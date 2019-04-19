@@ -1,0 +1,3 @@
+--ignore-dir=public
+--ignore-dir=build
+--smart-case
