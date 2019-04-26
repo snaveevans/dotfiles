@@ -305,22 +305,19 @@ map <leader>l :bnext<cr>
 map <leader>h :bprevious<cr>
 
 " Useful mappings for managing tabs
-map <leader>tn :tabnew<cr>
-map <leader>to :tabonly<cr>
-map <leader>tc :tabclose<cr>
-map <leader>tm :tabmove
+map tn :tabnew<cr>
 map <leader>t<leader> :tabnext
 
 " Easy tab movement in normal mode
-nnoremap <silent> th  :tabfirst<CR>
-nnoremap <silent> tk  :tabnext<CR>
-nnoremap <silent> tj  :tabprev<CR>
-nnoremap <silent> tl  :tablast<CR>
-nnoremap <silent> tt  :tabedit<Space>
-nnoremap <silent> tn  :tabnext<Space>
-nnoremap <silent> tm  :tabm<Space>
-nnoremap <silent> td  :tabclose<CR>
-nnoremap <silent> ty  :tabonly<CR>
+map <silent> th  :tabfirst<CR>
+map <silent> tk  :tabnext<CR>
+map <silent> tj  :tabprev<CR>
+map <silent> tl  :tablast<CR>
+map tt  :tabedit<Space>
+map tn  :tabnext<Space>
+map tm  :tabmove<Space>
+map <silent> td  :tabclose<CR>
+map <silent> ty  :tabonly<CR>
 
 " Let 'tl' toggle between this and the last accessed tab
 let g:lasttab = 1
@@ -330,7 +327,7 @@ au TabLeave * let g:lasttab = tabpagenr()
 
 " Opens a new tab with the current buffer's path
 " Super useful when editing files in the same directory
-map <leader>te :tabedit <c-r>=expand("%:p:h")<cr>/
+map <leader>tn :tabedit <c-r>=expand("%:p:h")<cr>/
 
 " Move up & down the buffer easier
 nnoremap <leader>d  <C-f>
@@ -348,6 +345,8 @@ endtry
 
 " Return to last edit position when opening files (You want this!)
 au BufReadPost * if line("'\"") > 1 && line("'\"") <= line("$") | exe "normal! g'\"" | endif
+
+nnoremap <leader>z :sus<cr>
 
 
 """"""""""""""""""""""""""""""
@@ -502,7 +501,7 @@ call deoplete#custom#source('omni', 'functions', {
 " Show hidden files in nerd tree
 let NERDTreeShowHidden=1
 " Open nerd tree with ctrl+n
-map <C-n> :NERDTreeToggle<CR>
+map <leader>n :NERDTreeToggle<CR>
 " Find current buffer in NERDTree
 map <leader>f :NERDTreeFind<CR>
 " Open nerdtree when opening directory
@@ -525,7 +524,7 @@ let g:workspace_persist_undo_history = 0
 " => Fzf
 nnoremap <leader>p  :Files<CR>
 nnoremap <leader>o  :Buffers<CR>
-nnoremap <leader>t  :Tags<CR>
+" nnoremap <leader>t  :Tags<CR>
 nnoremap <leader>a  :Ag<CR>
 " search selected text using :Ack
 " vnoremap <leader>a :call SearchSelectedText()<CR>
@@ -695,8 +694,8 @@ inoremap <C-v> <ESC>"+pa
 " delete without yanking \d
 nnoremap <leader><leader>d "_d
 " Unknown macro
-nnoremap <leader>te @c
-let @c='_/''lvnh"ny:tabe %:h/n'
+" nnoremap <leader>te @c
+" let @c='_/''lvnh"ny:tabe %:h/n'
 
 " Close Hidden Buffers
 nnoremap <leader>ch :call DeleteHiddenBuffers()<CR>
