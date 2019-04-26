@@ -1,211 +1,721 @@
-set nocompatible              " be iMproved, required
-filetype off                  " required
 
-" set the runtime path to include Vundle and initialize
-set rtp+=~/.vim/bundle/Vundle.vim
-call vundle#begin()
+" Sections:
+"    -> Plugins Installation
+"    -> General
+"    -> VIM user interface
+"    -> Colors and Fonts
+"    -> Files and backups
+"    -> Text, tab and indent related
+"    -> Visual mode related
+"    -> Moving around, tabs and buffers
+"    -> Status line
+"    -> Editing mappings
+"    -> vimgrep searching and cope displaying
+"    -> Spell checking
+"    -> Misc
+"    -> Helper functions
+"    -> Plugin Configuration
+"
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-" let Vundle manage Vundle, required
-Plugin 'VundleVim/Vundle.vim'
-Plugin 'ctrlpvim/ctrlp.vim'
-Plugin 'easymotion/vim-easymotion'
-Plugin 'jiangmiao/auto-pairs'
-Plugin 'joshdick/onedark.vim'
-Plugin 'leafgarland/typescript-vim'
-Plugin 'mileszs/ack.vim'
-Plugin 'omnisharp/omnisharp-vim'
-Plugin 'prettier/vim-prettier'
-Plugin 'scrooloose/nerdtree'
-Plugin 'scrooloose/nerdcommenter'
-Plugin 'thaerkh/vim-workspace'
-"Plugin 'snaveevans/vim-workspace'
-Plugin 'tpope/vim-surround'
-Plugin 'tpope/vim-fugitive'
-Plugin 'valloric/youcompleteme'
-Plugin 'vim-airline/vim-airline'
-Plugin 'w0rp/ale'
-Plugin 'junegunn/gv.vim'
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" => Plugins Installation
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Specify a directory for plugins
+" - For Neovim: ~/.local/share/nvim/plugged
+" - Avoid using standard Vim directory names like 'plugin'
+call plug#begin('~/.vim/plugged')
+" Make sure you use single quotes
 
-" All of your Plugins must be added before the following line
-call vundle#end()            " required
-filetype plugin indent on    " required
+Plug 'alvan/vim-closetag'
+Plug 'easymotion/vim-easymotion'
+Plug 'ervandew/supertab'
+Plug 'jiangmiao/auto-pairs'
+Plug 'joshdick/onedark.vim'
+Plug '/usr/local/opt/fzf'
+Plug 'junegunn/fzf.vim'
+Plug 'junegunn/gv.vim'
+Plug 'leafgarland/typescript-vim'
+Plug 'omnisharp/omnisharp-vim'
+Plug 'peitalin/vim-jsx-typescript'
+Plug 'prettier/vim-prettier'
+Plug 'scrooloose/nerdtree'
+Plug 'thaerkh/vim-workspace'
+Plug 'tpope/vim-commentary'
+Plug 'tpope/vim-surround'
+Plug 'tpope/vim-fugitive'
+Plug 'valloric/youcompleteme', { 'dir': '~/.vim/plugged/youcompleteme', 'do': './install.py --ts-completer' }
+Plug 'vim-airline/vim-airline'
+Plug 'w0rp/ale'
+if has('nvim')
+  Plug 'Shougo/deoplete.nvim', { 'do': ':UpdateRemotePlugins' }
+else
+  Plug 'Shougo/deoplete.nvim'
+  Plug 'roxma/nvim-yarp'
+  Plug 'roxma/vim-hug-neovim-rpc'
+endif
+
+" Initialize plugin system
+call plug#end()
+
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" => General
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Sets how many lines of history VIM has to remember
+set history=500
+
+" Enable filetype plugins
 filetype plugin on
+filetype indent on
 
+" Set to auto read when a file is changed from the outside
+set autoread
+
+" With a map leader it's possible to do extra key combinations
+" like <leader>w saves the current file
+let mapleader = ","
+
+" Fast saving
+nmap <leader>w :w!<cr>
+
+" :W sudo saves the file
+" (useful for handling the permission-denied error)
+command W w !sudo tee % > /dev/null
+
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" => VIM user interface
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Set 3 lines to the cursor - when moving vertically using j/k
+set so=3
+
+" Enable syntax highlight
 syntax on
-colorscheme onedark
-set number "show line numbers
+
+" Show line numbers
+set number
+
+" Highlight line cursor is on
 set cursorline
-set incsearch "incremental search for /
-set list "for vertical line tabs
-set listchars=tab:\|\ "show vertical line for tabs
-set tabstop=4 "show tabs as 4 spaces
-set shiftwidth=4
-set directory^=$HOME/.vim/tmp// "set swap directory
-set ssop-=options    " do not store global and local values in a session
-set ssop-=folds      " do not store folds
+
+" For vertical line tabs
+set list
+
+" Show vertical line for tabs
+set listchars=tab:\|\ 
+
+" Set default splits
 set splitright
 set splitbelow
+set diffopt+=vertical
 
-"copy and paste to and from system
-inoremap <C-v> <ESC>"+pa
+
+" Avoid garbled characters in Chinese language windows OS
+let $LANG='en'
+set langmenu=en
+source $VIMRUNTIME/delmenu.vim
+source $VIMRUNTIME/menu.vim
+
+" Turn on the Wild menu
+set wildmenu
+
+" Ignore compiled files
+set wildignore=*.o,*~,*.pyc
+if has("win16") || has("win32")
+    set wildignore+=.git\*,.hg\*,.svn\*
+else
+    set wildignore+=*/.git/*,*/.hg/*,*/.svn/*,*/.DS_Store
+endif
+
+"Always show current position
+set ruler
+
+" Height of the command bar
+set cmdheight=2
+
+" A buffer becomes hidden when it is abandoned
+set hid
+
+" Configure backspace so it acts as it should act
+set backspace=eol,start,indent
+set whichwrap+=<,>,h,l
+
+" Ignore case when searching
+set ignorecase
+
+" When searching try to be smart about cases
+set smartcase
+
+" Highlight search results
+set hlsearch
+
+" Makes search act like search in modern browsers
+set incsearch
+
+" Don't redraw while executing macros (good performance config)
+set lazyredraw
+
+" For regular expressions turn magic on
+set magic
+
+" Show matching brackets when text indicator is over them
+set showmatch
+" How many tenths of a second to blink when matching brackets
+set mat=2
+
+" No annoying sound on errors
+set noerrorbells
+set novisualbell
+set t_vb=
+set tm=500
+
+" Properly disable sound on errors on MacVim
+if has("gui_macvim")
+    autocmd GUIEnter * set vb t_vb=
+endif
+
+
+" Add a bit extra margin to the left
+set foldcolumn=1
+
+set omnifunc=syntaxcomplete#Complete
+
+" Omni complete select longest and always show
+set completeopt=longest,menuone
+inoremap <expr> <C-n> pumvisible() ? '<C-n>' :
+  \ '<C-n><C-r>=pumvisible() ? "\<lt>Down>" : ""<CR>'
+
+inoremap <expr> <M-,> pumvisible() ? '<C-n>' :
+  \ '<C-x><C-o><C-n><C-p><C-r>=pumvisible() ? "\<lt>Down>" : ""<CR>'
+
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" => Colors and Fonts
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Enable syntax highlighting
+syntax enable
+
+" Enable 256 colors palette in Gnome Terminal
+if $COLORTERM == 'gnome-terminal'
+    set t_Co=256
+endif
+
+try
+   " The best color scheme
+   colorscheme onedark
+catch
+endtry
+
+set background=dark
+
+" Set extra options when running in GUI mode
+if has("gui_running")
+    set guioptions-=T
+    set guioptions-=e
+    set t_Co=256
+    set guitablabel=%M\ %t
+endif
+
+" Set utf8 as standard encoding and en_US as the standard language
+set encoding=utf8
+
+" Use Unix as the standard file type
+set ffs=unix,dos,mac
+
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" => Files, backups and undo
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Turn backup off, since most stuff is in SVN, git et.c anyway...
+set nobackup
+set nowb
+set noswapfile
+
+" This sets swap directory
+" Set directory^=$HOME/.vim/tmp//
+" Do not store global and local values in a session
+set ssop-=options
+" Do not store folds
+set ssop-=folds
+
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" => Text, tab and indent related
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Use spaces instead of tabs
+set expandtab
+
+" Be smart when using tabs ;)
+set smarttab
+
+" 1 tab == 4 spaces
+set shiftwidth=4
+set tabstop=4
+
+" Linebreak on 500 characters
+set lbr
+set tw=500
+
+set ai "Auto indent
+set si "Smart indent
+set wrap "Wrap lines
+
+
+""""""""""""""""""""""""""""""
+" => Visual mode related
+""""""""""""""""""""""""""""""
+" Visual mode pressing * or # searches for the current selection
+" Super useful! From an idea by Michael Naumann
+vnoremap <silent> * :<C-u>call VisualSelection('', '')<CR>/<C-R>=@/<CR><CR>
+vnoremap <silent> # :<C-u>call VisualSelection('', '')<CR>?<C-R>=@/<CR><CR>
+vnoremap <silent> <leader>a :<C-u>call VisualSelection('', '')<CR>:Ag <C-R>=@/<CR><CR>
+
+"copy and cut to  system
 vnoremap <C-c> "+y
 vnoremap <C-d> "+d
-vnoremap <Leader>a :call SearchSelectedText()<CR>
-vnoremap // y/<C-R>"<CR>
 " delete without yanking \d
-nnoremap <leader>d "_d
-vnoremap <leader>d "_d
-" Contextual code actions (uses fzf, CtrlP or unite.vim when available)
-nnoremap <Leader><Space> :OmniSharpGetCodeActions<CR>
-" Run code actions with text selected in visual mode to extract method
-xnoremap <Leader><Space> :call OmniSharp#GetCodeActions('visual')<CR>
-"vim-workspace toggle workspace
-nnoremap <leader>s :ToggleWorkspace<CR>
-nnoremap <Leader>a :Ack!<Space>
-nnoremap th  :tabfirst<CR>
-nnoremap tk  :tabnext<CR>
-nnoremap tj  :tabprev<CR>
-nnoremap tl  :tablast<CR>
-nnoremap tt  :tabedit<Space>
-nnoremap tn  :tabnext<Space>
-nnoremap tm  :tabm<Space>
-nnoremap td  :tabclose<CR>
-nnoremap ty  :tabonly<CR>
+vnoremap <leader><leader>d "_d
 
-nnoremap ,o  :CtrlPBuffer<CR>
-nnoremap ,p  :CtrlP<CR>
-nnoremap ,t  :CtrlPTag<CR>
-nnoremap ,rr  :YcmCompleter RefactorRename<Space>
-nnoremap ,rf  :YcmCompleter FixIt<CR>
-nnoremap ,rw  :YcmCompleter OrganizeImports<CR>
-nnoremap ,gt  :ALEGoToDefinition<CR>
-nnoremap ,af  :ALEFix<CR>
-nnoremap ,an  :ALENext<CR>
-nnoremap ,ap  :ALEPrevious<CR>
-nnoremap ,fr  :ALEFindReferences<CR>
-nnoremap ,ch  :CloseHiddenBuffers<CR>
-nnoremap ,qq  :q<CR>
-nnoremap ,qa  :qa<CR>
-nnoremap ,bd  :bd<CR>
-nnoremap ,ww  :w<CR>
-nnoremap ,wa  :wa<CR>
-nnoremap ,wq  :wq<CR>
-nnoremap ,st  :Gstatus<CR>
-nnoremap ,gd  :Gdiff<CR>
-nnoremap ,gc  :Gcommit<CR>
-nnoremap ,gp  :Gpush<CR>
-nnoremap ,gw  :Gwrite<CR>
-nnoremap ,gf @z
-nnoremap ,gh @x
-"nnoremap ,te @c
-nnoremap ,d  <C-f>
-nnoremap ,u  <C-b>
-nnoremap ,h  <C-w>h
-nnoremap ,l  <C-w>l
-vnoremap ,h  <C-w>h
-vnoremap ,l  <C-w>l
-nnoremap ,j  <C-w>j
-nnoremap ,k  <C-w>k
-vnoremap ,j  <C-w>j
-vnoremap ,k  <C-w>k
-nnoremap <leader>h  <C-w>h
-nnoremap <leader>j  <C-w>j
-nnoremap <leader>k  <C-w>k
-nnoremap <leader>l  <C-w>l
-"nnoremap ,wn :botright vnew<Space>
-vnoremap ,f <ESC>/\%V
-"easy motion word
-"map ,a <Plug>(easymotion-bd-w)
-"easy motions line
-"map ,a <Plug>(easymotion-bd-jk) 
-nnoremap ,aa _
-vnoremap ,aa _
-nnoremap ,ss g_
-vnoremap ,ss g_
 
-"open nerd tree with ctrl+n
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" => Moving around, tabs, windows and buffers
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Map <Space> to / (search) and Ctrl-<Space> to ? (backwards search)
+map <space> /
+map <c-space> ?
+
+" Disable highlight when <leader><cr> is pressed
+map <silent> <leader><cr> :noh<cr>
+
+" Smart way to move between windows
+map <C-j> <C-W>j
+map <C-k> <C-W>k
+map <C-h> <C-W>h
+map <C-l> <C-W>l
+
+" Close the current buffer
+map <leader>bd :bd<cr>
+" map <leader>bd :Bclose<cr>:tabclose<cr>gT
+
+" Close all the buffers
+map <leader>ba :bufdo bd<cr>
+
+map <leader>l :bnext<cr>
+map <leader>h :bprevious<cr>
+
+" Useful mappings for managing tabs
+map <leader>tn :tabnew<cr>
+map <leader>to :tabonly<cr>
+map <leader>tc :tabclose<cr>
+map <leader>tm :tabmove
+map <leader>t<leader> :tabnext
+
+" Easy tab movement in normal mode
+nnoremap <silent> th  :tabfirst<CR>
+nnoremap <silent> tk  :tabnext<CR>
+nnoremap <silent> tj  :tabprev<CR>
+nnoremap <silent> tl  :tablast<CR>
+nnoremap <silent> tt  :tabedit<Space>
+nnoremap <silent> tn  :tabnext<Space>
+nnoremap <silent> tm  :tabm<Space>
+nnoremap <silent> td  :tabclose<CR>
+nnoremap <silent> ty  :tabonly<CR>
+
+" Let 'tl' toggle between this and the last accessed tab
+let g:lasttab = 1
+nmap <leader>tl :exe "tabn ".g:lasttab<CR>
+au TabLeave * let g:lasttab = tabpagenr()
+
+
+" Opens a new tab with the current buffer's path
+" Super useful when editing files in the same directory
+map <leader>te :tabedit <c-r>=expand("%:p:h")<cr>/
+
+" Move up & down the buffer easier
+nnoremap <leader>d  <C-f>
+nnoremap <leader>u  <C-b>
+
+" Switch CWD to the directory of the open buffer
+map <leader>cd :cd %:p:h<cr>:pwd<cr>
+
+" Specify the behavior when switching between buffers
+try
+  set switchbuf=useopen,usetab,newtab
+  set stal=2
+catch
+endtry
+
+" Return to last edit position when opening files (You want this!)
+au BufReadPost * if line("'\"") > 1 && line("'\"") <= line("$") | exe "normal! g'\"" | endif
+
+
+""""""""""""""""""""""""""""""
+" => Status line
+""""""""""""""""""""""""""""""
+" Always show the status line
+set laststatus=2
+
+" Format the status line
+set statusline=\ %{HasPaste()}%F%m%r%h\ %w\ \ CWD:\ %r%{getcwd()}%h\ \ \ Line:\ %l\ \ Column:\ %c
+
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" => Editing mappings
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Remap VIM 0 to first non-blank character
+map 0 ^
+
+" Move a line of text using ALT+[jk] or Command+[jk] on mac
+nmap <M-j> mz:m+<cr>`z
+nmap <M-k> mz:m-2<cr>`z
+vmap <M-j> :m'>+<cr>`<my`>mzgv`yo`z
+vmap <M-k> :m'<-2<cr>`>my`<mzgv`yo`z
+
+if has("mac") || has("macunix")
+  nmap <D-j> <M-j>
+  nmap <D-k> <M-k>
+  vmap <D-j> <M-j>
+  vmap <D-k> <M-k>
+endif
+
+" Delete trailing white space on save, useful for some filetypes ;)
+fun! CleanExtraSpaces()
+    let save_cursor = getpos(".")
+    let old_query = getreg('/')
+    silent! %s/\s\+$//e
+    call setpos('.', save_cursor)
+    call setreg('/', old_query)
+endfun
+
+if has("autocmd")
+    autocmd BufWritePre *.txt,*.js,*.py,*.wiki,*.sh,*.coffee :call CleanExtraSpaces()
+endif
+
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" => Spell checking
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Pressing ,ss will toggle and untoggle spell checking
+map <leader>ss :setlocal spell!<cr>
+
+" Shortcuts using <leader>
+map <leader>sn ]s
+map <leader>sp [s
+map <leader>sa zg
+map <leader>s? z=
+
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" => Misc
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Remove the Windows ^M - when the encodings gets messed up
+noremap <leader>m mmHmt:%s/<C-V><cr>//ge<cr>'tzt'm
+
+" Quickly open a buffer for scribble
+map <leader>q :q<cr>
+
+" Quickly open a markdown buffer for scribble
+map <leader>x :e ~/buffer.md<cr>
+
+" Toggle paste mode on and off
+" map <leader>pp :setlocal paste!<cr>
+
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" => Helper functions
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Returns true if paste mode is enabled
+function! HasPaste()
+    if &paste
+        return 'PASTE MODE  '
+    endif
+    return ''
+endfunction
+
+" Don't close window, when deleting a buffer
+command! Bclose call <SID>BufcloseCloseIt()
+function! <SID>BufcloseCloseIt()
+    let l:currentBufNum = bufnr("%")
+    let l:alternateBufNum = bufnr("#")
+
+    if buflisted(l:alternateBufNum)
+        buffer #
+    else
+        bnext
+    endif
+
+    if bufnr("%") == l:currentBufNum
+        new
+    endif
+
+    if buflisted(l:currentBufNum)
+        execute("bdelete! ".l:currentBufNum)
+    endif
+endfunction
+
+function! CmdLine(str)
+    call feedkeys(":" . a:str)
+endfunction
+
+function! VisualSelection(direction, extra_filter) range
+    let l:saved_reg = @"
+    execute "normal! vgvy"
+
+    let l:pattern = escape(@", "\\/.*'$^~[]")
+    let l:pattern = substitute(l:pattern, "\n$", "", "")
+
+    if a:direction == 'gv'
+        call CmdLine("Ag '" . l:pattern . "' " )
+    elseif a:direction == 'replace'
+        call CmdLine("%s" . '/'. l:pattern . '/')
+    endif
+
+    let @/ = l:pattern
+    let @" = l:saved_reg
+endfunction
+
+function DeleteHiddenBuffers()
+    let tpbl=[]
+    call map(range(1, tabpagenr('$')), 'extend(tpbl, tabpagebuflist(v:val))')
+    for buf in filter(range(1, bufnr('$')), 'bufexists(v:val) && index(tpbl, v:val)==-1')
+        silent execute 'bwipeout' buf
+    endfor
+endfunction
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" => Plugin Configuration
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" => deoplete
+let g:deoplete#enable_at_startup = 1
+autocmd FileType typescript call deoplete#custom#buffer_option('auto_complete', v:false)
+autocmd FileType cs call deoplete#custom#buffer_option('auto_complete', v:true)
+call deoplete#custom#source('omni', 'functions', {
+    \ 'csharp':  'omnisharp',
+    \})
+" let g:deoplete#sources#ts = {'_': ['ale']}
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" => NERDTree
+" Show hidden files in nerd tree
+let NERDTreeShowHidden=1
+" Open nerd tree with ctrl+n
 map <C-n> :NERDTreeToggle<CR>
+" Find current buffer in NERDTree
 map <leader>f :NERDTreeFind<CR>
-"open nerdtree when opening directory
+" Open nerdtree when opening directory
 autocmd StdinReadPre * let s:std_in=1
 autocmd VimEnter * if argc() == 1 && isdirectory(argv()[0]) && !exists("s:std_in") | exe 'NERDTree' argv()[0] | wincmd p | ene | endif
-let @z='_/:wv$h"ay:tabnew a:Gdiff'
-let @x='_/:wvg_"hy:tabnew h'
-let @c='_/''lvnh"ny:tabe %:h/n'
-"ignore fils in gitignore with CtrlP
-let g:ctrlp_user_command = ['.git', 'cd %s && git ls-files -co --exclude-standard']
-let NERDTreeShowHidden=1 "show hidden files in nerd tree
-let g:ctrlp_show_hidden = 1 "show hidden files in CtrlP
-let g:airline#extensions#tabline#tab_nr_type = 1 "show tab number using airline
-let g:ycm_filetype_blacklist = { 'cs': 1 }
-let g:ycm_autoclose_preview_window_after_insertion = 1 "auto-close preview window in YCM
-let g:OmniSharp_server_use_mono = 1
-let g:OmniSharp_selector_ui = 'ctrlp'  " Use ctrlp.vim
-"let g:OmniSharp_proc_debug = 1
-"let g:OmniSharp_loglevel = 'debug'
-let g:ale_linters = { 'cs': ['OmniSharp'] }
-let g:ale_fixers = { 'javascript': ['eslint', 'prettier'], 'typescript': ['tslint', 'prettier'], 'cs': ['OmniSharp'] }
-let g:ale_completion_enabled = 1
-let g:airline#extensions#ale#enabled = 1
-let g:workspace_autosave = 0 "disable autosave
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" => vim-workspace
+" Toggle workspace
+nnoremap <leader>s :ToggleWorkspace<CR>
+" Close all hidden buffers
+" nnoremap <leader>ch  :CloseHiddenBuffers<CR>
+" Disable autosave
+let g:workspace_autosave = 0 
 "let g:workspace_session_name = 'Session.vim'
 let g:workspace_session_directory = $HOME . '/.vim/sessions/'
 let g:workspace_persist_undo_history = 0
-"let g:ycm_log_level='debug'
-let g:prettier#exec_cmd_async = 1
-let g:prettier#autoformat = 0
-let g:prettier#exec_cmd_path = '/usr/local/bin/prettier'
-autocmd BufWritePre *.js,*.jsx,*.mjs,*.ts,*.tsx,*.css,*.less,*.scss,*.json,*.graphql,*.md,*.vue PrettierAsync
 
-"open CtrlP files in new tab
-let g:ctrlp_prompt_mappings = {
-    \ 'AcceptSelection("e")': ['<c-t>'],
-    \ 'AcceptSelection("t")': ['<cr>', '<2-LeftMouse>'],
-    \ }
-let g:ctrlp_buftag_types = {
-\ 'typescript' : {
-  \ 'bin': 'ctags',
-  \ 'args': '-f - ',
-  \ },
-\ 'javascript' : {
-  \ 'bin': 'ctags',
-  \ 'args': '-f - ',
-  \ }
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" => Fzf
+nnoremap <leader>p  :Files<CR>
+nnoremap <leader>o  :Buffers<CR>
+nnoremap <leader>t  :Tags<CR>
+nnoremap <leader>a  :Ag<CR>
+" search selected text using :Ack
+" vnoremap <leader>a :call SearchSelectedText()<CR>
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" => ALE
+nnoremap gd  :ALEGoToDefinition<CR>
+nnoremap <leader>af  :ALEFix<CR>
+nnoremap <leader>an  :ALENext<CR>
+nnoremap <leader>ap  :ALEPrevious<CR>
+nnoremap <leader>fr  :ALEFindReferences<CR>
+" Tell ALE to use OmniSharp for linting C# files, and no other linters.
+let g:ale_linters = { 'cs': ['OmniSharp'] }
+let g:ale_fixers = { 
+\ 'javascript': ['eslint', 'prettier'], 
+\ 'typescript': ['tslint', 'prettier'], 
 \ }
-"let g:ctrlp_buftag_types = { 
-	"\ 'javascript': '--language-force=javascript',
-	"\ 'typescript': '--language-force=typescript'
-	"\ }
-"airline tabs enabled
-let g:airline#extensions#tabline#enabled = 1
-let g:airline#extensions#tabline#formatter = 'unique_tail'
-
-function! GetVisual() range 
-	let reg_save = getreg('"') 
-	let regtype_save = getregtype('"') 
-	let cb_save = &clipboard 
-	set clipboard& 
-	normal! ""gvy 
-	let selection = getreg('"') 
-	call setreg('"', reg_save, regtype_save) 
-	let &clipboard = cb_save 
-	return selection
-endfunction
-
-function! SearchSelectedText() range
-	let selection = GetVisual()
-	execute printf('Ack! "%s"', selection)
-endfunction
-
-command! -nargs=1 RR YcmCompleter RefactorRename <args>
-command! -nargs=0 RF YcmCompleter FixIt
+" let g:ale_completion_enabled = 1
 command! -nargs=0 AF ALEFix
 command! -nargs=0 FR ALEFindReferences
 command! -nargs=0 GT ALEGoToDefinition
-command! -nargs=0 RW YcmCompleter OrganizeImports
-command! -nargs=0 DF YcmCompleter OrganizeImports | Prettier
+
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" => vim-fugitive
+nnoremap <leader>st  :Gstatus<CR>
+nnoremap <leader>gd  :Gdiff<CR>
+nnoremap <leader>gc  :Gcommit<CR>
+nnoremap <leader>gp  :Gpush<CR>
+nnoremap <leader>gw  :Gwrite<CR>
+
+" macro to open file from GStatus in new tab
+nnoremap <leader>gh @x
+let @x='_wvg_"hy:tabnew h'
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" => airline
+" Show tab number using airline
+let g:airline#extensions#tabline#tab_nr_type = 1
+" Airline tabs enabled
+let g:airline#extensions#tabline#enabled = 1
+let g:airline#extensions#tabline#formatter = 'unique_tail'
+let g:airline#extensions#ale#enabled = 1
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" => Prettier
+nnoremap <leader>fd  :PrettierAsync<CR>
+" Always execute async
+let g:prettier#exec_cmd_async = 1
+let g:prettier#autoformat = 0
+let g:prettier#exec_cmd_path = '/usr/local/bin/prettier'
+" Trigger PrettierAsync before writing buffer
+autocmd BufWritePre *.js,*.jsx,*.mjs,*.ts,*.tsx,*.css,*.less,*.scss,*.json,*.graphql,*.md,*.vue,*.html PrettierAsync
 command! -nargs=0 PP Prettier
-command! -nargs=0 QQ CloseHiddenBuffers 
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" => SuperTab
+" Map SuperTab up & down to k & j
+let g:SuperTabMappingForward = '<c-k>'
+let g:SuperTabMappingBackward = '<c-j>'
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" => YouCompleteMe
+augroup ycm_commands
+    autocmd!
+
+    autocmd FileType typescript nnoremap <buffer> <leader>rr  :YcmCompleter RefactorRename<Space>
+    autocmd FileType typescript nnoremap <buffer> <leader>rf  :YcmCompleter FixIt<CR>
+    autocmd FileType typescript nnoremap <buffer> <leader>rw  :YcmCompleter OrganizeImports<CR>
+
+    autocmd FileType javascript nnoremap <buffer> <leader>rr  :YcmCompleter RefactorRename<Space>
+    autocmd FileType javascript nnoremap <buffer> <leader>rf  :YcmCompleter FixIt<CR>
+    autocmd FileType javascript nnoremap <buffer> <leader>rw  :YcmCompleter OrganizeImports<CR>
+augroup END
+" Dont use ycm for c# files
+let g:ycm_filetype_blacklist = { 'cs': 1 }
+" Auto-close preview window in YCM
+let g:ycm_autoclose_preview_window_after_insertion = 1
+"let g:ycm_log_level='debug'
+" command! -nargs=1 RR YcmCompleter RefactorRename <args>
+" command! -nargs=0 RF YcmCompleter FixIt
+" command! -nargs=0 RW YcmCompleter OrganizeImports
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" => Omnisharp
+let g:OmniSharp_server_use_mono = 1
+" let g:OmniSharp_selector_ui = 'ctrlp'  " Use ctrlp.vim
+let g:OmniSharp_server_path = '/Users/tyler/omnisharp.http-osx/omnisharp/OmniSharp.exe'
+
+" Fetch semantic type/interface/identifier names on BufEnter and highlight them
+let g:OmniSharp_highlight_types = 1
+
+augroup omnisharp_commands
+    autocmd!
+
+    " Show type information automatically when the cursor stops moving
+    autocmd CursorHold *.cs call OmniSharp#TypeLookupWithoutDocumentation()
+
+    " Update the highlighting whenever leaving insert mode
+    autocmd InsertLeave *.cs call OmniSharp#HighlightBuffer()
+
+    " Alternatively, use a mapping to refresh highlighting for the current buffer
+    autocmd FileType cs nnoremap <buffer> <leader>th :OmniSharpHighlightTypes<CR>
+
+    " The following commands are contextual, based on the cursor position.
+    autocmd FileType cs nnoremap <buffer> gd :OmniSharpGotoDefinition<CR>
+    autocmd FileType cs nnoremap <buffer> <leader>fi :OmniSharpFindImplementations<CR>
+    autocmd FileType cs nnoremap <buffer> <leader>fs :OmniSharpFindSymbol<CR>
+    autocmd FileType cs nnoremap <buffer> <leader>fu :OmniSharpFindUsages<CR>
+
+    " Finds members in the current buffer
+    autocmd FileType cs nnoremap <buffer> <leader>fm :OmniSharpFindMembers<CR>
+
+    autocmd FileType cs nnoremap <buffer> <leader>fx :OmniSharpFixUsings<CR>
+    autocmd FileType cs nnoremap <buffer> <leader>tt :OmniSharpTypeLookup<CR>
+    autocmd FileType cs nnoremap <buffer> <leader>dc :OmniSharpDocumentation<CR>
+    autocmd FileType cs nnoremap <buffer> <C-\> :OmniSharpSignatureHelp<CR>
+    autocmd FileType cs inoremap <buffer> <C-\> <C-o>:OmniSharpSignatureHelp<CR>
+
+    " Navigate up and down by method/property/field
+    autocmd FileType cs nnoremap <buffer> <leader>k :OmniSharpNavigateUp<CR>
+    autocmd FileType cs nnoremap <buffer> <leader>j :OmniSharpNavigateDown<CR>
+
+    " Formate the buffer
+    autocmd FileType cs nnoremap <buffer> <leader>fd :OmniSharpCodeFormat<CR>
+
+    " Contextual code actions (uses fzf, CtrlP or unite.vim when available)
+    autocmd FileType cs nnoremap <buffer> <leader><Space> :OmniSharpGetCodeActions<CR>
+    " Run code actions with text selected in visual mode to extract method
+    autocmd FileType cs xnoremap <buffer> <leader><Space> :call OmniSharp#GetCodeActions('visual')<CR>
+
+    " Rename with dialog
+    autocmd FileType cs nnoremap <buffer> <leader>rr :OmniSharpRename<CR>
+    " Rename without dialog - with cursor on the symbol to rename: `:Rename newname`
+    autocmd FileType cs command! -nargs=1 Rename :call OmniSharp#RenameTo("<args>")
+
+    " Start the omnisharp server for the current solution
+    autocmd FileType cs nnoremap <buffer> <leader>ss :OmniSharpStartServer<CR>
+    autocmd FileType cs nnoremap <buffer> <leader>sp :OmniSharpStopServer<CR>
+    
+    " Map ctrl-space to open omnicomplete
+    autocmd FileType cs inoremap <buffer> <C-Space> <C-x><C-o>
+augroup END
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" => vim-jsx-typescript
+" Set filetypes js & ts as typescript.tsx
+autocmd BufNewFile,BufRead *.tsx,*.jsx set filetype=typescript.tsx
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" => vim-closetag
+
+let g:closetag_filenames = '*.html,*.xhtml,*.phtml'
+let g:closetag_xhtml_filenames = '*.xhtml,*.jsx,*.tsx'
+let g:closetag_filetypes = 'html,xhtml,phtml'
+let g:closetag_xhtml_filetypes = 'xhtml,jsx,tsx'
+let g:closetag_emptyTags_caseSensitive = 1
+let g:closetag_regions = {
+    \ 'typescript.tsx': 'jsxRegion,tsxRegion',
+    \ 'javascript.jsx': 'jsxRegion',
+    \ }
+
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" => Misc
+" paste from system
+inoremap <C-v> <ESC>"+pa
+" delete without yanking \d
+nnoremap <leader><leader>d "_d
+" Unknown macro
+nnoremap <leader>te @c
+let @c='_/''lvnh"ny:tabe %:h/n'
+
+" Close Hidden Buffers
+nnoremap <leader>ch :call DeleteHiddenBuffers()<CR>
+
 command! -nargs=0 UP bufdo e! "command will discard changes and reload files
 command! -nargs=0 JK bd
+
+"nnoremap ,h  <C-w>h
+"nnoremap ,l  <C-w>l
+"vnoremap ,h  <C-w>h
+"vnoremap ,l  <C-w>l
+"nnoremap ,j  <C-w>j
+"nnoremap ,k  <C-w>k
+"vnoremap ,j  <C-w>j
+"vnoremap ,k  <C-w>k
+"nnoremap <leader>h  <C-w>h
+"nnoremap <leader>j  <C-w>j
+"nnoremap <leader>k  <C-w>k
+"nnoremap <leader>l  <C-w>l
+"nnoremap ,wn :botright vnew<Space>
+"vnoremap , <ESC>/\%V
 
