@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/sh
 
 # Thanks to Mathias Bynens! https://mths.be/macos
 
