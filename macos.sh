@@ -82,6 +82,12 @@ defaults write com.apple.screensaver askForPasswordDelay -int 0
 # Finder                                                                      #
 ###############################################################################
 
+# Create screenshots directory
+mkdir -p $HOME/screenshots
+
+# Change screenshots directory
+defaults write com.apple.screencapture location $HOME/screenshots/
+
 # Finder: disable window animations and Get Info animations
 defaults write com.apple.finder DisableAllAnimations -bool true
 
