@@ -47,7 +47,6 @@ Plug 'leafgarland/typescript-vim'
 Plug 'omnisharp/omnisharp-vim'
 Plug 'peitalin/vim-jsx-typescript'
 Plug 'prettier/vim-prettier'
-Plug 'scrooloose/nerdtree'
 Plug 'thaerkh/vim-workspace'
 Plug 'tpope/vim-commentary'
 Plug 'tpope/vim-surround'
@@ -252,7 +251,7 @@ set ssop-=folds
 " => Text, tab and indent related
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Use spaces instead of tabs
-set expandtab
+" set expandtab
 
 " Be smart when using tabs ;)
 set smarttab
@@ -301,6 +300,10 @@ map <C-j> <C-W>j
 map <C-k> <C-W>k
 map <C-h> <C-W>h
 map <C-l> <C-W>l
+map <leader>j <C-W>j
+map <leader>k <C-W>k
+map <leader>h <C-W>h
+map <leader>l <C-W>l
 
 " Close the current buffer
 map <leader>bd :bd<cr>
@@ -309,8 +312,8 @@ map <leader>bd :bd<cr>
 " Close all the buffers
 map <leader>ba :bufdo bd<cr>
 
-map <leader>l :bnext<cr>
-map <leader>h :bprevious<cr>
+" map <leader>l :bnext<cr>
+" map <leader>h :bprevious<cr>
 
 " Useful mappings for managing tabs
 map tn :tabnew<cr>
@@ -434,60 +437,98 @@ map <leader>x :e ~/buffer.md<cr>
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Returns true if paste mode is enabled
 function! HasPaste()
-    if &paste
-        return 'PASTE MODE  '
-    endif
-    return ''
+	if &paste
+		return 'PASTE MODE  '
+	endif
+	return ''
 endfunction
 
 " Don't close window, when deleting a buffer
 command! Bclose call <SID>BufcloseCloseIt()
 function! <SID>BufcloseCloseIt()
-    let l:currentBufNum = bufnr("%")
-    let l:alternateBufNum = bufnr("#")
+	let l:currentBufNum = bufnr("%")
+	let l:alternateBufNum = bufnr("#")
 
-    if buflisted(l:alternateBufNum)
-        buffer #
-    else
-        bnext
-    endif
+	if buflisted(l:alternateBufNum)
+		buffer #
+	else
+		bnext
+	endif
 
-    if bufnr("%") == l:currentBufNum
-        new
-    endif
+	if bufnr("%") == l:currentBufNum
+		new
+	endif
 
-    if buflisted(l:currentBufNum)
-        execute("bdelete! ".l:currentBufNum)
-    endif
+	if buflisted(l:currentBufNum)
+		execute("bdelete! ".l:currentBufNum)
+	endif
 endfunction
 
 function! CmdLine(str)
-    call feedkeys(":" . a:str)
+	call feedkeys(":" . a:str)
 endfunction
 
 function! VisualSelection(direction, extra_filter) range
-    let l:saved_reg = @"
-    execute "normal! vgvy"
+	let l:saved_reg = @"
+	execute "normal! vgvy"
 
-    let l:pattern = escape(@", "\\/.*'$^~[]")
-    let l:pattern = substitute(l:pattern, "\n$", "", "")
+	let l:pattern = escape(@", "\\/.*'$^~[]")
+	let l:pattern = substitute(l:pattern, "\n$", "", "")
 
-    if a:direction == 'gv'
-        call CmdLine("Ag '" . l:pattern . "' " )
-    elseif a:direction == 'replace'
-        call CmdLine("%s" . '/'. l:pattern . '/')
-    endif
+	if a:direction == 'gv'
+		call CmdLine("Ag '" . l:pattern . "' " )
+	elseif a:direction == 'replace'
+		call CmdLine("%s" . '/'. l:pattern . '/')
+	endif
 
-    let @/ = l:pattern
-    let @" = l:saved_reg
+	let @/ = l:pattern
+	let @" = l:saved_reg
 endfunction
 
 function DeleteHiddenBuffers()
-    let tpbl=[]
-    call map(range(1, tabpagenr('$')), 'extend(tpbl, tabpagebuflist(v:val))')
-    for buf in filter(range(1, bufnr('$')), 'bufexists(v:val) && index(tpbl, v:val)==-1')
-        silent execute 'bwipeout' buf
-    endfor
+	let tpbl=[]
+	call map(range(1, tabpagenr('$')), 'extend(tpbl, tabpagebuflist(v:val))')
+	for buf in filter(range(1, bufnr('$')), 'bufexists(v:val) && index(tpbl, v:val)==-1')
+		silent execute 'bwipeout' buf
+	endfor
+endfunction
+
+function EnableDisableDeoplete()
+	let enabledFileTypes = ['cs']
+	if index(enabledFileTypes, &ft) >= 0
+		" enable deoplete
+		call deoplete#custom#buffer_option('auto_complete', v:true)
+	else
+		" disable deoplete
+		call deoplete#custom#buffer_option('auto_complete', v:false)
+	endif
+endfunction
+
+function! AngularOpenComponent()
+	let l:files = split(globpath(expand("%:p:h"), "*"), "\n")
+	let l:componentFile = filter(deepcopy(l:files), function("FilterComponentFile", [".component.ts"]))
+	if len(l:componentFile) >= 1
+		execute "edit ".fnameescape(l:componentFile[0])
+	endif
+	let l:markupFile = filter(deepcopy(l:files), function("FilterComponentFile", [".html"]))
+	if len(l:markupFile ) >= 1
+		execute "vsplit ".fnameescape(l:markupFile[0])
+	endif
+	let l:styleFile = filter(deepcopy(l:files), function("FilterComponentFile", [".scss"]))
+	if len(l:styleFile) >= 1
+		execute "vsplit ".fnameescape(l:styleFile[0])
+	endif
+	execute("wincmd =")
+	execute("wincmd h")
+	execute("wincmd h")
+endfunction
+
+function! FilterComponentFile(desiredFile, idx, filePath)
+	if a:filePath =~ a:desiredFile
+		return 1
+	else
+		return 0
+	endif
 endfunction
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -495,26 +536,34 @@ endfunction
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" => Netrw
+let g:netrw_banner = 0
+let g:netrw_liststyle = 3
+let g:netrw_browse_split = 4
+let g:netrw_altv = 1
+let g:netrw_winsize = 25
+augroup NetrwCommands
+	autocmd!
+	" Open Explorer
+	nnoremap <silent> <leader>e :Vexplore<cr>
+
+	" Open Explorer in new Tab
+	nnoremap <silent> <leader>n :Texplore<cr>
+	" Open netrw as side drawer
+	" autocmd VimEnter * :Vexplore
+
+	" Ensure netrw doesn't open
+	autocmd VimEnter * silent! au! FileExplorer
+augroup END
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => deoplete
 let g:deoplete#enable_at_startup = 1
-autocmd FileType typescript call deoplete#custom#buffer_option('auto_complete', v:false)
-autocmd FileType cs call deoplete#custom#buffer_option('auto_complete', v:true)
+autocmd BufEnter * call EnableDisableDeoplete()
 call deoplete#custom#source('omni', 'functions', {
     \ 'csharp':  'omnisharp',
     \})
 " let g:deoplete#sources#ts = {'_': ['ale']}
-
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" => NERDTree
-" Show hidden files in nerd tree
-let NERDTreeShowHidden=1
-" Open nerd tree with ctrl+n
-map <leader>n :NERDTreeToggle<CR>
-" Find current buffer in NERDTree
-map <leader>f :NERDTreeFind<CR>
-" Open nerdtree when opening directory
-autocmd StdinReadPre * let s:std_in=1
-autocmd VimEnter * if argc() == 1 && isdirectory(argv()[0]) && !exists("s:std_in") | exe 'NERDTree' argv()[0] | wincmd p | ene | endif
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => vim-workspace
@@ -536,6 +585,7 @@ nnoremap <leader>o  :Buffers<CR>
 nnoremap <leader>a  :Ag<CR>
 " search selected text using :Ack
 " vnoremap <leader>a :call SearchSelectedText()<CR>
+command! -bang -nargs=* Ag call fzf#vim#ag(<q-args>, {'options': '--delimiter : --nth 4..'}, <bang>0)
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => ALE
@@ -579,9 +629,9 @@ let g:airline#extensions#ale#enabled = 1
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Prettier
-nnoremap <leader>fd  :PrettierAsync<CR>
+nnoremap <leader>fd  :Prettier<CR>
 " Always execute async
-let g:prettier#exec_cmd_async = 1
+" let g:prettier#exec_cmd_async = 1
 let g:prettier#autoformat = 0
 let g:prettier#exec_cmd_path = '/usr/local/bin/prettier'
 " Trigger PrettierAsync before writing buffer
@@ -600,11 +650,11 @@ augroup ycm_commands
     autocmd!
 
     autocmd FileType typescript nnoremap <buffer> <leader>rr  :YcmCompleter RefactorRename<Space>
-    autocmd FileType typescript nnoremap <buffer> <leader>rf  :YcmCompleter FixIt<CR>
+    autocmd FileType typescript nnoremap <buffer> <leader>fi  :YcmCompleter FixIt<CR>
     autocmd FileType typescript nnoremap <buffer> <leader>rw  :YcmCompleter OrganizeImports<CR>
 
     autocmd FileType javascript nnoremap <buffer> <leader>rr  :YcmCompleter RefactorRename<Space>
-    autocmd FileType javascript nnoremap <buffer> <leader>rf  :YcmCompleter FixIt<CR>
+    autocmd FileType javascript nnoremap <buffer> <leader>fi  :YcmCompleter FixIt<CR>
     autocmd FileType javascript nnoremap <buffer> <leader>rw  :YcmCompleter OrganizeImports<CR>
 augroup END
 " Dont use ycm for c# files
@@ -705,11 +755,24 @@ nnoremap <leader><leader>d "_d
 " nnoremap <leader>te @c
 " let @c='_/''lvnh"ny:tabe %:h/n'
 
+" Diff get target
+" map <leader>dgt :diffget //2 | diffupdate<cr>
+
+" Diff get merge
+" map <leader>dgm :diffget //3 | diffupdate<cr>
+
+" Open angular component
+nnoremap <leader>ao :call AngularOpenComponent()<CR>
+
+" Open Component
+vnoremap <silent> <leader>a :<C-u>call VisualSelection('', '')<CR>:Ag <C-R>=@/<CR><CR>
+
 " Close Hidden Buffers
 nnoremap <leader>ch :call DeleteHiddenBuffers()<CR>
 
 command! -nargs=0 UP bufdo e! "command will discard changes and reload files
 command! -nargs=0 JK bd
+command! -nargs=0 AngularOpenComponent call AngularOpenComponent()
 
 "nnoremap ,h  <C-w>h
 "nnoremap ,l  <C-w>l
