@@ -505,22 +505,20 @@ function EnableDisableDeoplete()
 endfunction
 
 function! AngularOpenComponent()
-	let l:files = split(globpath(expand("%:p:h"), "*"), "\n")
-	let l:componentFile = filter(deepcopy(l:files), function("FilterComponentFile", [".component.ts"]))
-	if len(l:componentFile) >= 1
-		execute "edit ".fnameescape(l:componentFile[0])
-	endif
-	let l:markupFile = filter(deepcopy(l:files), function("FilterComponentFile", [".html"]))
-	if len(l:markupFile ) >= 1
-		execute "vsplit ".fnameescape(l:markupFile[0])
-	endif
-	let l:styleFile = filter(deepcopy(l:files), function("FilterComponentFile", [".scss"]))
-	if len(l:styleFile) >= 1
-		execute "vsplit ".fnameescape(l:styleFile[0])
-	endif
+	call OpenFileInWdLike(".component.ts", "e")
+	call OpenFileInWdLike(".html", "vs")
+	call OpenFileInWdLike(".scss", "vs")
 	execute("wincmd =")
 	execute("wincmd h")
 	execute("wincmd h")
+endfunction
+
+function! OpenFileInWdLike(likeness, mode)
+	let l:files = split(globpath(expand("%:p:h"), "*"), "\n")
+	let l:filteredFiles = filter(l:files, function("FilterComponentFile", [a:likeness]))
+	if len(l:filteredFiles) >= 1
+		execute a:mode." ".fnameescape(l:filteredFiles[0])
+	endif
 endfunction
 
 function! FilterComponentFile(desiredFile, idx, filePath)
@@ -568,7 +566,7 @@ call deoplete#custom#source('omni', 'functions', {
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => vim-workspace
 " Toggle workspace
-nnoremap <leader>s :ToggleWorkspace<CR>
+nnoremap <leader>tw :ToggleWorkspace<CR>
 " Close all hidden buffers
 " nnoremap <leader>ch  :CloseHiddenBuffers<CR>
 " Disable autosave
@@ -583,6 +581,7 @@ nnoremap <leader>p  :Files<CR>
 nnoremap <leader>o  :Buffers<CR>
 " nnoremap <leader>t  :Tags<CR>
 nnoremap <leader>a  :Ag<CR>
+nnoremap <leader>s  :Ag 
 " search selected text using :Ack
 " vnoremap <leader>a :call SearchSelectedText()<CR>
 command! -bang -nargs=* Ag call fzf#vim#ag(<q-args>, {'options': '--delimiter : --nth 4..'}, <bang>0)
@@ -763,6 +762,9 @@ nnoremap <leader><leader>d "_d
 
 " Open angular component
 nnoremap <leader>ao :call AngularOpenComponent()<CR>
+nnoremap <leader>ac :call OpenFileInWdLike(".component.ts", "vs")<CR>
+nnoremap <leader>am :call OpenFileInWdLike(".html", "vs")<CR>
+nnoremap <leader>as :call OpenFileInWdLike(".scss", "vs")<CR>
 
 " Open Component
 vnoremap <silent> <leader>a :<C-u>call VisualSelection('', '')<CR>:Ag <C-R>=@/<CR><CR>
