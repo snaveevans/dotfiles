@@ -91,7 +91,7 @@ zle -N _git-status
 zle -N _zen-git-remote-branch
 zle -N _zen-git-local-branch
 zle -N _zen-j
-zle -N _zen-accept-autosuggest
+# zle -N _zen-accept-autosuggest
 zle -N q
 
 bindkey -M vicmd 'st' _git-status
@@ -104,7 +104,7 @@ bindkey -M emacs '^j' fzf-file-widget
 bindkey -M emacs '^k' _zen-git-remote-branch
 bindkey -M emacs '^l' _zen-git-local-branch
 bindkey '^ ' autosuggest-accept
-bindkey '^\r' _zen-accept-autosuggest
+# bindkey '^\r' _zen-accept-autosuggest
 
 alias tabn='open . -a iterm'
 alias gcob="gco beta"
