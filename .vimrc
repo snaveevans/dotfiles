@@ -35,25 +35,36 @@ endif
 call plug#begin('~/.vim/plugged')
 " Make sure you use single quotes
 
-Plug 'alvan/vim-closetag'
+" Vim
+Plug 'joshdick/onedark.vim'
+Plug 'thaerkh/vim-workspace'
+Plug 'vim-airline/vim-airline'
+
+" General
 Plug 'easymotion/vim-easymotion'
 Plug 'ervandew/supertab'
 Plug 'jiangmiao/auto-pairs'
-Plug 'joshdick/onedark.vim'
 Plug '/usr/local/opt/fzf'
 Plug 'junegunn/fzf.vim'
 Plug 'junegunn/gv.vim'
-Plug 'leafgarland/typescript-vim'
-Plug 'omnisharp/omnisharp-vim'
-Plug 'peitalin/vim-jsx-typescript'
-Plug 'prettier/vim-prettier'
-Plug 'thaerkh/vim-workspace'
 Plug 'tpope/vim-commentary'
 Plug 'tpope/vim-surround'
 Plug 'tpope/vim-fugitive'
+
+" Languages > 1
+Plug 'prettier/vim-prettier'
 Plug 'valloric/youcompleteme', { 'dir': '~/.vim/plugged/youcompleteme', 'do': './install.py --ts-completer' }
-Plug 'vim-airline/vim-airline'
 Plug 'w0rp/ale'
+
+" HTML
+Plug 'alvan/vim-closetag'
+
+" TS & JS
+Plug 'leafgarland/typescript-vim'
+Plug 'peitalin/vim-jsx-typescript'
+
+" CS
+Plug 'omnisharp/omnisharp-vim'
 if has('nvim')
   Plug 'Shougo/deoplete.nvim', { 'do': ':UpdateRemotePlugins' }
 else
