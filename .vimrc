@@ -42,7 +42,6 @@ Plug 'vim-airline/vim-airline'
 
 " General
 Plug 'easymotion/vim-easymotion'
-Plug 'ervandew/supertab'
 Plug 'jiangmiao/auto-pairs'
 Plug '/usr/local/opt/fzf'
 Plug 'junegunn/fzf.vim'
@@ -52,16 +51,11 @@ Plug 'tpope/vim-surround'
 Plug 'tpope/vim-fugitive'
 
 " Languages > 1
-Plug 'prettier/vim-prettier'
-Plug 'valloric/youcompleteme', { 'dir': '~/.vim/plugged/youcompleteme', 'do': './install.py --ts-completer' }
-Plug 'w0rp/ale'
+Plug 'neoclide/coc.nvim', {'do': { -> coc#util#install()}}
+Plug 'sheerun/vim-polyglot'
 
 " HTML
 Plug 'alvan/vim-closetag'
-
-" TS & JS
-Plug 'leafgarland/typescript-vim'
-Plug 'peitalin/vim-jsx-typescript'
 
 " CS
 Plug 'omnisharp/omnisharp-vim'
@@ -153,11 +147,16 @@ set ruler
 set cmdheight=2
 
 " A buffer becomes hidden when it is abandoned
-set hid
+set hidden
 
-" Configure backspace so it acts as it should act
-set backspace=eol,start,indent
-set whichwrap+=<,>,h,l
+" Smaller updatetime for CursorHold & CursorHoldI
+set updatetime=300
+
+" don't give |ins-completion-menu| messages.
+set shortmess+=c
+
+" always show signcolumns
+set signcolumn=yes
 
 " Ignore case when searching
 set ignorecase
@@ -287,7 +286,9 @@ set wrap "Wrap lines
 " Super useful! From an idea by Michael Naumann
 vnoremap <silent> * :<C-u>call VisualSelection('', '')<CR>/<C-R>=@/<CR><CR>
 vnoremap <silent> # :<C-u>call VisualSelection('', '')<CR>?<C-R>=@/<CR><CR>
-vnoremap <silent> <leader>a :<C-u>call VisualSelection('', '')<CR>:Ag <C-R>=@/<CR><CR>
+
+" Search selected using Ag
+vnoremap <silent> <leader>s :<C-u>call VisualSelection('', '')<CR>:Ag <C-R>=@/<CR><CR>
 
 "copy and cut to  system
 vnoremap <C-c> "+y
@@ -299,10 +300,6 @@ vnoremap <leader><leader>d "_d
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Moving around, tabs, windows and buffers
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Map <Space> to / (search) and Ctrl-<Space> to ? (backwards search)
-map <space> /
-map <c-space> ?
-
 " Disable highlight when <leader><cr> is pressed
 map <silent> <leader><cr> :noh<cr>
 
@@ -434,7 +431,7 @@ map <leader>s? z=
 noremap <leader>m mmHmt:%s/<C-V><cr>//ge<cr>'tzt'm
 
 " Quickly open a buffer for scribble
-map <leader>q :q<cr>
+map <leader>Q :q<cr>
 
 " Quickly open a markdown buffer for scribble
 map <leader>x :e ~/buffer.md<cr>
@@ -589,31 +586,14 @@ let g:workspace_persist_undo_history = 0
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Fzf
 nnoremap <leader>p  :Files<CR>
+nnoremap <C-p>  :Files<CR>
 nnoremap <leader>o  :Buffers<CR>
 " nnoremap <leader>t  :Tags<CR>
-nnoremap <leader>a  :Ag<CR>
-nnoremap <leader>s  :Ag 
+nnoremap <leader>s  :Ag<CR>
+nnoremap <leader>S  :Ag 
 " search selected text using :Ack
 " vnoremap <leader>a :call SearchSelectedText()<CR>
 command! -bang -nargs=* Ag call fzf#vim#ag(<q-args>, {'options': '--delimiter : --nth 4..'}, <bang>0)
-
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" => ALE
-nnoremap gd  :ALEGoToDefinition<CR>
-nnoremap <leader>af  :ALEFix<CR>
-nnoremap <leader>an  :ALENext<CR>
-nnoremap <leader>ap  :ALEPrevious<CR>
-nnoremap <leader>fr  :ALEFindReferences<CR>
-" Tell ALE to use OmniSharp for linting C# files, and no other linters.
-let g:ale_linters = { 'cs': ['OmniSharp'] }
-let g:ale_fixers = { 
-\ 'javascript': ['eslint', 'prettier'], 
-\ 'typescript': ['tslint', 'prettier'], 
-\ }
-" let g:ale_completion_enabled = 1
-command! -nargs=0 AF ALEFix
-command! -nargs=0 FR ALEFindReferences
-command! -nargs=0 GT ALEGoToDefinition
 
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -636,45 +616,8 @@ let g:airline#extensions#tabline#tab_nr_type = 1
 let g:airline#extensions#tabline#enabled = 1
 let g:airline#extensions#tabline#formatter = 'unique_tail'
 let g:airline#extensions#ale#enabled = 1
-
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" => Prettier
-nnoremap <leader>fd  :Prettier<CR>
-" Always execute async
-" let g:prettier#exec_cmd_async = 1
-let g:prettier#autoformat = 0
-let g:prettier#exec_cmd_path = '/usr/local/bin/prettier'
-" Trigger PrettierAsync before writing buffer
-autocmd BufWritePre *.js,*.jsx,*.mjs,*.ts,*.tsx,*.css,*.less,*.scss,*.json,*.graphql,*.md,*.vue,*.html PrettierAsync
-command! -nargs=0 PP Prettier
-
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" => SuperTab
-" Map SuperTab up & down to k & j
-let g:SuperTabMappingForward = '<c-k>'
-let g:SuperTabMappingBackward = '<c-j>'
-
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" => YouCompleteMe
-augroup ycm_commands
-    autocmd!
-
-    autocmd FileType typescript nnoremap <buffer> <leader>rr  :YcmCompleter RefactorRename<Space>
-    autocmd FileType typescript nnoremap <buffer> <leader>fi  :YcmCompleter FixIt<CR>
-    autocmd FileType typescript nnoremap <buffer> <leader>rw  :YcmCompleter OrganizeImports<CR>
-
-    autocmd FileType javascript nnoremap <buffer> <leader>rr  :YcmCompleter RefactorRename<Space>
-    autocmd FileType javascript nnoremap <buffer> <leader>fi  :YcmCompleter FixIt<CR>
-    autocmd FileType javascript nnoremap <buffer> <leader>rw  :YcmCompleter OrganizeImports<CR>
-augroup END
-" Dont use ycm for c# files
-let g:ycm_filetype_blacklist = { 'cs': 1 }
-" Auto-close preview window in YCM
-let g:ycm_autoclose_preview_window_after_insertion = 1
-"let g:ycm_log_level='debug'
-" command! -nargs=1 RR YcmCompleter RefactorRename <args>
-" command! -nargs=0 RF YcmCompleter FixIt
-" command! -nargs=0 RW YcmCompleter OrganizeImports
+let g:airline_section_error = '%{airline#util#wrap(airline#extensions#coc#get_error(),0)}'
+let g:airline_section_warning = '%{airline#util#wrap(airline#extensions#coc#get_warning(),0)}'
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Omnisharp
@@ -735,12 +678,14 @@ augroup omnisharp_commands
     
     " Map ctrl-space to open omnicomplete
     autocmd FileType cs inoremap <buffer> <C-Space> <C-x><C-o>
-augroup END
+augroup end
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" => vim-jsx-typescript
-" Set filetypes js & ts as typescript.tsx
-autocmd BufNewFile,BufRead *.tsx,*.jsx set filetype=typescript.tsx
+" => vim-polyglot
+
+" Set filetypes jsx & tsx
+autocmd BufNewFile,BufRead *.jsx set filetype=javascript.jsx
+autocmd BufNewFile,BufRead *.tsx set filetype=typescript.tsx
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => vim-closetag
@@ -754,6 +699,113 @@ let g:closetag_regions = {
     \ 'typescript.tsx': 'jsxRegion,tsxRegion',
     \ 'javascript.jsx': 'jsxRegion',
     \ }
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" => coc.nvim 
+
+" Use tab for trigger completion with characters ahead and navigate.
+" Use command ':verbose imap <tab>' to make sure tab is not mapped by other plugin.
+inoremap <silent><expr> <TAB>
+      \ pumvisible() ? "\<C-n>" :
+      \ <SID>check_back_space() ? "\<TAB>" :
+      \ coc#refresh()
+inoremap <expr><S-TAB> pumvisible() ? "\<C-p>" : "\<C-h>"
+
+function! s:check_back_space() abort
+  let col = col('.') - 1
+  return !col || getline('.')[col - 1]  =~# '\s'
+endfunction
+
+" Use <c-space> to trigger completion.
+inoremap <silent><expr> <c-space> coc#refresh()
+
+" Use <cr> to confirm completion, `<C-g>u` means break undo chain at current position.
+" Coc only does snippet and additional edit on confirm.
+inoremap <expr> <cr> pumvisible() ? "\<C-y>" : "\<C-g>u\<CR>"
+
+" Use `[c` and `]c` to navigate diagnostics
+nmap <silent> <leader>ap <Plug>(coc-diagnostic-prev)
+nmap <silent> <leader>an <Plug>(coc-diagnostic-next)
+
+" Remap keys for gotos
+nmap <silent> gd <Plug>(coc-definition)
+nmap <silent> gy <Plug>(coc-type-definition)
+nmap <silent> gi <Plug>(coc-implementation)
+nmap <silent> gr <Plug>(coc-references)
+
+" Use K to show documentation in preview window
+nnoremap <silent> K :call <SID>show_documentation()<CR>
+
+function! s:show_documentation()
+  if (index(['vim','help'], &filetype) >= 0)
+    execute 'h '.expand('<cword>')
+  else
+    call CocAction('doHover')
+  endif
+endfunction
+
+" Highlight symbol under cursor on CursorHold
+autocmd CursorHold * silent call CocActionAsync('highlight')
+
+" Remap for rename current word
+nmap <leader>rn <Plug>(coc-rename)
+
+" Remap for format selected region
+xmap <leader>f  <Plug>(coc-format-selected)
+nmap <leader>f  <Plug>(coc-format-selected)
+
+augroup coc_general_commands
+  autocmd!
+  " Setup formatexpr specified filetype(s).
+  autocmd FileType typescript,json setl formatexpr=CocAction('formatSelected')
+  " Update signature help on jump placeholder
+  autocmd User CocJumpPlaceholder call CocActionAsync('showSignatureHelp')
+augroup end
+
+" Remap for do codeAction of selected region, ex: `<leader>aap` for current paragraph
+xmap <leader>a  <Plug>(coc-codeaction-selected)
+nmap <leader>a  <Plug>(coc-codeaction-selected)
+
+" Remap for do codeAction of current line
+nmap <leader>ac  <Plug>(coc-codeaction)
+" Fix autofix problem of current line
+nmap <leader>qf  <Plug>(coc-fix-current)
+
+" Use `:Format` to format current buffer
+command! -nargs=0 Format :call CocAction('format')
+
+" Use `:Fold` to fold current buffer
+command! -nargs=? Fold :call CocAction('fold', <f-args>)
+
+" Using CocList
+" Show all diagnostics
+nnoremap <silent> <space>a  :<C-u>CocList diagnostics<cr>
+" Manage extensions
+nnoremap <silent> <space>e  :<C-u>CocList extensions<cr>
+" Show commands
+nnoremap <silent> <space>c  :<C-u>CocList commands<cr>
+" Find symbol of current document
+nnoremap <silent> <space>o  :<C-u>CocList outline<cr>
+" Search workspace symbols
+nnoremap <silent> <space>s  :<C-u>CocList -I symbols<cr>
+" Do default action for next item.
+nnoremap <silent> <space>j  :<C-u>CocNext<CR>
+" Do default action for previous item.
+nnoremap <silent> <space>k  :<C-u>CocPrev<CR>
+" Resume latest coc list
+nnoremap <silent> <space>p  :<C-u>CocListResume<CR>
+
+" ******* ts-server
+augroup coc_tsserver_commands
+    autocmd!
+
+    autocmd FileType typescript nnoremap <buffer> <leader>rw :CocCommand tsserver.organizeImports<CR>
+augroup end
+
+
+" ******* Prettier
+command! -nargs=0 Prettier :CocCommand prettier.formatFile
+nnoremap <leader>fd :Prettier<CR>
 
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Misc
@@ -773,12 +825,9 @@ nnoremap <leader><leader>d "_d
 
 " Open angular component
 nnoremap <leader>ao :call AngularOpenComponent()<CR>
-nnoremap <leader>ac :call OpenFileInWdLike(".component.ts", "vs")<CR>
+nnoremap <leader>at :call OpenFileInWdLike(".component.ts", "vs")<CR>
 nnoremap <leader>am :call OpenFileInWdLike(".html", "vs")<CR>
 nnoremap <leader>as :call OpenFileInWdLike(".scss", "vs")<CR>
-
-" Open Component
-vnoremap <silent> <leader>a :<C-u>call VisualSelection('', '')<CR>:Ag <C-R>=@/<CR><CR>
 
 " Close Hidden Buffers
 nnoremap <leader>ch :call DeleteHiddenBuffers()<CR>
