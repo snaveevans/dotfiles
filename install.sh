@@ -35,6 +35,10 @@ ln -s $HOME/.dotfiles/.zshrc $HOME/.zshrc
 rm -rf $HOME/.vimrc
 ln -s $HOME/.dotfiles/.vimrc $HOME/.vimrc
 
+# Removes coc-settings.json from $HOME/.vim (if it exists) and symlinks the coc-settings.json file from the .dotfiles
+rm -rf $HOME/.vim/coc-settings.json
+ln -s $HOME/.dotfiles/coc-settings.json $HOME/.vim/coc-settings.json
+
 # Set macOS preferences
 # We will run this last because this will reload the shell
 source macos.sh
