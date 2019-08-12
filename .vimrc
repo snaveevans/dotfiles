@@ -586,8 +586,9 @@ let g:workspace_persist_undo_history = 0
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Fzf
 nnoremap <leader>p  :Files<CR>
-nnoremap <C-p>  :Files<CR>
+nnoremap <C-p> :Files<CR>
 nnoremap <leader>o  :Buffers<CR>
+" nnoremap <C-P> :Buffers<CR>
 " nnoremap <leader>t  :Tags<CR>
 nnoremap <leader>s  :Ag<CR>
 nnoremap <leader>S  :Ag 

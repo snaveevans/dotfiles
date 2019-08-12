@@ -46,7 +46,7 @@ _zen-git-remote-branch() {
 	local branch=$(git branch --remotes | fzf --height 40% | sed 's:remotes/origin/::g'| sed 's:origin/::g' | xargs)
 	if [ ${#branch} -ge 1 ]; then
 		# zle -U "$command $branch"
-		zle -U "$command $branch"
+		zle -U "$command$branch"
 		zle vi-end-of-line
 	fi
 	# zle accept-line
@@ -58,7 +58,7 @@ _zen-git-local-branch() {
 	local branch=$(git branch --list | fzf --height 40% | sed 's:remotes/origin/::g'| sed 's:origin/::g' | xargs)
 	if [ ${#branch} -ge 1 ]; then
 		# zle -U "$command $branch"
-		zle -U "$command $branch"
+		zle -U "$command$branch"
 		zle vi-end-of-line
 	fi
 	# zle accept-line

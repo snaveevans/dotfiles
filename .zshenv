@@ -16,3 +16,4 @@ export NODE_ENV=development
 export JAVA_HOME=/Users/tylerevans/bin/jdk/Contents/Home
 export LDFLAGS="-L/usr/local/opt/node@10/lib"
 export CPPFLAGS="-I/usr/local/opt/node@10/include"
+export MONO_GAC_PREFIX="/usr/local"
