@@ -708,6 +708,8 @@ let g:closetag_regions = {
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => coc.nvim 
 
+let g:coc_global_extensions=[ 'coc-omnisharp', 'coc-vetur', 'coc-tsserver', 'coc-fsharp', 'coc-prettier' ]
+
 " Use tab for trigger completion with characters ahead and navigate.
 " Use command ':verbose imap <tab>' to make sure tab is not mapped by other plugin.
 inoremap <silent><expr> <TAB>
