@@ -35,6 +35,14 @@ ln -s $HOME/.dotfiles/.zshrc $HOME/.zshrc
 rm -rf $HOME/.vimrc
 ln -s $HOME/.dotfiles/.vimrc $HOME/.vimrc
 
+# Removes .yabairc from $HOME (if it exists) and symlinks the .yabairc file from the .dotfiles
+rm -rf $HOME/.yabairc
+ln -s $HOME/.dotfiles/.yabairc $HOME/.yabairc
+
+# Removes .skhdrc from $HOME (if it exists) and symlinks the .skhdrc file from the .dotfiles
+rm -rf $HOME/.skhdrc
+ln -s $HOME/.dotfiles/.skhdrc $HOME/.skhdrc
+
 # Removes coc-settings.json from $HOME/.vim (if it exists) and symlinks the coc-settings.json file from the .dotfiles
 rm -rf $HOME/.vim/coc-settings.json
 ln -s $HOME/.dotfiles/coc-settings.json $HOME/.vim/coc-settings.json
