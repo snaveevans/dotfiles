@@ -269,6 +269,8 @@ set smarttab
 " 1 tab == 4 spaces
 set shiftwidth=4
 set tabstop=4
+set softtabstop=4
+set expandtab
 
 " Linebreak on 500 characters
 set lbr
@@ -687,13 +689,15 @@ augroup end
 " Set filetypes jsx & tsx
 autocmd BufNewFile,BufRead *.jsx set filetype=javascript.jsx
 autocmd BufNewFile,BufRead *.tsx set filetype=typescript.tsx
+autocmd BufNewFile,BufRead *.vue set filetype=vue
+autocmd BufNewFile,BufRead *.sbt set filetype=scala
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => vim-closetag
 
-let g:closetag_filenames = '*.html,*.xhtml,*.phtml'
+let g:closetag_filenames = '*.html,*.xhtml,*.phtml,*.vue'
 let g:closetag_xhtml_filenames = '*.xhtml,*.jsx,*.tsx'
-let g:closetag_filetypes = 'html,xhtml,phtml'
+let g:closetag_filetypes = 'html,xhtml,phtml,vue'
 let g:closetag_xhtml_filetypes = 'xhtml,jsx,tsx'
 let g:closetag_emptyTags_caseSensitive = 1
 let g:closetag_regions = {
@@ -703,6 +707,8 @@ let g:closetag_regions = {
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => coc.nvim 
+
+let g:coc_global_extensions=[ 'coc-omnisharp', 'coc-vetur', 'coc-tsserver', 'coc-fsharp', 'coc-prettier' ]
 
 " Use tab for trigger completion with characters ahead and navigate.
 " Use command ':verbose imap <tab>' to make sure tab is not mapped by other plugin.

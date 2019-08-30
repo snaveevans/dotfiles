@@ -35,9 +35,26 @@ ln -s $HOME/.dotfiles/.zshrc $HOME/.zshrc
 rm -rf $HOME/.vimrc
 ln -s $HOME/.dotfiles/.vimrc $HOME/.vimrc
 
+# Removes .yabairc from $HOME (if it exists) and symlinks the .yabairc file from the .dotfiles
+rm -rf $HOME/.yabairc
+ln -s $HOME/.dotfiles/.yabairc $HOME/.yabairc
+
+# Removes .skhdrc from $HOME (if it exists) and symlinks the .skhdrc file from the .dotfiles
+rm -rf $HOME/.skhdrc
+ln -s $HOME/.dotfiles/.skhdrc $HOME/.skhdrc
+
 # Removes coc-settings.json from $HOME/.vim (if it exists) and symlinks the coc-settings.json file from the .dotfiles
 rm -rf $HOME/.vim/coc-settings.json
 ln -s $HOME/.dotfiles/coc-settings.json $HOME/.vim/coc-settings.json
+# configure for nvim
+ln -s $HOME/.dotfiles/init.vim $HOME/.config/nvim/init.vim
+ln -s $HOME/.dotfiles/coc-settings.json $HOME/.config/nvim/coc-settings.json
+
+# zsh-syntax-highlighting doesn't like brew installation
+git clone https://github.com/zsh-users/zsh-syntax-highlighting.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting
+
+# fzf key bindings
+$(brew --prefix)/opt/fzf/install --all
 
 # Set macOS preferences
 # We will run this last because this will reload the shell
