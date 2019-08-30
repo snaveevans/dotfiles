@@ -46,6 +46,9 @@ ln -s $HOME/.dotfiles/.skhdrc $HOME/.skhdrc
 # Removes coc-settings.json from $HOME/.vim (if it exists) and symlinks the coc-settings.json file from the .dotfiles
 rm -rf $HOME/.vim/coc-settings.json
 ln -s $HOME/.dotfiles/coc-settings.json $HOME/.vim/coc-settings.json
+# configure for nvim
+ln -s $HOME/.dotfiles/init.vim $HOME/.config/nvim/init.vim
+ln -s $HOME/.dotfiles/coc-settings.json $HOME/.config/nvim/coc-settings.json
 
 # zsh-syntax-highlighting doesn't like brew installation
 git clone https://github.com/zsh-users/zsh-syntax-highlighting.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting
