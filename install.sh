@@ -47,6 +47,12 @@ ln -s $HOME/.dotfiles/.skhdrc $HOME/.skhdrc
 rm -rf $HOME/.vim/coc-settings.json
 ln -s $HOME/.dotfiles/coc-settings.json $HOME/.vim/coc-settings.json
 
+# zsh-syntax-highlighting doesn't like brew installation
+git clone https://github.com/zsh-users/zsh-syntax-highlighting.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting
+
+# fzf key bindings
+$(brew --prefix)/opt/fzf/install --all
+
 # Set macOS preferences
 # We will run this last because this will reload the shell
 source macos.sh
