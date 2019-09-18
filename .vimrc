@@ -96,6 +96,7 @@ set so=3
 syntax on
 
 " Show line numbers
+set number
 set relativenumber
 
 " Highlight line cursor is on
