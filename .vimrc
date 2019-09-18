@@ -57,16 +57,6 @@ Plug 'sheerun/vim-polyglot'
 " HTML
 Plug 'alvan/vim-closetag'
 
-" CS
-Plug 'omnisharp/omnisharp-vim'
-if has('nvim')
-  Plug 'Shougo/deoplete.nvim', { 'do': ':UpdateRemotePlugins' }
-else
-  Plug 'Shougo/deoplete.nvim'
-  Plug 'roxma/nvim-yarp'
-  Plug 'roxma/vim-hug-neovim-rpc'
-endif
-
 " Initialize plugin system
 call plug#end()
 
@@ -106,7 +96,7 @@ set so=3
 syntax on
 
 " Show line numbers
-set number
+set relativenumber
 
 " Highlight line cursor is on
 set cursorline
@@ -430,9 +420,9 @@ map <leader>s? z=
 " => Misc
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Remove the Windows ^M - when the encodings gets messed up
-noremap <leader>m mmHmt:%s/<C-V><cr>//ge<cr>'tzt'm
+noremap <leader>v mmHmt:%s/<C-V><cr>//ge<cr>'tzt'm
 
-" Quickly open a buffer for scribble
+" close buffer
 map <leader>Q :q<cr>
 
 " Quickly open a markdown buffer for scribble
@@ -503,17 +493,6 @@ function DeleteHiddenBuffers()
 	endfor
 endfunction
 
-function EnableDisableDeoplete()
-	let enabledFileTypes = ['cs']
-	if index(enabledFileTypes, &ft) >= 0
-		" enable deoplete
-		call deoplete#custom#buffer_option('auto_complete', v:true)
-	else
-		" disable deoplete
-		call deoplete#custom#buffer_option('auto_complete', v:false)
-	endif
-endfunction
-
 function! AngularOpenComponent()
 	call OpenFileInWdLike(".component.ts", "e")
 	call OpenFileInWdLike(".html", "vs")
@@ -565,15 +544,6 @@ augroup NetrwCommands
 augroup END
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" => deoplete
-let g:deoplete#enable_at_startup = 1
-autocmd BufEnter * call EnableDisableDeoplete()
-call deoplete#custom#source('omni', 'functions', {
-    \ 'csharp':  'omnisharp',
-    \})
-" let g:deoplete#sources#ts = {'_': ['ale']}
-
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => vim-workspace
 " Toggle workspace
 nnoremap <leader>tw :ToggleWorkspace<CR>
@@ -587,8 +557,9 @@ let g:workspace_persist_undo_history = 0
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Fzf
-nnoremap <leader>p  :Files<CR>
-nnoremap <C-p> :Files<CR>
+let $FZF_DEFAULT_COMMAND = 'ag -g ""'
+nnoremap <leader>p  :HFiles<CR>
+nnoremap <C-p> :HFiles<CR>
 nnoremap <leader>o  :Buffers<CR>
 " nnoremap <C-P> :Buffers<CR>
 " nnoremap <leader>t  :Tags<CR>
@@ -597,15 +568,22 @@ nnoremap <leader>S  :Ag
 " search selected text using :Ack
 " vnoremap <leader>a :call SearchSelectedText()<CR>
 command! -bang -nargs=* Ag call fzf#vim#ag(<q-args>, {'options': '--delimiter : --nth 4..'}, <bang>0)
+command! -bang -nargs=? -complete=dir HFiles
+  \ call fzf#vim#files(<q-args>, {'source': 'ag --hidden --ignore .git -g ""'}, <bang>0)
 
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" => vim-commentary
+autocmd FileType fsharp setlocal commentstring=//\ %s
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => vim-fugitive
-nnoremap <leader>st  :Gstatus<CR>
+nnoremap <leader>gs  :Gstatus<CR>
 nnoremap <leader>gd  :Gdiff<CR>
 nnoremap <leader>gc  :Gcommit<CR>
 nnoremap <leader>gp  :Gpush<CR>
 nnoremap <leader>gw  :Gwrite<CR>
+nnoremap <leader>gb  :Gblame<CR>
 
 " macro to open file from GStatus in new tab
 nnoremap <leader>gh @x
@@ -618,70 +596,8 @@ let g:airline#extensions#tabline#tab_nr_type = 1
 " Airline tabs enabled
 let g:airline#extensions#tabline#enabled = 1
 let g:airline#extensions#tabline#formatter = 'unique_tail'
-let g:airline#extensions#ale#enabled = 1
 let g:airline_section_error = '%{airline#util#wrap(airline#extensions#coc#get_error(),0)}'
 let g:airline_section_warning = '%{airline#util#wrap(airline#extensions#coc#get_warning(),0)}'
-
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" => Omnisharp
-let g:OmniSharp_server_use_mono = 1
-" let g:OmniSharp_selector_ui = 'ctrlp'  " Use ctrlp.vim
-let g:OmniSharp_server_path = '/Users/tyler/omnisharp.http-osx/omnisharp/OmniSharp.exe'
-
-" Fetch semantic type/interface/identifier names on BufEnter and highlight them
-let g:OmniSharp_highlight_types = 1
-
-augroup omnisharp_commands
-    autocmd!
-
-    " Show type information automatically when the cursor stops moving
-    autocmd CursorHold *.cs call OmniSharp#TypeLookupWithoutDocumentation()
-
-    " Update the highlighting whenever leaving insert mode
-    autocmd InsertLeave *.cs call OmniSharp#HighlightBuffer()
-
-    " Alternatively, use a mapping to refresh highlighting for the current buffer
-    autocmd FileType cs nnoremap <buffer> <leader>th :OmniSharpHighlightTypes<CR>
-
-    " The following commands are contextual, based on the cursor position.
-    autocmd FileType cs nnoremap <buffer> gd :OmniSharpGotoDefinition<CR>
-    autocmd FileType cs nnoremap <buffer> <leader>fi :OmniSharpFindImplementations<CR>
-    autocmd FileType cs nnoremap <buffer> <leader>fs :OmniSharpFindSymbol<CR>
-    autocmd FileType cs nnoremap <buffer> <leader>fu :OmniSharpFindUsages<CR>
-
-    " Finds members in the current buffer
-    autocmd FileType cs nnoremap <buffer> <leader>fm :OmniSharpFindMembers<CR>
-
-    autocmd FileType cs nnoremap <buffer> <leader>fx :OmniSharpFixUsings<CR>
-    autocmd FileType cs nnoremap <buffer> <leader>tt :OmniSharpTypeLookup<CR>
-    autocmd FileType cs nnoremap <buffer> <leader>dc :OmniSharpDocumentation<CR>
-    autocmd FileType cs nnoremap <buffer> <C-\> :OmniSharpSignatureHelp<CR>
-    autocmd FileType cs inoremap <buffer> <C-\> <C-o>:OmniSharpSignatureHelp<CR>
-
-    " Navigate up and down by method/property/field
-    autocmd FileType cs nnoremap <buffer> <leader>k :OmniSharpNavigateUp<CR>
-    autocmd FileType cs nnoremap <buffer> <leader>j :OmniSharpNavigateDown<CR>
-
-    " Formate the buffer
-    autocmd FileType cs nnoremap <buffer> <leader>fd :OmniSharpCodeFormat<CR>
-
-    " Contextual code actions (uses fzf, CtrlP or unite.vim when available)
-    autocmd FileType cs nnoremap <buffer> <leader><Space> :OmniSharpGetCodeActions<CR>
-    " Run code actions with text selected in visual mode to extract method
-    autocmd FileType cs xnoremap <buffer> <leader><Space> :call OmniSharp#GetCodeActions('visual')<CR>
-
-    " Rename with dialog
-    autocmd FileType cs nnoremap <buffer> <leader>rr :OmniSharpRename<CR>
-    " Rename without dialog - with cursor on the symbol to rename: `:Rename newname`
-    autocmd FileType cs command! -nargs=1 Rename :call OmniSharp#RenameTo("<args>")
-
-    " Start the omnisharp server for the current solution
-    autocmd FileType cs nnoremap <buffer> <leader>ss :OmniSharpStartServer<CR>
-    autocmd FileType cs nnoremap <buffer> <leader>sp :OmniSharpStopServer<CR>
-    
-    " Map ctrl-space to open omnicomplete
-    autocmd FileType cs inoremap <buffer> <C-Space> <C-x><C-o>
-augroup end
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => vim-polyglot
@@ -708,7 +624,7 @@ let g:closetag_regions = {
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => coc.nvim 
 
-let g:coc_global_extensions=[ 'coc-omnisharp', 'coc-vetur', 'coc-tsserver', 'coc-fsharp', 'coc-prettier' ]
+let g:coc_global_extensions=[ 'coc-vetur', 'coc-tsserver', 'coc-fsharp', 'coc-prettier' ]
 
 " Use tab for trigger completion with characters ahead and navigate.
 " Use command ':verbose imap <tab>' to make sure tab is not mapped by other plugin.
@@ -813,6 +729,8 @@ augroup end
 " ******* Prettier
 command! -nargs=0 Prettier :CocCommand prettier.formatFile
 nnoremap <leader>fd :Prettier<CR>
+vmap <leader>ff  <Plug>(coc-format-selected)
+nmap <leader>ff  <Plug>(coc-format-selected)
 
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Misc
@@ -820,15 +738,8 @@ nnoremap <leader>fd :Prettier<CR>
 inoremap <C-v> <ESC>"+pa
 " delete without yanking \d
 nnoremap <leader><leader>d "_d
-" Unknown macro
-" nnoremap <leader>te @c
-" let @c='_/''lvnh"ny:tabe %:h/n'
-
-" Diff get target
-" map <leader>dgt :diffget //2 | diffupdate<cr>
-
-" Diff get merge
-" map <leader>dgm :diffget //3 | diffupdate<cr>
+" reload buffers
+nnoremap <leader>rr :checktime<cr>
 
 " Open angular component
 nnoremap <leader>ao :call AngularOpenComponent()<CR>
@@ -842,19 +753,4 @@ nnoremap <leader>ch :call DeleteHiddenBuffers()<CR>
 command! -nargs=0 UP bufdo e! "command will discard changes and reload files
 command! -nargs=0 JK bd
 command! -nargs=0 AngularOpenComponent call AngularOpenComponent()
-
-"nnoremap ,h  <C-w>h
-"nnoremap ,l  <C-w>l
-"vnoremap ,h  <C-w>h
-"vnoremap ,l  <C-w>l
-"nnoremap ,j  <C-w>j
-"nnoremap ,k  <C-w>k
-"vnoremap ,j  <C-w>j
-"vnoremap ,k  <C-w>k
-"nnoremap <leader>h  <C-w>h
-"nnoremap <leader>j  <C-w>j
-"nnoremap <leader>k  <C-w>k
-"nnoremap <leader>l  <C-w>l
-"nnoremap ,wn :botright vnew<Space>
-"vnoremap , <ESC>/\%V
 
