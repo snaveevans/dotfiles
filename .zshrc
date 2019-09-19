@@ -30,6 +30,12 @@ source /usr/local/share/zsh-autosuggestions/zsh-autosuggestions.zsh
 # User configuration
 unsetopt share_history
 
+_zen-accept-autosuggest() {
+	zle autosuggest-accept
+	zle accept-line
+}
+bindkey '^ ' autosuggest-accept
+
 alias tabn='open . -a iterm'
 alias gcob="gco beta"
 alias gbda="git branch --no-color --merged | command grep -vE \"^(\*|\s*(master|develop|dev|beta)\s*$)\" | command xargs -n 1 git branch -d"
