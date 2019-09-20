@@ -360,6 +360,8 @@
 	<string>2542056D-C5F1-4383-AA0E-6E03FC87549E</string>
 	<key>DimBackgroundWindows</key>
 	<false/>
+	<key>EnableDivisionView</key>
+	<true/>
 	<key>GlobalKeyMap</key>
 	<dict>
 		<key>0x48-0x120000</key>
@@ -434,7 +436,7 @@
 	<key>HideTabNumber</key>
 	<true/>
 	<key>Hotkey</key>
-	<true/>
+	<false/>
 	<key>HotkeyChar</key>
 	<integer>63</integer>
 	<key>HotkeyCode</key>
@@ -489,9 +491,13 @@
 		<integer>1</integer>
 	</dict>
 	<key>NSWindow Frame SUUpdateAlert</key>
-	<string>970 768 620 392 0 0 2560 1417 </string>
+	<string>773 636 620 392 0 0 2560 1440 </string>
 	<key>NSWindow Frame iTerm Window 0</key>
-	<string>847 22 816 483 0 0 1680 1050 </string>
+	<string>12 19 2531 1383 0 0 2560 1440 </string>
+	<key>NeverWarnAboutShortLivedSessions_2542056D-C5F1-4383-AA0E-6E03FC87549E</key>
+	<true/>
+	<key>NeverWarnAboutShortLivedSessions_2542056D-C5F1-4383-AA0E-6E03FC87549E_selection</key>
+	<integer>0</integer>
 	<key>New Bookmarks</key>
 	<array>
 		<dict>
@@ -1330,14 +1336,14 @@
 	<key>NoSyncFrame_SharedPreferences</key>
 	<dict>
 		<key>screenFrame</key>
-		<string>{{0, 0}, {1680, 1050}}</string>
+		<string>{{0, 0}, {2560, 1440}}</string>
 		<key>topLeft</key>
-		<string>{375, 899}</string>
+		<string>{496, 929}</string>
 	</dict>
 	<key>NoSyncInstallationId</key>
 	<string>69503EFA-ED4A-4C0E-BA3C-B32E493FA09E</string>
 	<key>NoSyncLaunchExperienceControllerRunCount</key>
-	<integer>57</integer>
+	<integer>58</integer>
 	<key>NoSyncNeverRemindPrefsChangesLostForFile</key>
 	<true/>
 	<key>NoSyncNeverRemindPrefsChangesLostForFile_selection</key>
@@ -2118,11 +2124,11 @@
 	<key>SUHasLaunchedBefore</key>
 	<true/>
 	<key>SULastCheckTime</key>
-	<date>2019-08-29T14:43:06Z</date>
+	<date>2019-09-06T05:39:14Z</date>
 	<key>SUSendProfileInfo</key>
 	<false/>
 	<key>SUUpdateRelaunchingMarker</key>
-	<false/>
+	<true/>
 	<key>ShowBookmarkName</key>
 	<false/>
 	<key>ShowFullScreenTabBar</key>
@@ -2133,6 +2139,10 @@
 	<false/>
 	<key>StretchTabsToFillBar</key>
 	<true/>
+	<key>SwitchTabModifier</key>
+	<integer>9</integer>
+	<key>SwitchWindowModifier</key>
+	<integer>9</integer>
 	<key>TabStyle</key>
 	<integer>1</integer>
 	<key>TabStyleWithAutomaticOption</key>

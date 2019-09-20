@@ -1,15 +1,15 @@
 #!/usr/bin/env sh
 
 # bar settings
-yabai -m config status_bar                   off
+yabai -m config status_bar                   on
 yabai -m config status_bar_text_font         "Helvetica Neue:Bold:12.0"
 yabai -m config status_bar_icon_font         "FontAwesome:Regular:12.0"
 yabai -m config status_bar_background_color  0xff202020
 yabai -m config status_bar_foreground_color  0xffa8a8a8
 yabai -m config status_bar_space_icon_strip  'H' 'J' 'K' 'L' ':' '"' 'N' 'M' '<' '>'
-yabai -m config status_bar_power_icon_strip   
-yabai -m config status_bar_space_icon        
-yabai -m config status_bar_clock_icon        
+# yabai -m config status_bar_power_icon_strip  🔋🔌
+# yabai -m config status_bar_space_icon        🥋
+# yabai -m config status_bar_clock_icon        🕑
 
 # global settings
 yabai -m config mouse_follows_focus          off

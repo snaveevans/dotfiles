@@ -30,81 +30,11 @@ source /usr/local/share/zsh-autosuggestions/zsh-autosuggestions.zsh
 # User configuration
 unsetopt share_history
 
-# Set zle to vi mode
-# setopt vi
-# bindkey -v
-
-_git-status() {
-    zle backward-kill-line
-    BUFFER="git status"
-	zle accept-line
-}
-
-_zen-git-remote-branch() {
-	local command="$BUFFER"
-    zle backward-kill-line
-	local branch=$(git branch --remotes | fzf --height 40% | sed 's:remotes/origin/::g'| sed 's:origin/::g' | xargs)
-	if [ ${#branch} -ge 1 ]; then
-		# zle -U "$command $branch"
-		zle -U "$command$branch"
-		zle vi-end-of-line
-	fi
-	# zle accept-line
-}
-
-_zen-git-local-branch() {
-	local command="$BUFFER"
-    zle backward-kill-line
-	local branch=$(git branch --list | fzf --height 40% | sed 's:remotes/origin/::g'| sed 's:origin/::g' | xargs)
-	if [ ${#branch} -ge 1 ]; then
-		# zle -U "$command $branch"
-		zle -U "$command$branch"
-		zle vi-end-of-line
-	fi
-	# zle accept-line
-}
-
-_zen-j() {
-	zle backward-kill-line
-	local jump=$(j --stat | fzf --height 40% | cut -d '/' -f2-)
-	# echo $jump
-	if [ ${#jump} -ge 1 ]; then
-		zle -U "cd /$jump"
-		zle vi-end-of-line
-	fi
-	zle accept-line
-}
-
 _zen-accept-autosuggest() {
 	zle autosuggest-accept
 	zle accept-line
 }
-
-q() {
-	zle accept-line
-}
-
-# zle-line-init() { zle -K vicmd; }
-
-# zle -N zle-line-init
-zle -N _git-status
-zle -N _zen-git-remote-branch
-zle -N _zen-git-local-branch
-zle -N _zen-j
-# zle -N _zen-accept-autosuggest
-zle -N q
-
-bindkey -M vicmd 'st' _git-status
-bindkey -M vicmd '_' vi-beginning-of-line
-bindkey -M vicmd 'g_' vi-end-of-line
-bindkey -M vicmd ',j' _zen-j
-
-bindkey -M emacs '^h' fzf-history-widget
-bindkey -M emacs '^j' fzf-file-widget
-bindkey -M emacs '^k' _zen-git-remote-branch
-bindkey -M emacs '^l' _zen-git-local-branch
 bindkey '^ ' autosuggest-accept
-# bindkey '^\r' _zen-accept-autosuggest
 
 alias tabn='open . -a iterm'
 alias gcob="gco beta"
