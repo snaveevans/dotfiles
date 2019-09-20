@@ -2,7 +2,7 @@ PATH="$HOME/bin:${PATH}"
 PATH="/usr/local/bin:${PATH}"
 PATH="/usr/local/share/dotnet:${PATH}"
 PATH="$HOME/.dotnet/tools:${PATH}"
-PATH="/Users/tylerevans/bin/jdk/Contents/Home/bin:${PATH}"
+PATH="$HOME/bin/jdk/Contents/Home/bin:${PATH}"
 PATH="/usr/local/opt/node@10/bin:${PATH}"
 export PATH
 
