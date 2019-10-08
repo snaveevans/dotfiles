@@ -1,5 +1,8 @@
 # open terminal
-cmd - 0x2C : open -a iTerm .
+cmd - 0x2C : open -a iTerm ~
+# open browser
+cmd - i : open -na "Brave Browser" --args --new-window
+cmd + shift - i : open -na "Brave Browser" --args --incognito
 
 # focus window
 ctrl - h : yabai -m window --focus west
