@@ -44,3 +44,7 @@ alias gbda="git branch --no-color --merged | command grep -vE \"^(\*|\s*(master|
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 autoload -Uz compinit
 compinit
+
+export NVM_DIR="$HOME/.nvm"
+  [ -s "/usr/local/opt/nvm/nvm.sh" ] && . "/usr/local/opt/nvm/nvm.sh"  # This loads nvm
+  [ -s "/usr/local/opt/nvm/etc/bash_completion" ] && . "/usr/local/opt/nvm/etc/bash_completion"  # This loads nvm bash_completion
