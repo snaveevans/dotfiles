@@ -36,6 +36,7 @@ _zen-accept-autosuggest() {
 }
 bindkey '^ ' autosuggest-accept
 
+alias vi='nvim'
 alias tabn='open . -a iterm'
 alias gcob="gco beta"
 alias gbda="git branch --no-color --merged | command grep -vE \"^(\*|\s*(master|develop|dev|beta)\s*$)\" | command xargs -n 1 git branch -d"
