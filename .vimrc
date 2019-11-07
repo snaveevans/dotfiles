@@ -39,6 +39,7 @@ call plug#begin('~/.vim/plugged')
 Plug 'joshdick/onedark.vim'
 Plug 'thaerkh/vim-workspace'
 Plug 'vim-airline/vim-airline'
+Plug 'vim-scripts/restore_view.vim'
 
 " General
 Plug 'easymotion/vim-easymotion'
@@ -54,6 +55,7 @@ Plug 'tpope/vim-fugitive'
 " Languages > 1
 Plug 'neoclide/coc.nvim', {'do': { -> coc#util#install()}}
 Plug 'sheerun/vim-polyglot'
+Plug 'dense-analysis/ale'
 
 " HTML
 Plug 'alvan/vim-closetag'
@@ -263,9 +265,9 @@ set ssop-=folds
 set smarttab
 
 " 1 tab == 4 spaces
-set shiftwidth=4
-set tabstop=4
-set softtabstop=4
+set shiftwidth=2
+set tabstop=2
+set softtabstop=2
 set expandtab
 
 " Linebreak on 500 characters
@@ -500,6 +502,14 @@ function! DeleteHiddenBuffers()
 	endfor
 endfunction
 
+function! FormatCode()
+  if &filetype != 'cs' 
+    execute 'Prettier'
+  else
+    execute 'OmniSharpCodeFormat'
+  endif
+endfunction
+
 function! AngularOpenComponent()
 	call OpenFileInWdLike(".component.ts", "e")
 	call OpenFileInWdLike(".html", "vs")
@@ -631,7 +641,17 @@ let g:closetag_regions = {
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => coc.nvim 
 
-let g:coc_global_extensions=[ 'coc-vetur', 'coc-tsserver', 'coc-fsharp', 'coc-prettier', 'coc-json' ]
+let g:coc_global_extensions=[ 
+    \'coc-angular',
+    \'coc-vetur',
+    \'coc-tsserver',
+    \'coc-fsharp',
+    \'coc-java',
+    \'coc-prettier',
+    \'coc-json',
+    \'coc-html',
+    \'coc-css',
+    \]
 
 " Use tab for trigger completion with characters ahead and navigate.
 " Use command ':verbose imap <tab>' to make sure tab is not mapped by other plugin.
@@ -735,10 +755,14 @@ augroup end
 
 " ******* Prettier
 command! -nargs=0 Prettier :CocCommand prettier.formatFile
-nnoremap <leader>fd :Prettier<CR>
 vmap <leader>ff  <Plug>(coc-format-selected)
 nmap <leader>ff  <Plug>(coc-format-selected)
 
+
+
+" ******* ALE
+" Tell ALE to use OmniSharp for linting C# files, and no other linters.
+let g:ale_linters = { 'cs': ['OmniSharp'] }
 
 " ******* omnisharp-vim
 " Use the stdio OmniSharp-roslyn server
@@ -758,9 +782,6 @@ let g:omnicomplete_fetch_full_documentation = 1
 " Set desired preview window height for viewing documentation.
 " You might also want to look at the echodoc plugin.
 set previewheight=5
-
-" Tell ALE to use OmniSharp for linting C# files, and no other linters.
-" let g:ale_linters = { 'cs': ['OmniSharp'] }
 
 " Update semantic highlighting on BufEnter and InsertLeave
 let g:OmniSharp_highlight_types = 2
@@ -782,6 +803,10 @@ augroup omnisharp_commands
 
     " Finds members in the current buffer
     autocmd FileType cs nnoremap <buffer> <Leader>fm :OmniSharpFindMembers<CR>
+
+    autocmd FileType cs nnoremap <buffer> <Leader>an :ALENext<CR>
+    autocmd FileType cs nnoremap <buffer> <Leader>ap :ALEPrevious<CR>
+    autocmd FileType cs nnoremap <buffer> <Leader>ad :ALEDetail<CR>
 
     autocmd FileType cs nnoremap <buffer> <Leader>fx :OmniSharpFixUsings<CR>
     autocmd FileType cs nnoremap <buffer> <Leader>tt :OmniSharpTypeLookup<CR>
@@ -817,18 +842,24 @@ augroup END
 
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Misc
-" paste from system
-inoremap <C-v> <ESC>"+pa
 " delete without yanking \d
 nnoremap <leader><leader>d "_d
 " reload buffers
 nnoremap <leader>rr :checktime<cr>
+
+nnoremap <leader>fd :call FormatCode()<CR>
 
 " Open angular component
 nnoremap <leader>ao :call AngularOpenComponent()<CR>
 nnoremap <leader>at :call OpenFileInWdLike(".component.ts", "vs")<CR>
 nnoremap <leader>am :call OpenFileInWdLike(".html", "vs")<CR>
 nnoremap <leader>as :call OpenFileInWdLike(".scss", "vs")<CR>
+
+" Create & open folds
+let @x='V%zf' " This macro creates a fold using '%'
+nnoremap <silent> <Space> @=(foldlevel('.')?'za':"@x")<CR>
+" nnoremap <Space>z zfat
+vnoremap <Space> zf
 
 " Close Hidden Buffers
 nnoremap <leader>ch :call DeleteHiddenBuffers()<CR>
