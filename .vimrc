@@ -43,7 +43,8 @@ Plug 'vim-airline/vim-airline'
 " General
 Plug 'easymotion/vim-easymotion'
 Plug 'jiangmiao/auto-pairs'
-Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': './install --all' }
+Plug '/usr/local/opt/fzf'
+" Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': './install --all' }
 Plug 'junegunn/fzf.vim'
 Plug 'junegunn/gv.vim'
 Plug 'tpope/vim-commentary'
@@ -86,7 +87,7 @@ nmap <leader>w :w!<cr>
 
 " :W sudo saves the file
 " (useful for handling the permission-denied error)
-command W w !sudo tee % > /dev/null
+command! W w !sudo tee % > /dev/null
 
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -100,7 +101,6 @@ syntax on
 
 " Show line numbers
 set number
-set relativenumber
 
 " Highlight line cursor is on
 set cursorline
@@ -492,7 +492,7 @@ function! VisualSelection(direction, extra_filter) range
 	let @" = l:saved_reg
 endfunction
 
-function DeleteHiddenBuffers()
+function! DeleteHiddenBuffers()
 	let tpbl=[]
 	call map(range(1, tabpagenr('$')), 'extend(tpbl, tabpagebuflist(v:val))')
 	for buf in filter(range(1, bufnr('$')), 'bufexists(v:val) && index(tpbl, v:val)==-1')
@@ -618,7 +618,7 @@ autocmd BufNewFile,BufRead *.sbt set filetype=scala
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => vim-closetag
 
-let g:closetag_filenames = '*.html,*.xhtml,*.phtml,*.vue'
+let g:closetag_filenames = '*.html,*.xhtml,*.phtml,*.vue,*.jsx,*.tsx'
 let g:closetag_xhtml_filenames = '*.xhtml,*.jsx,*.tsx'
 let g:closetag_filetypes = 'html,xhtml,phtml,vue'
 let g:closetag_xhtml_filetypes = 'xhtml,jsx,tsx'
@@ -631,7 +631,7 @@ let g:closetag_regions = {
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => coc.nvim 
 
-let g:coc_global_extensions=[ 'coc-vetur', 'coc-tsserver', 'coc-fsharp', 'coc-prettier' ]
+let g:coc_global_extensions=[ 'coc-vetur', 'coc-tsserver', 'coc-fsharp', 'coc-prettier', 'coc-json' ]
 
 " Use tab for trigger completion with characters ahead and navigate.
 " Use command ':verbose imap <tab>' to make sure tab is not mapped by other plugin.
@@ -729,7 +729,7 @@ nnoremap <silent> <space>p  :<C-u>CocListResume<CR>
 augroup coc_tsserver_commands
     autocmd!
 
-    autocmd FileType typescript,javascript nnoremap <buffer> <leader>rw :CocCommand tsserver.organizeImports<CR>
+    autocmd FileType typescript,javascript nnoremap <buffer> <leader>fx :CocCommand tsserver.organizeImports<CR>
 augroup end
 
 
