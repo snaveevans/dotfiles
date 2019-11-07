@@ -1,4 +1,9 @@
 {
+  "suggest.autoTrigger": "always",
+  "suggest.minTriggerInputLength": 2,
+  "suggest.triggerAfterInsertEnter": true,
+  "coc.source.OmniSharp.enable": true,
+  "coc.source.OmniSharp.triggerCharacters": ".",
   "languageserver": {
     "metals": {
       "command": "metals-vim",
@@ -21,11 +26,5 @@
         }
       }
     }
-  },
-  "coc.preferences.formatOnSaveFiletypes": [
-    "css",
-    "Markdown",
-    "html",
-    "scss"
-  ]
+  }
 }
