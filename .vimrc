@@ -765,6 +765,9 @@ set previewheight=5
 " Update semantic highlighting on BufEnter and InsertLeave
 let g:OmniSharp_highlight_types = 2
 
+" Enable snippet completion
+" let g:OmniSharp_want_snippet=1
+
 augroup omnisharp_commands
     autocmd!
 
@@ -787,32 +790,30 @@ augroup omnisharp_commands
     autocmd FileType cs inoremap <buffer> <C-\> <C-o>:OmniSharpSignatureHelp<CR>
 
     " Navigate up and down by method/property/field
-    autocmd FileType cs nnoremap <buffer> <C-k> :OmniSharpNavigateUp<CR>
-    autocmd FileType cs nnoremap <buffer> <C-j> :OmniSharpNavigateDown<CR>
+    autocmd FileType cs nnoremap <buffer> <leader>ck :OmniSharpNavigateUp<CR>
+    autocmd FileType cs nnoremap <buffer> <leader>cj :OmniSharpNavigateDown<CR>
 
     " Find all code errors/warnings for the current solution and populate the quickfix window
     autocmd FileType cs nnoremap <buffer> <Leader>cc :OmniSharpGlobalCodeCheck<CR>
+
+    " Contextual code actions (uses fzf, CtrlP or unite.vim when available)
+    autocmd FileType cs nnoremap <Leader><Space> :OmniSharpGetCodeActions<CR>
+    " Run code actions with text selected in visual mode to extract method
+    autocmd FileType cs xnoremap <Leader><Space> :call OmniSharp#GetCodeActions('visual')<CR>
+
+    " Rename with dialog
+    autocmd FileType cs nnoremap <Leader>rn :OmniSharpRename<CR>
+    autocmd FileType cs nnoremap <F2> :OmniSharpRename<CR>
+    " Rename without dialog - with cursor on the symbol to rename: `:Rename newname`
+    autocmd FileType cs command! -nargs=1 Rename :call OmniSharp#RenameTo("<args>")
+
+    autocmd FileType cs nnoremap <Leader>fd :OmniSharpCodeFormat<CR>
+
+    " Start the omnisharp server for the current solution
+    " nnoremap <Leader>ss :OmniSharpStartServer<CR>
+    " nnoremap <Leader>sp :OmniSharpStopServer<CR>
+
 augroup END
-
-" Contextual code actions (uses fzf, CtrlP or unite.vim when available)
-nnoremap <Leader><Space> :OmniSharpGetCodeActions<CR>
-" Run code actions with text selected in visual mode to extract method
-xnoremap <Leader><Space> :call OmniSharp#GetCodeActions('visual')<CR>
-
-" Rename with dialog
-nnoremap <Leader>rn :OmniSharpRename<CR>
-nnoremap <F2> :OmniSharpRename<CR>
-" Rename without dialog - with cursor on the symbol to rename: `:Rename newname`
-command! -nargs=1 Rename :call OmniSharp#RenameTo("<args>")
-
-nnoremap <Leader>cf :OmniSharpCodeFormat<CR>
-
-" Start the omnisharp server for the current solution
-nnoremap <Leader>ss :OmniSharpStartServer<CR>
-nnoremap <Leader>sp :OmniSharpStopServer<CR>
-
-" Enable snippet completion
-" let g:OmniSharp_want_snippet=1
 
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Misc
