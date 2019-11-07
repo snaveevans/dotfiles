@@ -730,18 +730,12 @@ command! -nargs=? Fold :call CocAction('fold', <f-args>)
 " Using CocList
 " Show all diagnostics
 nnoremap <silent> <space>a  :<C-u>CocList diagnostics<cr>
-" Manage extensions
-nnoremap <silent> <space>e  :<C-u>CocList extensions<cr>
 " Show commands
 nnoremap <silent> <space>c  :<C-u>CocList commands<cr>
 " Find symbol of current document
 nnoremap <silent> <space>o  :<C-u>CocList outline<cr>
 " Search workspace symbols
 nnoremap <silent> <space>s  :<C-u>CocList -I symbols<cr>
-" Do default action for next item.
-nnoremap <silent> <space>j  :<C-u>CocNext<CR>
-" Do default action for previous item.
-nnoremap <silent> <space>k  :<C-u>CocPrev<CR>
 " Resume latest coc list
 nnoremap <silent> <space>p  :<C-u>CocListResume<CR>
 
@@ -839,6 +833,7 @@ nnoremap <leader><leader>d "_d
 " reload buffers
 nnoremap <leader>rr :checktime<cr>
 
+" Universal format mapping
 nnoremap <leader>fd :call FormatCode()<CR>
 
 " Open angular component
@@ -849,9 +844,9 @@ nnoremap <leader>as :call OpenFileInWdLike(".scss", "vs")<CR>
 
 " Create & open folds
 let @x='V%zf' " This macro creates a fold using '%'
-nnoremap <silent> <Space> @=(foldlevel('.')?'za':"@x")<CR>
+nnoremap <silent> <Space>f @=(foldlevel('.')?'za':"@x")<CR>
 " nnoremap <Space>z zfat
-vnoremap <Space> zf
+vnoremap <Space>f zf
 
 " Close Hidden Buffers
 nnoremap <leader>ch :call DeleteHiddenBuffers()<CR>
