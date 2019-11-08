@@ -1,5 +1,6 @@
 # open terminal
-cmd - 0x2C : open -a iTerm ~
+# cmd - /
+# cmd - 0x2C : open -na iTerm ~
 # open browser
 cmd - i : open -na "Brave Browser" --args --new-window
 cmd + shift - i : open -na "Brave Browser" --args --incognito
