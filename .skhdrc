@@ -5,146 +5,10 @@
 cmd - i : open -na "Brave Browser" --args --new-window
 cmd + shift - i : open -na "Brave Browser" --args --incognito
 
-# add an on_enter command to the default mode
-
-# :: default : yabai -m config normal_window_border_color 0xff505050
-# defines a new mode 'zen' with an on_enter command, that captures keypresses
-:: zen @ : yabai -m config normal_window_border_color 0xffBE4F45
-# from 'default' mode, activate mode 'zen'
-cmd - 0x2B ; zen
-
-# workaround: this command actually sets us to default (zen < -)
-zen < 0x1B ; default
-# workaround: this command sets the border color than calls the 'default' mode
-zen < escape : yabai -m config normal_window_border_color 0xff505050 ; skhd --key "0x1B"
-
-# fuji mode
-:: fuji @ : yabai -m config normal_window_border_color 0xff0081C1
-# from 'default' mode, activate mode 'fuji' (cmd - ')
-cmd - 0x27 ; fuji
-# workaround: this command actually sets us to default (space < -)
-fuji < 0x1B ; default
-# workaround: this command sets the border color than calls the 'default' mode
-fuji < escape : yabai -m config normal_window_border_color 0xff505050 ; skhd --key "0x1B"
-
-# focus window
-fuji < h : yabai -m window --focus west ; skhd --key "escape"
-fuji < j : yabai -m window --focus south ; skhd --key "escape"
-fuji < k : yabai -m window --focus north ; skhd --key "escape"
-fuji < l : yabai -m window --focus east ; skhd --key "escape"
-
-# focus window
-zen < h : yabai -m window --focus west
-zen < j : yabai -m window --focus south
-zen < k : yabai -m window --focus north
-zen < l : yabai -m window --focus east
-
-# swap window
-zen < shift - h : yabai -m window --swap west
-zen < shift - j : yabai -m window --swap south
-zen < shift - k : yabai -m window --swap north
-zen < shift - l : yabai -m window --swap east
-
-# move window
-zen < ctrl - h : yabai -m window --warp west
-zen < ctrl - j : yabai -m window --warp south
-zen < ctrl - k : yabai -m window --warp north
-zen < ctrl - l : yabai -m window --warp east
-
-# cycle all windows on space backwards by coordinate
-zen < ctrl + shift - n : yabai -m window --focus "$(yabai -m query --windows --space | jq -re "[sort_by(.id, .frame) | reverse | .[] | select(.role == \"AXWindow\" and .subrole == \"AXStandardWindow\") | .id] | nth(index($(yabai -m query --windows --window | jq -re ".id")) - 1)")"
-
-# cycle all windows on space backwards by coordinate
-zen < ctrl + shift - m : yabai -m window --focus "$(yabai -m query --windows --space | jq -re "[sort_by(.id, .frame) | .[] | select(.role == \"AXWindow\" and .subrole == \"AXStandardWindow\") | .id] | nth(index($(yabai -m query --windows --window | jq -re ".id")) - 1)")"
-
-# balance size of windows
-zen < 0x18 : yabai -m space --balance
-
-# create desktop, move window and follow focus - uses jq for parsing json (brew install jq)
-cmd + shift - u : yabai -m space --create && \
-                  index="$(yabai -m query --spaces --display | jq 'map(select(."native-fullscreen" == 0))[-1].index')" && \
-                  yabai -m window --space "${index}" && \
-                  yabai -m space --focus "${index}"
-
-# create desktop and follow focus - uses jq for parsing json (brew install jq)
-cmd + alt - n : yabai -m space --create && \
-                index="$(yabai -m query --spaces --display | jq 'map(select(."native-fullscreen" == 0))[-1].index')" && \
-                yabai -m space --focus "${index}"
-
-# destroy desktop
-zen < q : yabai -m space --destroy
-
-# everest mode
-:: everest @ : yabai -m config normal_window_border_color 0xffE2C08C
-# from 'default' mode, activate mode 'everest' (cmd - ')
-cmd - 0x2F ; everest
-# workaround: this command actually sets us to default (space < -)
-everest < 0x1B ; default
-# workaround: this command sets the border color than calls the 'default' mode
-everest < escape : yabai -m config normal_window_border_color 0xff505050 ; skhd --key "0x1B"
-
-# fast focus desktop
-everest < y : yabai -m space --focus recent
-everest < h : yabai -m space --focus 1 ; skhd --key "escape"
-everest < j : yabai -m space --focus 2 ; skhd --key "escape"
-everest < k : yabai -m space --focus 3 ; skhd --key "escape"
-everest < l : yabai -m space --focus 4 ; skhd --key "escape"
-# cmd + shift + ;
-everest < 0x29 : yabai -m space --focus 5 ; skhd --key "escape"
-# cmd + shift + '
-everest < 0x27 : yabai -m space --focus 6 ; skhd --key "escape"
-everest < n : yabai -m space --focus 7 ; skhd --key "escape"
-everest < m : yabai -m space --focus 8 ; skhd --key "escape"
-# cmd + shift + ,
-everest < 0x2B : yabai -m space --focus 9 ; skhd --key "escape"
-# cmd + shift + .
-everest < 0x2F : yabai -m space --focus 10 ; skhd --key "escape"
-
-# fast focus desktop
-zen < cmd - y : yabai -m space --focus recent
-zen < cmd - h : yabai -m space --focus 1
-zen < cmd - j : yabai -m space --focus 2
-zen < cmd - k : yabai -m space --focus 3
-zen < cmd - l : yabai -m space --focus 4
-# cmd + shift + ;
-zen < cmd - 0x29 : yabai -m space --focus 5
-# cmd + shift + '
-zen < cmd - 0x27 : yabai -m space --focus 6
-zen < cmd - n : yabai -m space --focus 7
-zen < cmd - m : yabai -m space --focus 8
-# cmd + shift + ,
-zen < cmd - 0x2B : yabai -m space --focus 9
-# cmd + shift + .
-zen < cmd - 0x2F : yabai -m space --focus 10
-
-# send window to desktop and follow focus
-zen < cmd + shift - y : yabai -m window --space recent; yabai -m space --focus recent
-zen < cmd + shift - h : yabai -m window --space  1; yabai -m space --focus 1
-zen < cmd + shift - j : yabai -m window --space  2; yabai -m space --focus 2
-zen < cmd + shift - k : yabai -m window --space  3; yabai -m space --focus 3
-zen < cmd + shift - l : yabai -m window --space  4; yabai -m space --focus 4
-# cmd + shift + ;
-zen < cmd + shift - 0x29 : yabai -m window --space  5; yabai -m space --focus 5
-# cmd + shift + '
-zen < cmd + shift - 0x27 : yabai -m window --space  6; yabai -m space --focus 6
-zen < cmd + shift - n : yabai -m window --space  7; yabai -m space --focus 7
-zen < cmd + shift - m : yabai -m window --space  8; yabai -m space --focus 8
-# cmd + shift + ,
-zen < cmd + shift - 0x2B : yabai -m window --space  9; yabai -m space --focus 9
-# cmd + shift + .
-zen < cmd + shift - 0x2F : yabai -m window --space 10; yabai -m space --focus 10
-
-# increase window size
-zen < a : yabai -m window --resize left:-20:0
-zen < s : yabai -m window --resize bottom:0:20
-zen < w : yabai -m window --resize top:0:-20
-zen < d : yabai -m window --resize right:20:0
-
-# decrease window size
-zen < shift - a : yabai -m window --resize left:20:0
-zen < shift - s : yabai -m window --resize bottom:0:-20
-zen < shift - w : yabai -m window --resize top:0:20
-zen < shift - d : yabai -m window --resize right:-20:0
+# zen mode (cmd - ')
+:: zen @
+cmd - 0x27 ; zen
+zen < escape ; default
 
 # set insertion point in focused container
 zen < alt - h : yabai -m window --insert west
@@ -175,3 +39,100 @@ zen < alt + shift - b : yabai -m window --toggle border
 
 # toggle window split type
 zen < alt - e : yabai -m window --toggle split
+
+# zen mode (zen < w)
+:: zenwindow @
+zen < w ; zenwindow
+zenwindow < escape ; default
+
+# focus window
+zenwindow < h : yabai -m window --focus west
+zenwindow < j : yabai -m window --focus south
+zenwindow < k : yabai -m window --focus north
+zenwindow < l : yabai -m window --focus east
+
+# swap window
+zenwindow < shift - h : yabai -m window --swap west
+zenwindow < shift - j : yabai -m window --swap south
+zenwindow < shift - k : yabai -m window --swap north
+zenwindow < shift - l : yabai -m window --swap east
+
+# move window
+zenwindow < ctrl - h : yabai -m window --warp west
+zenwindow < ctrl - j : yabai -m window --warp south
+zenwindow < ctrl - k : yabai -m window --warp north
+zenwindow < ctrl - l : yabai -m window --warp east
+
+# cycle all windows on space backwards by coordinate
+zenwindow < n : yabai -m window --focus "$(yabai -m query --windows --space | jq -re "[sort_by(.id, .frame) | reverse | .[] | select(.role == \"AXWindow\" and .subrole == \"AXStandardWindow\") | .id] | nth(index($(yabai -m query --windows --window | jq -re ".id")) - 1)")"
+
+# cycle all windows on space backwards by coordinate
+zenwindow < p : yabai -m window --focus "$(yabai -m query --windows --space | jq -re "[sort_by(.id, .frame) | .[] | select(.role == \"AXWindow\" and .subrole == \"AXStandardWindow\") | .id] | nth(index($(yabai -m query --windows --window | jq -re ".id")) - 1)")"
+
+# balance size of windows
+zenwindow < 0x18 : yabai -m space --balance
+
+# increase window size
+zenwindow < a : yabai -m window --resize left:-20:0
+zenwindow < s : yabai -m window --resize bottom:0:20
+zenwindow < w : yabai -m window --resize top:0:-20
+zenwindow < d : yabai -m window --resize right:20:0
+
+# decrease window size
+zenwindow < shift - a : yabai -m window --resize left:20:0
+zenwindow < shift - s : yabai -m window --resize bottom:0:-20
+zenwindow < shift - w : yabai -m window --resize top:0:20
+zenwindow < shift - d : yabai -m window --resize right:-20:0
+
+# zen mode (zen < w)
+:: zenspace @
+zen < s ; zenspace
+zenspace < escape ; default
+
+# create desktop, move window and follow focus - uses jq for parsing json (brew install jq)
+zenspace < u : yabai -m space --create && \
+                  index="$(yabai -m query --spaces --display | jq 'map(select(."native-fullscreen" == 0))[-1].index')" && \
+                  yabai -m window --space "${index}" && \
+                  yabai -m space --focus "${index}"
+
+# create desktop and follow focus - uses jq for parsing json (brew install jq)
+zenspace < cmd - n : yabai -m space --create && \
+                index="$(yabai -m query --spaces --display | jq 'map(select(."native-fullscreen" == 0))[-1].index')" && \
+                yabai -m space --focus "${index}"
+
+# destroy desktop
+zenspace < q : yabai -m space --destroy
+
+# fast focus desktop
+zenspace < y : yabai -m space --focus recent
+zenspace < h : yabai -m space --focus 1
+zenspace < j : yabai -m space --focus 2
+zenspace < k : yabai -m space --focus 3
+zenspace < l : yabai -m space --focus 4
+# cmd + shift + ;
+zenspace < 0x29 : yabai -m space --focus
+# cmd + shift + '
+zenspace < 0x27 : yabai -m space --focus
+zenspace < n : yabai -m space --focus 7
+zenspace < m : yabai -m space --focus 8
+# cmd + shift + ,
+zenspace < 0x2B : yabai -m space --focus 9
+# cmd + shift + .
+zenspace < 0x2F : yabai -m space --focus 10
+
+# send window to desktop and follow focus
+zenspace < shift - y : yabai -m window --space recent; yabai -m space --focus recent
+zenspace < shift - h : yabai -m window --space  1; yabai -m space --focus 1
+zenspace < shift - j : yabai -m window --space  2; yabai -m space --focus 2
+zenspace < shift - k : yabai -m window --space  3; yabai -m space --focus 3
+zenspace < shift - l : yabai -m window --space  4; yabai -m space --focus 4
+# cmd + shift + ;
+zenspace < shift - 0x29 : yabai -m window --space  5; yabai -m space --focus 5
+# cmd + shift + '
+zenspace < shift - 0x27 : yabai -m window --space  6; yabai -m space --focus 6
+zenspace < shift - n : yabai -m window --space  7; yabai -m space --focus 7
+zenspace < shift - m : yabai -m window --space  8; yabai -m space --focus 8
+# cmd + shift + ,
+zenspace < shift - 0x2B : yabai -m window --space  9; yabai -m space --focus 9
+# cmd + shift + .
+zenspace < shift - 0x2F : yabai -m window --space 10; yabai -m space --focus 10
