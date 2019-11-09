@@ -1,3 +1,5 @@
+# open terminal	
+cmd - 0x2C : open -na iTerm ~ # cmd /
 # open browser
 cmd - i : open -na "Brave Browser" --args --new-window
 cmd + shift - i : open -na "Brave Browser" --args --incognito
@@ -7,10 +9,19 @@ cmd + shift - i : open -na "Brave Browser" --args --incognito
 cmd - 0x24 ; zen
 
 :: zenwindow @ : yabai -m config status_bar_background_color 0xff926D0D
+
 :: zenspace @ : yabai -m config status_bar_background_color 0xff0081C1
+:: zenspaceq @ : yabai -m config status_bar_background_color 0xffE2E4E6
+:: zenspacetab @ : yabai -m config status_bar_background_color 0xff0081C1
 
 zen, zenspace < 0x24 ; zenwindow
 zen, zenwindow < 0x31 ; zenspace
+cmd + shift - 0x24 ; zenwindow
+
+cmd + shift - 0x31 ; zenspaceq
+
+zenspace < t ; zenspacetab
+zenspacetab < q ; zenspace
 
 # set insertion point in focused container
 zen < alt - h : yabai -m window --insert west
@@ -96,7 +107,7 @@ zenspace < cmd - n : yabai -m space --create && \
 zenspace < q : yabai -m space --destroy
 
 # fast focus desktop
-zenspace < y : yabai -m space --focus recent
+zenspace < 0x31 : yabai -m space --focus recent
 zenspace < h : yabai -m space --focus 1
 zenspace < j : yabai -m space --focus 2
 zenspace < k : yabai -m space --focus 3
@@ -109,7 +120,7 @@ zenspace < 0x2B : yabai -m space --focus 9 # ,
 zenspace < 0x2F : yabai -m space --focus 10 # .
 
 # send window to desktop and follow focus
-zenspace < shift - y : yabai -m window --space recent; yabai -m space --focus recent
+zenspace < shift - 0x31 : yabai -m window --space recent; yabai -m space --focus recent
 zenspace < shift - h : yabai -m window --space  1; yabai -m space --focus 1
 zenspace < shift - j : yabai -m window --space  2; yabai -m space --focus 2
 zenspace < shift - k : yabai -m window --space  3; yabai -m space --focus 3
@@ -121,8 +132,25 @@ zenspace < shift - m : yabai -m window --space  8; yabai -m space --focus 8
 zenspace < shift - 0x2B : yabai -m window --space  9; yabai -m space --focus 9 # shift - ,
 zenspace < shift - 0x2F : yabai -m window --space 10; yabai -m space --focus 10 # shift - .
 
+# fast focus desktop
+zenspaceq < h : yabai -m space --focus 1 ; skhd --key "escape"
+zenspaceq < j : yabai -m space --focus 2 ; skhd --key "escape"
+zenspaceq < k : yabai -m space --focus 3 ; skhd --key "escape"
+zenspaceq < l : yabai -m space --focus 4 ; skhd --key "escape"
+zenspaceq < 0x29 : yabai -m space --focus 5 ; skhd --key "escape" # ;
+zenspaceq < 0x27 : yabai -m space --focus 6 ; skhd --key "escape" # '
+zenspaceq < n : yabai -m space --focus 7 ; skhd --key "escape"
+zenspaceq < m : yabai -m space --focus 8 ; skhd --key "escape"
+zenspaceq < 0x2B : yabai -m space --focus 9 ; skhd --key "escape" # ,
+zenspaceq < 0x2F : yabai -m space --focus 10 ; skhd --key "escape" # .
+
+zenspacetab < h : yabai -m space --focus first ; skhd --key "q"
+zenspacetab < l : yabai -m space --focus last ; skhd --key "q"
+zenspacetab < j : yabai -m space --focus prev ; skhd --key "q"
+zenspacetab < k : yabai -m space --focus next ; skhd --key "q"
+
 # workaround: this command actually sets us to default (zen < -)
-zen, zenwindow, zenspace < 0x1B ; default
+zen, zenwindow, zenspace, zenspaceq, zenspacetab < 0x1B ; default
 # workaround: this command sets the border color than calls the 'default' mode
-zen, zenwindow, zenspace < escape : yabai -m config status_bar_background_color 0xff202020; \
+zen, zenwindow, zenspace, zenspaceq, zenspacetab < escape : yabai -m config status_bar_background_color 0xff202020; \
   skhd --key "0x1B"
