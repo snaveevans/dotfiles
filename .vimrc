@@ -79,6 +79,8 @@ filetype indent on
 
 " Set to auto read when a file is changed from the outside
 set autoread
+au CursorHold,CursorHoldI * checktime
+au FocusGained,BufEnter * :checktime
 
 " With a map leader it's possible to do extra key combinations
 " like <leader>w saves the current file
@@ -351,6 +353,8 @@ map <leader>tn :tabedit <c-r>=expand("%:p:h")<cr>/
 " Move up & down the buffer easier
 nnoremap <leader>d  <C-f>
 nnoremap <leader>u  <C-b>
+nnoremap <C-j>  <C-d>
+nnoremap <C-k>  <C-u>
 
 " Switch CWD to the directory of the open buffer
 map <leader>cd :cd %:p:h<cr>:pwd<cr>
@@ -729,15 +733,15 @@ command! -nargs=? Fold :call CocAction('fold', <f-args>)
 
 " Using CocList
 " Show all diagnostics
-nnoremap <silent> <space>a  :<C-u>CocList diagnostics<cr>
+nnoremap <silent> <leader>ca  :<C-u>CocList diagnostics<cr>
 " Show commands
-nnoremap <silent> <space>c  :<C-u>CocList commands<cr>
+nnoremap <silent> <leader>c  :<C-u>CocList commands<cr>
 " Find symbol of current document
-nnoremap <silent> <space>o  :<C-u>CocList outline<cr>
+nnoremap <silent> <leader>co  :<C-u>CocList outline<cr>
 " Search workspace symbols
-nnoremap <silent> <space>s  :<C-u>CocList -I symbols<cr>
+nnoremap <silent> <leader>cs  :<C-u>CocList -I symbols<cr>
 " Resume latest coc list
-nnoremap <silent> <space>p  :<C-u>CocListResume<CR>
+nnoremap <silent> <leader>cp  :<C-u>CocListResume<CR>
 
 " ******* ts-server
 augroup coc_tsserver_commands
@@ -755,7 +759,19 @@ nmap <leader>ff  <Plug>(coc-format-selected)
 
 " ******* ALE
 " Tell ALE to use OmniSharp for linting C# files, and no other linters.
-let g:ale_linters = { 'cs': ['OmniSharp'] }
+let g:ale_linters = { 
+      \'cs': ['OmniSharp'],
+      \'vue': ['eslint', 'vls'],
+      \}
+let g:ale_linter_aliases = {'vue': ['vue', 'javascript']}
+
+augroup ale_commands
+    autocmd!
+
+    autocmd FileType cs,vue nnoremap <buffer> <Leader>an :ALENext<CR>
+    autocmd FileType cs,vue nnoremap <buffer> <Leader>ap :ALEPrevious<CR>
+    autocmd FileType cs,vue nnoremap <buffer> <Leader>ad :ALEDetail<CR>
+augroup end
 
 " ******* omnisharp-vim
 " Use the stdio OmniSharp-roslyn server
@@ -797,10 +813,6 @@ augroup omnisharp_commands
     " Finds members in the current buffer
     autocmd FileType cs nnoremap <buffer> <Leader>fm :OmniSharpFindMembers<CR>
 
-    autocmd FileType cs nnoremap <buffer> <Leader>an :ALENext<CR>
-    autocmd FileType cs nnoremap <buffer> <Leader>ap :ALEPrevious<CR>
-    autocmd FileType cs nnoremap <buffer> <Leader>ad :ALEDetail<CR>
-
     autocmd FileType cs nnoremap <buffer> <Leader>fx :OmniSharpFixUsings<CR>
     autocmd FileType cs nnoremap <buffer> <Leader>tt :OmniSharpTypeLookup<CR>
     autocmd FileType cs nnoremap <buffer> <Leader>dc :OmniSharpDocumentation<CR>
@@ -824,7 +836,7 @@ augroup omnisharp_commands
     autocmd FileType cs nnoremap <F2> :OmniSharpRename<CR>
     " Rename without dialog - with cursor on the symbol to rename: `:Rename newname`
     autocmd FileType cs command! -nargs=1 Rename :call OmniSharp#RenameTo("<args>")
-augroup END
+augroup end
 
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Misc
@@ -844,9 +856,9 @@ nnoremap <leader>as :call OpenFileInWdLike(".scss", "vs")<CR>
 
 " Create & open folds
 let @x='V%zf' " This macro creates a fold using '%'
-nnoremap <silent> <Space>f @=(foldlevel('.')?'za':"@x")<CR>
+nnoremap <silent> <Space> @=(foldlevel('.')?'za':"@x")<CR>
 " nnoremap <Space>z zfat
-vnoremap <Space>f zf
+vnoremap <Space> zf
 
 " Close Hidden Buffers
 nnoremap <leader>ch :call DeleteHiddenBuffers()<CR>
