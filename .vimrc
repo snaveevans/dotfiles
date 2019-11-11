@@ -260,18 +260,6 @@ set ssop-=folds
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Text, tab and indent related
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Use spaces instead of tabs
-" set expandtab
-
-" Be smart when using tabs ;)
-set smarttab
-
-" 1 tab == 4 spaces
-set shiftwidth=2
-set tabstop=2
-set softtabstop=2
-set expandtab
-
 " Linebreak on 500 characters
 set lbr
 set tw=500
@@ -514,6 +502,14 @@ function! FormatCode()
   endif
 endfunction
 
+function! SetTabs()
+  if &filetype == 'MakeFile' 
+    call UseTabs()
+  else
+    call UseSpaces()
+  endif
+endfunction
+
 function! AngularOpenComponent()
 	call OpenFileInWdLike(".component.ts", "e")
 	call OpenFileInWdLike(".html", "vs")
@@ -537,6 +533,22 @@ function! FilterComponentFile(desiredFile, idx, filePath)
 	else
 		return 0
 	endif
+endfunction
+
+function! UseTabs()
+  set tabstop=4     " Size of a hard tabstop (ts).
+  set shiftwidth=4  " Size of an indentation (sw).
+  set noexpandtab   " Always uses tabs instead of space characters (noet).
+  set autoindent    " Copy indent from current line when starting a new line (ai).
+endfunction
+
+function! UseSpaces()
+  set tabstop=2     " Size of a hard tabstop (ts).
+  set shiftwidth=2  " Size of an indentation (sw).
+  set expandtab     " Always uses spaces instead of tab characters (et).
+  set softtabstop=0 " Number of spaces a <Tab> counts for. When 0, featuer is off (sts).
+  set autoindent    " Copy indent from current line when starting a new line.
+  set smarttab      " Inserts blanks on a <Tab> key (as per sw, ts and sts).
 endfunction
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -628,6 +640,7 @@ autocmd BufNewFile,BufRead *.jsx set filetype=javascript.jsx
 autocmd BufNewFile,BufRead *.tsx set filetype=typescript.tsx
 autocmd BufNewFile,BufRead *.vue set filetype=vue
 autocmd BufNewFile,BufRead *.sbt set filetype=scala
+autocmd BufNewFile,BufRead makefile set filetype=makefile
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => vim-closetag
@@ -844,6 +857,8 @@ augroup end
 nnoremap <leader><leader>d "_d
 " reload buffers
 nnoremap <leader>rr :checktime<cr>
+
+au! BufWrite,FileWritePre * call SetTabs()
 
 " Universal format mapping
 nnoremap <leader>fd :call FormatCode()<CR>
