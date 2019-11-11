@@ -502,14 +502,6 @@ function! FormatCode()
   endif
 endfunction
 
-function! SetTabs()
-  if &filetype == 'MakeFile' 
-    call UseTabs()
-  else
-    call UseSpaces()
-  endif
-endfunction
-
 function! AngularOpenComponent()
 	call OpenFileInWdLike(".component.ts", "e")
 	call OpenFileInWdLike(".html", "vs")
@@ -549,6 +541,14 @@ function! UseSpaces()
   set softtabstop=0 " Number of spaces a <Tab> counts for. When 0, featuer is off (sts).
   set autoindent    " Copy indent from current line when starting a new line.
   set smarttab      " Inserts blanks on a <Tab> key (as per sw, ts and sts).
+endfunction
+
+function! SetTabs()
+  if &filetype == 'MakeFile' 
+    call UseTabs()
+  else
+    call UseSpaces()
+  endif
 endfunction
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
