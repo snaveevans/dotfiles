@@ -305,16 +305,11 @@ map <leader>l <C-W>l
 
 " Close the current buffer
 map <leader>bd :bd<cr>
-" map <leader>bd :Bclose<cr>:tabclose<cr>gT
 
 " Close all the buffers
 map <leader>ba :bufdo bd<cr>
 
-" map <leader>l :bnext<cr>
-" map <leader>h :bprevious<cr>
-
 " Useful mappings for managing tabs
-map tn :tabnew<cr>
 map <leader>t<leader> :tabnext
 
 " Easy tab movement in normal mode
@@ -419,7 +414,7 @@ map <leader>s? z=
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Misc
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-imap kj <Esc>
+imap jk <Esc>
 " Remove the Windows ^M - when the encodings gets messed up
 noremap <leader>v mmHmt:%s/<C-V><cr>//ge<cr>'tzt'm
 
@@ -427,7 +422,10 @@ noremap <leader>v mmHmt:%s/<C-V><cr>//ge<cr>'tzt'm
 map <leader>Q :q<cr>
 
 " Quickly open a markdown buffer for scribble
-map <leader>x :e ~/buffer.md<cr>
+map <leader>b :e ~/buffer.md<cr>
+
+" Quickly open a [No Name] buffer for scribble
+map <leader>x :tabnew<cr>
 
 " Toggle paste mode on and off
 " map <leader>pp :setlocal paste!<cr>
@@ -769,8 +767,8 @@ command! -nargs=0 Prettier :CocCommand prettier.formatFile
 vmap <leader>ff  <Plug>(coc-format-selected)
 nmap <leader>ff  <Plug>(coc-format-selected)
 
-
-" ******* ALE
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" => ALE
 " Tell ALE to use OmniSharp for linting C# files, and no other linters.
 let g:ale_linters = { 
       \'cs': ['OmniSharp'],
@@ -786,7 +784,9 @@ augroup ale_commands
     autocmd FileType cs,vue nnoremap <buffer> <Leader>ad :ALEDetail<CR>
 augroup end
 
-" ******* omnisharp-vim
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" => omnisharp-vim 
 " Use the stdio OmniSharp-roslyn server
 let g:OmniSharp_server_stdio = 1
 
