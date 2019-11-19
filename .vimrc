@@ -634,8 +634,8 @@ let g:airline_section_warning = '%{airline#util#wrap(airline#extensions#coc#get_
 " => vim-polyglot
 
 " Set filetypes jsx & tsx
-autocmd BufNewFile,BufRead *.jsx set filetype=javascript.jsx
-autocmd BufNewFile,BufRead *.tsx set filetype=typescript.tsx
+autocmd BufNewFile,BufRead *.jsx set filetype=javascript
+autocmd BufNewFile,BufRead *.tsx set filetype=typescript
 autocmd BufNewFile,BufRead *.vue set filetype=vue
 autocmd BufNewFile,BufRead *.sbt set filetype=scala
 autocmd BufNewFile,BufRead makefile set filetype=makefile
