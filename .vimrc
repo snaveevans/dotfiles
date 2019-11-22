@@ -39,7 +39,6 @@ call plug#begin('~/.vim/plugged')
 Plug 'joshdick/onedark.vim'
 Plug 'thaerkh/vim-workspace'
 Plug 'vim-airline/vim-airline'
-Plug 'vim-scripts/restore_view.vim'
 
 " General
 Plug 'easymotion/vim-easymotion'
@@ -47,7 +46,6 @@ Plug 'jiangmiao/auto-pairs'
 Plug '/usr/local/opt/fzf'
 " Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': './install --all' }
 Plug 'junegunn/fzf.vim'
-Plug 'junegunn/gv.vim'
 Plug 'tpope/vim-commentary'
 Plug 'tpope/vim-surround'
 Plug 'tpope/vim-fugitive'
@@ -88,6 +86,7 @@ let mapleader = ","
 
 " Fast saving
 nmap <leader>w :w!<cr>
+nmap <leader>q :q<cr>
 
 " :W sudo saves the file
 " (useful for handling the permission-denied error)
@@ -109,11 +108,11 @@ set number
 " Highlight line cursor is on
 set cursorline
 
+" Show vertical line for tabs, · for spaces, and ¶ end of line
+set listchars=tab:\|\ ,space:·,nbsp:␣,trail:•,eol:¶,precedes:«,extends:»
+
 " For vertical line tabs
 set list
-
-" Show vertical line for tabs
-set listchars=tab:\|\ 
 
 " Set default splits
 set splitright
@@ -688,16 +687,6 @@ inoremap <silent><expr> <c-space> coc#refresh()
 " Coc only does snippet and additional edit on confirm.
 inoremap <expr> <cr> pumvisible() ? "\<C-y>" : "\<C-g>u\<CR>"
 
-" Use `[c` and `]c` to navigate diagnostics
-nmap <silent> <leader>ap <Plug>(coc-diagnostic-prev)
-nmap <silent> <leader>an <Plug>(coc-diagnostic-next)
-
-" Remap keys for gotos
-nmap <silent> gd <Plug>(coc-definition)
-nmap <silent> gy <Plug>(coc-type-definition)
-nmap <silent> gi <Plug>(coc-implementation)
-nmap <silent> gr <Plug>(coc-references)
-
 " Use K to show documentation in preview window
 nnoremap <silent> K :call <SID>show_documentation()<CR>
 
@@ -712,13 +701,6 @@ endfunction
 " Highlight symbol under cursor on CursorHold
 autocmd CursorHold * silent call CocActionAsync('highlight')
 
-" Remap for rename current word
-nmap <leader>rn <Plug>(coc-rename)
-
-" Remap for format selected region
-xmap <leader>f  <Plug>(coc-format-selected)
-nmap <leader>f  <Plug>(coc-format-selected)
-
 augroup coc_general_commands
   autocmd!
   " Setup formatexpr specified filetype(s).
@@ -726,15 +708,6 @@ augroup coc_general_commands
   " Update signature help on jump placeholder
   autocmd User CocJumpPlaceholder call CocActionAsync('showSignatureHelp')
 augroup end
-
-" Remap for do codeAction of selected region, ex: `<leader>aap` for current paragraph
-xmap <leader>a  <Plug>(coc-codeaction-selected)
-nmap <leader>a  <Plug>(coc-codeaction-selected)
-
-" Remap for do codeAction of current line
-nmap <leader>ac  <Plug>(coc-codeaction)
-" Fix autofix problem of current line
-nmap <leader>qf  <Plug>(coc-fix-current)
 
 " Use `:Format` to format current buffer
 command! -nargs=0 Format :call CocAction('format')
@@ -758,7 +731,24 @@ nnoremap <silent> <leader>cp  :<C-u>CocListResume<CR>
 augroup coc_tsserver_commands
     autocmd!
 
-    autocmd FileType typescript,javascript nnoremap <buffer> <leader>fx :CocCommand tsserver.organizeImports<CR>
+  " Remap keys for gotos
+  autocmd FileType typescript,javascript,vue,scala nmap <buffer> <silent> gd <Plug>(coc-definition)
+  autocmd FileType typescript,javascript,vue,scala nmap <buffer> <silent> gy <Plug>(coc-type-definition)
+  autocmd FileType typescript,javascript,vue,scala nmap <buffer> <silent> gi <Plug>(coc-implementation)
+  autocmd FileType typescript,javascript,vue,scala nmap <buffer> <silent> gr <Plug>(coc-references)
+
+  " Use `ap` and `an` to navigate diagnostics
+  autocmd FileType typescript,javascript,vue,scala nmap <buffer> <silent> <leader>ap <Plug>(coc-diagnostic-prev)
+  autocmd FileType typescript,javascript,vue,scala nmap <buffer> <silent> <leader>an <Plug>(coc-diagnostic-next)
+
+  " Remap for do codeAction of current line
+  autocmd FileType typescript,javascript,vue,scala nmap <buffer> <leader>ac  <Plug>(coc-codeaction)
+  " Fix autofix problem of current line
+  autocmd FileType typescript,javascript,vue,scala nmap <buffer> <leader>qf  <Plug>(coc-fix-current)
+
+  " Remap for rename current word
+  autocmd FileType typescript,javascript,vue,scala nmap <buffer> <leader>rn <Plug>(coc-rename)
+  autocmd FileType typescript,javascript,vue,scala nmap <buffer> <leader>rw :CocCommand tsserver.organizeImports<CR>
 augroup end
 
 
@@ -812,43 +802,43 @@ let g:OmniSharp_highlight_types = 2
 " let g:OmniSharp_want_snippet=1
 
 augroup omnisharp_commands
-    autocmd!
+  autocmd!
 
-    " Show type information automatically when the cursor stops moving
-    autocmd CursorHold *.cs call OmniSharp#TypeLookupWithoutDocumentation()
+  " Show type information automatically when the cursor stops moving
+  autocmd CursorHold *.cs call OmniSharp#TypeLookupWithoutDocumentation()
 
-    " The following commands are contextual, based on the cursor position.
-    autocmd FileType cs nnoremap <buffer> gd :OmniSharpGotoDefinition<CR>
-    autocmd FileType cs nnoremap <buffer> <Leader>fi :OmniSharpFindImplementations<CR>
-    autocmd FileType cs nnoremap <buffer> <Leader>fs :OmniSharpFindSymbol<CR>
-    autocmd FileType cs nnoremap <buffer> <Leader>fu :OmniSharpFindUsages<CR>
+  " The following commands are contextual, based on the cursor position.
+  autocmd FileType cs nnoremap <buffer> gd :OmniSharpGotoDefinition<CR>
+  autocmd FileType cs nnoremap <buffer> <Leader>fi :OmniSharpFindImplementations<CR>
+  autocmd FileType cs nnoremap <buffer> <Leader>fs :OmniSharpFindSymbol<CR>
+  autocmd FileType cs nnoremap <buffer> <Leader>fu :OmniSharpFindUsages<CR>
 
-    " Finds members in the current buffer
-    autocmd FileType cs nnoremap <buffer> <Leader>fm :OmniSharpFindMembers<CR>
+  " Finds members in the current buffer
+  autocmd FileType cs nnoremap <buffer> <Leader>fm :OmniSharpFindMembers<CR>
 
-    autocmd FileType cs nnoremap <buffer> <Leader>fx :OmniSharpFixUsings<CR>
-    autocmd FileType cs nnoremap <buffer> <Leader>tt :OmniSharpTypeLookup<CR>
-    autocmd FileType cs nnoremap <buffer> <Leader>dc :OmniSharpDocumentation<CR>
-    autocmd FileType cs nnoremap <buffer> <C-\> :OmniSharpSignatureHelp<CR>
-    autocmd FileType cs inoremap <buffer> <C-\> <C-o>:OmniSharpSignatureHelp<CR>
+  autocmd FileType cs nnoremap <buffer> <Leader>rw :OmniSharpFixUsings<CR>
+  autocmd FileType cs nnoremap <buffer> <Leader>tt :OmniSharpTypeLookup<CR>
+  autocmd FileType cs nnoremap <buffer> <Leader>dc :OmniSharpDocumentation<CR>
+  autocmd FileType cs nnoremap <buffer> <C-\> :OmniSharpSignatureHelp<CR>
+  autocmd FileType cs inoremap <buffer> <C-\> <C-o>:OmniSharpSignatureHelp<CR>
 
-    " Navigate up and down by method/property/field
-    autocmd FileType cs nnoremap <buffer> <leader>ck :OmniSharpNavigateUp<CR>
-    autocmd FileType cs nnoremap <buffer> <leader>cj :OmniSharpNavigateDown<CR>
+  " Navigate up and down by method/property/field
+  autocmd FileType cs nnoremap <buffer> <leader>ck :OmniSharpNavigateUp<CR>
+  autocmd FileType cs nnoremap <buffer> <leader>cj :OmniSharpNavigateDown<CR>
 
-    " Find all code errors/warnings for the current solution and populate the quickfix window
-    autocmd FileType cs nnoremap <buffer> <Leader>cc :OmniSharpGlobalCodeCheck<CR>
+  " Find all code errors/warnings for the current solution and populate the quickfix window
+  autocmd FileType cs nnoremap <buffer> <Leader>cc :OmniSharpGlobalCodeCheck<CR>
 
-    " Contextual code actions (uses fzf, CtrlP or unite.vim when available)
-    autocmd FileType cs nnoremap <Leader><Space> :OmniSharpGetCodeActions<CR>
-    " Run code actions with text selected in visual mode to extract method
-    autocmd FileType cs xnoremap <Leader><Space> :call OmniSharp#GetCodeActions('visual')<CR>
+  " Contextual code actions (uses fzf, CtrlP or unite.vim when available)
+  autocmd FileType cs nnoremap <buffer> <Leader><Space> :OmniSharpGetCodeActions<CR>
+  " Run code actions with text selected in visual mode to extract method
+  autocmd FileType cs xnoremap <buffer> <Leader><Space> :call OmniSharp#GetCodeActions('visual')<CR>
 
-    " Rename with dialog
-    autocmd FileType cs nnoremap <Leader>rn :OmniSharpRename<CR>
-    autocmd FileType cs nnoremap <F2> :OmniSharpRename<CR>
-    " Rename without dialog - with cursor on the symbol to rename: `:Rename newname`
-    autocmd FileType cs command! -nargs=1 Rename :call OmniSharp#RenameTo("<args>")
+  " Rename with dialog
+  autocmd FileType cs nnoremap <buffer> <leader>rn :OmniSharpRename<CR>
+  autocmd FileType cs nnoremap <buffer> <F2> :OmniSharpRename<CR>
+  " Rename without dialog - with cursor on the symbol to rename: `:Rename newname`
+  autocmd FileType cs command! -nargs=1 Rename :call OmniSharp#RenameTo("<args>")
 augroup end
 
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
