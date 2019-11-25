@@ -49,6 +49,7 @@ Plug 'junegunn/fzf.vim'
 Plug 'tpope/vim-commentary'
 Plug 'tpope/vim-surround'
 Plug 'tpope/vim-fugitive'
+Plug 'terryma/vim-multiple-cursors'
 
 " Languages > 1
 Plug 'neoclide/coc.nvim', {'do': { -> coc#util#install()}}
@@ -109,7 +110,7 @@ set number
 set cursorline
 
 " Show vertical line for tabs, · for spaces, and ¶ end of line
-set listchars=tab:\|\ ,space:·,nbsp:␣,trail:•,eol:¶,precedes:«,extends:»
+set listchars=tab:\|\ ,space:·,nbsp:␣,trail:•,eol:$,precedes:«,extends:»
 
 " For vertical line tabs
 set list
@@ -266,6 +267,13 @@ set tw=500
 set ai "Auto indent
 set si "Smart indent
 set wrap "Wrap lines
+
+set tabstop=2     " Size of a hard tabstop (ts).
+set shiftwidth=2  " Size of an indentation (sw).
+set expandtab     " Always uses spaces instead of tab characters (et).
+set softtabstop=0 " Number of spaces a <Tab> counts for. When 0, featuer is off (sts).
+set autoindent    " Copy indent from current line when starting a new line.
+set smarttab      " Inserts blanks on a <Tab> key (as per sw, ts and sts).
 
 
 """"""""""""""""""""""""""""""
@@ -540,14 +548,6 @@ function! UseSpaces()
   set smarttab      " Inserts blanks on a <Tab> key (as per sw, ts and sts).
 endfunction
 
-function! SetTabs()
-  if &filetype == 'MakeFile' 
-    call UseTabs()
-  else
-    call UseSpaces()
-  endif
-endfunction
-
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Plugin Configuration
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -618,6 +618,20 @@ nnoremap <leader>gb  :Gblame<CR>
 " macro to open file from GStatus in new tab
 nnoremap <leader>gh @x
 let @x='_wvg_"hy:tabnew h'
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" => vim-multiple-cursors
+let g:multi_cursor_use_default_mapping=0
+
+" Default mapping
+let g:multi_cursor_start_word_key      = '<C-n>'
+let g:multi_cursor_select_all_word_key = '<A-n>'
+let g:multi_cursor_start_key           = 'g<C-n>'
+let g:multi_cursor_select_all_key      = 'g<A-n>'
+let g:multi_cursor_next_key            = '<C-n>'
+let g:multi_cursor_prev_key            = '<C-p>'
+let g:multi_cursor_skip_key            = '<C-x>'
+let g:multi_cursor_quit_key            = '<Esc>'
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => airline
