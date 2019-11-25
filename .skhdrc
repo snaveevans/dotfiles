@@ -1,8 +1,21 @@
 :: default : yabai -m config status_bar_background_color 0xff202020
 
+.blacklist [
+    "iTerm2"
+ ]
+
+# focus window
+cmd + shift - h : yabai -m window --focus west
+cmd + shift - j : yabai -m window --focus south
+cmd + shift - k : yabai -m window --focus north
+cmd + shift - l : yabai -m window --focus east
+
 # open browser
-cmd - i : open -na "Brave Browser" --args --new-window
-cmd + shift - i : open -na "Brave Browser" --args --incognito
+cmd - i : open -na "Google Chrome" --args --new-window
+cmd + shift - i : open -na "Google Chrome" --args --incognito
+
+cmd + shift - p : yabai -m space --focus prev
+cmd + shift - n : yabai -m space --focus next
 
 # zen mode (cmd - ;)
 :: zen @ : yabai -m config status_bar_background_color 0xffBE4F45
@@ -88,6 +101,8 @@ zenwindow < shift - s : yabai -m window --resize bottom:0:-20
 zenwindow < shift - w : yabai -m window --resize top:0:20
 zenwindow < shift - d : yabai -m window --resize right:-20:0
 
+zenwindow < z ; zen
+
 # float / unfloat window and center on screen
 zenwindow < t : yabai -m window --toggle float;\
           yabai -m window --grid 4:4:1:1:2:2
@@ -131,6 +146,8 @@ zenspace < shift - n : yabai -m window --space  7; yabai -m space --focus 7
 zenspace < shift - m : yabai -m window --space  8; yabai -m space --focus 8
 zenspace < shift - 0x2B : yabai -m window --space  9; yabai -m space --focus 9 # shift - ,
 zenspace < shift - 0x2F : yabai -m window --space 10; yabai -m space --focus 10 # shift - .
+
+zenspace < z ; zen
 
 # destroy desktop
 zenspaceq < q : yabai -m space --destroy ; skhd --key "escape"
