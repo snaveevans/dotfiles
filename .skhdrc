@@ -1,3 +1,5 @@
+:: default : yabai -m config status_bar_background_color 0xff202020
+
 # open browser
 cmd - i : open -na "Brave Browser" --args --new-window
 cmd + shift - i : open -na "Brave Browser" --args --incognito
@@ -171,8 +173,5 @@ zenspaceq < i : yabai -m space --create && \
   yabai -m space --focus "${index}" ; \
   skhd --key "escape"
 
-# workaround: this command actually sets us to default (zen < -)
-zen, zenwindow, zenspace, zenspaceq < 0x1B ; default
-# workaround: this command sets the border color than calls the 'default' mode
-zen, zenwindow, zenspace, zenspaceq < escape : yabai -m config status_bar_background_color 0xff202020; \
-  skhd --key "0x1B"
+
+zen, zenwindow, zenspace, zenspaceq < escape ; default
