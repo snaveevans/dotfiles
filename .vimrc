@@ -301,10 +301,6 @@ vnoremap <leader><leader>d "_d
 map <silent> <leader><cr> :noh<cr>
 
 " Smart way to move between windows
-map <C-j> <C-W>j
-map <C-k> <C-W>k
-map <C-h> <C-W>h
-map <C-l> <C-W>l
 map <leader>j <C-W>j
 map <leader>k <C-W>k
 map <leader>h <C-W>h
@@ -548,6 +544,14 @@ function! UseSpaces()
   set smarttab      " Inserts blanks on a <Tab> key (as per sw, ts and sts).
 endfunction
 
+function! SetTabs()
+  if (index(['MakeFile'], &filetype) >= 0)
+    call UseTabs()
+  else
+    call UseSpaces()
+  endif
+endfunction
+
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Plugin Configuration
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -604,6 +608,7 @@ command! -bang -nargs=? -complete=dir HFiles
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => vim-commentary
+autocmd FileType cs setlocal commentstring=//\ %s
 autocmd FileType fsharp setlocal commentstring=//\ %s
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -673,6 +678,7 @@ let g:coc_global_extensions=[
     \'coc-angular',
     \'coc-vetur',
     \'coc-tsserver',
+    \'coc-tslint-plugin',
     \'coc-fsharp',
     \'coc-java',
     \'coc-prettier',
@@ -705,7 +711,9 @@ inoremap <expr> <cr> pumvisible() ? "\<C-y>" : "\<C-g>u\<CR>"
 nnoremap <silent> K :call <SID>show_documentation()<CR>
 
 function! s:show_documentation()
-  if (index(['vim','help'], &filetype) >= 0)
+  if (index(['cs'], &filetype) >= 0)
+    call OmniSharp#TypeLookupWithoutDocumentation()
+  elseif (index(['vim','help'], &filetype) >= 0)
     execute 'h '.expand('<cword>')
   else
     call CocAction('doHover')
@@ -741,28 +749,28 @@ nnoremap <silent> <leader>cs  :<C-u>CocList -I symbols<cr>
 " Resume latest coc list
 nnoremap <silent> <leader>cp  :<C-u>CocListResume<CR>
 
-" ******* ts-server
-augroup coc_tsserver_commands
+augroup coc__commands
     autocmd!
 
   " Remap keys for gotos
-  autocmd FileType typescript,javascript,vue,scala nmap <buffer> <silent> gd <Plug>(coc-definition)
-  autocmd FileType typescript,javascript,vue,scala nmap <buffer> <silent> gy <Plug>(coc-type-definition)
-  autocmd FileType typescript,javascript,vue,scala nmap <buffer> <silent> gi <Plug>(coc-implementation)
-  autocmd FileType typescript,javascript,vue,scala nmap <buffer> <silent> gr <Plug>(coc-references)
+  autocmd FileType typescript,javascript,vue,scala,c nmap <buffer> <silent> gd <Plug>(coc-definition)
+  autocmd FileType typescript,javascript,vue,scala,c nmap <buffer> <silent> gy <Plug>(coc-type-definition)
+  autocmd FileType typescript,javascript,vue,scala,c nmap <buffer> <silent> gi <Plug>(coc-implementation)
+  autocmd FileType typescript,javascript,vue,scala,c nmap <buffer> <silent> gr <Plug>(coc-references)
 
   " Use `ap` and `an` to navigate diagnostics
-  autocmd FileType typescript,javascript,vue,scala nmap <buffer> <silent> <leader>ap <Plug>(coc-diagnostic-prev)
-  autocmd FileType typescript,javascript,vue,scala nmap <buffer> <silent> <leader>an <Plug>(coc-diagnostic-next)
+  autocmd FileType typescript,javascript,scala,c nmap <buffer> <silent> <leader>ap <Plug>(coc-diagnostic-prev)
+  autocmd FileType typescript,javascript,scala,c nmap <buffer> <silent> <leader>an <Plug>(coc-diagnostic-next)
 
   " Remap for do codeAction of current line
-  autocmd FileType typescript,javascript,vue,scala nmap <buffer> <leader>ac  <Plug>(coc-codeaction)
+  autocmd FileType typescript,javascript,vue,scala,c nmap <buffer> <leader><space>  <Plug>(coc-codeaction)
   " Fix autofix problem of current line
-  autocmd FileType typescript,javascript,vue,scala nmap <buffer> <leader>qf  <Plug>(coc-fix-current)
+  autocmd FileType typescript,javascript,vue,scala,c nmap <buffer> <leader>qf  <Plug>(coc-fix-current)
 
   " Remap for rename current word
-  autocmd FileType typescript,javascript,vue,scala nmap <buffer> <leader>rn <Plug>(coc-rename)
-  autocmd FileType typescript,javascript,vue,scala nmap <buffer> <leader>rw :CocCommand tsserver.organizeImports<CR>
+  autocmd FileType typescript,javascript,vue,scala,c nmap <buffer> <leader>rn <Plug>(coc-rename)
+  autocmd FileType typescript,javascript,vue nmap <buffer> <leader>rw :CocCommand tsserver.organizeImports<CR>
+  autocmd FileType typescript,javascript,vue nmap <buffer> <leader>fx :CocCommand eslint.executeAutofix<CR>
 augroup end
 
 
@@ -819,7 +827,7 @@ augroup omnisharp_commands
   autocmd!
 
   " Show type information automatically when the cursor stops moving
-  autocmd CursorHold *.cs call OmniSharp#TypeLookupWithoutDocumentation()
+  " autocmd CursorHold *.cs call OmniSharp#TypeLookupWithoutDocumentation()
 
   " The following commands are contextual, based on the cursor position.
   autocmd FileType cs nnoremap <buffer> gd :OmniSharpGotoDefinition<CR>
@@ -862,7 +870,7 @@ nnoremap <leader><leader>d "_d
 " reload buffers
 nnoremap <leader>rr :checktime<cr>
 
-au! BufWrite,FileWritePre * call SetTabs()
+au! BufEnter * call SetTabs()
 
 " Universal format mapping
 nnoremap <leader>fd :call FormatCode()<CR>
