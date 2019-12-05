@@ -675,10 +675,8 @@ let g:closetag_regions = {
 " => coc.nvim 
 
 let g:coc_global_extensions=[ 
-    \'coc-angular',
     \'coc-vetur',
     \'coc-tsserver',
-    \'coc-tslint-plugin',
     \'coc-fsharp',
     \'coc-java',
     \'coc-prettier',
