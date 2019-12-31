@@ -3,7 +3,8 @@ PATH="/usr/local/bin:${PATH}"
 PATH="/usr/local/share/dotnet:${PATH}"
 PATH="$HOME/.dotnet/tools:${PATH}"
 PATH="$HOME/bin/jdk/Contents/Home/bin:${PATH}"
-PATH="/usr/local/opt/node@10/bin:${PATH}"
+PATH="/Library/Frameworks/Mono.framework/Versions/Current/Commands:${PATH}"
+PATH="$HOME/.cargo/bin:${PATH}"
 export PATH
 
 export LANG=en_US.UTF-8
