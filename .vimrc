@@ -669,18 +669,19 @@ let g:closetag_regions = {
     \ }
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" => coc.nvim 
+" => coc.nvim
 
-let g:coc_global_extensions=[ 
-    \'coc-vetur',
-    \'coc-tsserver',
-    \'coc-fsharp',
-    \'coc-java',
-    \'coc-prettier',
-    \'coc-json',
-    \'coc-html',
-    \'coc-css',
-    \]
+" let g:coc_global_extensions=[
+"     \'coc-vetur',
+"     \'coc-tsserver',
+"     \'coc-eslint',
+"     \'coc-fsharp',
+"     \'coc-java',
+"     \'coc-prettier',
+"     \'coc-json',
+"     \'coc-html',
+"     \'coc-css',
+"     \]
 
 " Use tab for trigger completion with characters ahead and navigate.
 " Use command ':verbose imap <tab>' to make sure tab is not mapped by other plugin.
@@ -720,8 +721,6 @@ autocmd CursorHold * silent call CocActionAsync('highlight')
 
 augroup coc_general_commands
   autocmd!
-  " Setup formatexpr specified filetype(s).
-  autocmd FileType typescript,json setl formatexpr=CocAction('formatSelected')
   " Update signature help on jump placeholder
   autocmd User CocJumpPlaceholder call CocActionAsync('showSignatureHelp')
 augroup end
@@ -747,25 +746,28 @@ nnoremap <silent> <leader>cp  :<C-u>CocListResume<CR>
 augroup coc__commands
     autocmd!
 
+  " Setup formatexpr specified filetype(s).
+  autocmd FileType typescript.tsx,javascript.jsx,typescript,javascript,vue,scala,c,rust setl formatexpr=CocAction('formatSelected')
+
   " Remap keys for gotos
-  autocmd FileType typescript,javascript,vue,scala,c nmap <buffer> <silent> gd <Plug>(coc-definition)
-  autocmd FileType typescript,javascript,vue,scala,c nmap <buffer> <silent> gy <Plug>(coc-type-definition)
-  autocmd FileType typescript,javascript,vue,scala,c nmap <buffer> <silent> gi <Plug>(coc-implementation)
-  autocmd FileType typescript,javascript,vue,scala,c nmap <buffer> <silent> gr <Plug>(coc-references)
+  autocmd FileType typescript.tsx,javascript.jsx,typescript,javascript,vue,scala,c,rust nmap <buffer> <silent> gd <Plug>(coc-definition)
+  autocmd FileType typescript.tsx,javascript.jsx,typescript,javascript,vue,scala,c,rust nmap <buffer> <silent> gy <Plug>(coc-type-definition)
+  autocmd FileType typescript.tsx,javascript.jsx,typescript,javascript,vue,scala,c,rust nmap <buffer> <silent> gi <Plug>(coc-implementation)
+  autocmd FileType typescript.tsx,javascript.jsx,typescript,javascript,vue,scala,c,rust nmap <buffer> <silent> gr <Plug>(coc-references)
 
   " Use `ap` and `an` to navigate diagnostics
-  autocmd FileType typescript,javascript,scala,c nmap <buffer> <silent> <leader>ap <Plug>(coc-diagnostic-prev)
-  autocmd FileType typescript,javascript,scala,c nmap <buffer> <silent> <leader>an <Plug>(coc-diagnostic-next)
+  autocmd FileType typescript.tsx,javascript.jsx,typescript,javascript,vue,scala,c,rust nmap <buffer> <silent> <leader>ap <Plug>(coc-diagnostic-prev)
+  autocmd FileType typescript.tsx,javascript.jsx,typescript,javascript,vue,scala,c,rust nmap <buffer> <silent> <leader>an <Plug>(coc-diagnostic-next)
 
   " Remap for do codeAction of current line
-  autocmd FileType typescript,javascript,vue,scala,c nmap <buffer> <leader><space>  <Plug>(coc-codeaction)
+  autocmd FileType typescript.tsx,javascript.jsx,typescript,javascript,vue,scala,c,rust nmap <buffer> <leader><space>  <Plug>(coc-codeaction)
   " Fix autofix problem of current line
-  autocmd FileType typescript,javascript,vue,scala,c nmap <buffer> <leader>qf  <Plug>(coc-fix-current)
+  autocmd FileType typescript.tsx,javascript.jsx,typescript,javascript,vue,scala,c,rust nmap <buffer> <leader>qf  <Plug>(coc-fix-current)
 
   " Remap for rename current word
-  autocmd FileType typescript,javascript,vue,scala,c nmap <buffer> <leader>rn <Plug>(coc-rename)
-  autocmd FileType typescript,javascript,vue nmap <buffer> <leader>rw :CocCommand tsserver.organizeImports<CR>
-  autocmd FileType typescript,javascript,vue nmap <buffer> <leader>fx :CocCommand eslint.executeAutofix<CR>
+  autocmd FileType typescript.tsx,javascript.jsx,typescript,javascript,vue,scala,c,rust nmap <buffer> <leader>rn <Plug>(coc-rename)
+  autocmd FileType typescript.tsx,javascript.jsx,typescript,javascript nmap <buffer> <leader>rw :CocCommand tsserver.organizeImports<CR>
+  autocmd FileType typescript.tsx,javascript.jsx,typescript,javascript,vue nmap <buffer> <leader>fx :CocCommand eslint.executeAutofix<CR>
 augroup end
 
 
