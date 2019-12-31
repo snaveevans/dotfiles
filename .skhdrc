@@ -10,6 +10,9 @@ cmd + shift - j : yabai -m window --focus south
 cmd + shift - k : yabai -m window --focus north
 cmd + shift - l : yabai -m window --focus east
 
+# toggle fullscreen
+cmd + shift - f : yabai -m window --toggle zoom-fullscreen
+
 # open browser
 cmd - i : open -na "Google Chrome" --args --new-window
 cmd + shift - i : open -na "Google Chrome" --args --incognito
@@ -190,5 +193,6 @@ zenspaceq < i : yabai -m space --create && \
   yabai -m space --focus "${index}" ; \
   skhd --key "escape"
 
+zenspaceq < 0x24 : yabai -m display --focus recent ; skhd --key "escape" # <cr>
 
 zen, zenwindow, zenspace, zenspaceq < escape ; default
