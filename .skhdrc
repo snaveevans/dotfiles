@@ -4,14 +4,24 @@
     "iTerm2"
  ]
 
-# focus window
+# fast focus window
 cmd + shift - h : yabai -m window --focus west
 cmd + shift - j : yabai -m window --focus south
 cmd + shift - k : yabai -m window --focus north
 cmd + shift - l : yabai -m window --focus east
 
-# toggle fullscreen
+# fast float / unfloat window and center on screen
+cmd + shift - d : yabai -m window --toggle float;\
+          yabai -m window --grid 4:4:1:1:2:2
+
+# fast toggle fullscreen
 cmd + shift - f : yabai -m window --toggle zoom-fullscreen
+
+# set insertion point in focused container
+cmd + alt - h : yabai -m window --insert west
+cmd + alt - j : yabai -m window --insert south
+cmd + alt - k : yabai -m window --insert north
+cmd + alt - l : yabai -m window --insert east
 
 # open browser
 cmd - i : open -na "Google Chrome" --args --new-window
@@ -27,13 +37,11 @@ cmd - 0x29 ; zen
 :: zenwindow @ : yabai -m config status_bar_background_color 0xff24CCAA
 
 :: zenspace @ : yabai -m config status_bar_background_color 0xff0081C1
-:: zenspaceq @ : yabai -m config status_bar_background_color 0xffE2E4E6
 
 zen, zenspace < 0x24 ; zenwindow # <enter>
 zen, zenwindow < 0x31 ; zenspace # <space>
 cmd + shift - 0x24 ; zenwindow # cmd + shift - <enter>
-
-cmd + shift - 0x31 ; zenspaceq # cmd + shift - <space>
+cmd + shift - 0x31 ; zenspace # cmd + shift - <space>
 
 # set insertion point in focused container
 zen < alt - h : yabai -m window --insert west
@@ -104,95 +112,94 @@ zenwindow < shift - s : yabai -m window --resize bottom:0:-20
 zenwindow < shift - w : yabai -m window --resize top:0:20
 zenwindow < shift - d : yabai -m window --resize right:-20:0
 
+# switch back to zen mode
 zenwindow < z ; zen
 
 # float / unfloat window and center on screen
 zenwindow < t : yabai -m window --toggle float;\
           yabai -m window --grid 4:4:1:1:2:2
 
-# create desktop, move window and follow focus - uses jq for parsing json (brew install jq)
+### create desktop, move window and follow focus - uses jq for parsing json (brew install jq)
+zenspace < ctrl - u : yabai -m space --create && \
+  index="$(yabai -m query --spaces --display | jq 'map(select(."native-fullscreen" == 0))[-1].index')" && \
+  yabai -m window --space "${index}" && \
+  yabai -m space --focus "${index}"
+# end mode
 zenspace < u : yabai -m space --create && \
   index="$(yabai -m query --spaces --display | jq 'map(select(."native-fullscreen" == 0))[-1].index')" && \
   yabai -m window --space "${index}" && \
-  yabai -m space --focus "${index}"
+  yabai -m space --focus "${index}" ; \
+  skhd --key "escape"
 
-# create desktop and follow focus - uses jq for parsing json (brew install jq)
+### create desktop and follow focus - uses jq for parsing json (brew install jq)
+zenspace < ctrl - i : yabai -m space --create && \
+  index="$(yabai -m query --spaces --display | jq 'map(select(."native-fullscreen" == 0))[-1].index')" && \
+  yabai -m space --focus "${index}"
+# end mode
 zenspace < i : yabai -m space --create && \
   index="$(yabai -m query --spaces --display | jq 'map(select(."native-fullscreen" == 0))[-1].index')" && \
-  yabai -m space --focus "${index}"
+  yabai -m space --focus "${index}" ; \
+  skhd --key "escape"
 
-# destroy desktop
-zenspace < q : yabai -m space --destroy
+### destroy desktop
+zenspace < ctrl - q : yabai -m space --destroy
+# end mode
+zenspace < q : yabai -m space --destroy ; skhd --key "escape"
 
-# fast focus desktop
-zenspace < 0x31 : yabai -m space --focus recent # <space>
-zenspace < h : yabai -m space --focus 1
-zenspace < j : yabai -m space --focus 2
-zenspace < k : yabai -m space --focus 3
-zenspace < l : yabai -m space --focus 4
-zenspace < 0x29 : yabai -m space --focus 5 # ;
-zenspace < 0x27 : yabai -m space --focus 6 # '
-zenspace < n : yabai -m space --focus 7
-zenspace < m : yabai -m space --focus 8
-zenspace < 0x2B : yabai -m space --focus 9 # ,
-zenspace < 0x2F : yabai -m space --focus 10 # .
+### fast focus desktop
+zenspace < ctrl - 0x31 : yabai -m space --focus recent # <space>
+zenspace < ctrl - h : yabai -m space --focus 1
+zenspace < ctrl - j : yabai -m space --focus 2
+zenspace < ctrl - k : yabai -m space --focus 3
+zenspace < ctrl - l : yabai -m space --focus 4
+zenspace < ctrl - 0x29 : yabai -m space --focus 5 # ;
+zenspace < ctrl - 0x27 : yabai -m space --focus 6 # '
+zenspace < ctrl - n : yabai -m space --focus 7
+zenspace < ctrl - m : yabai -m space --focus 8
+zenspace < ctrl - 0x2B : yabai -m space --focus 9 # ,
+zenspace < ctrl - 0x2F : yabai -m space --focus 10 # .
+# end mode
+zenspace < 0x31 : yabai -m space --focus recent ; skhd --key "escape" # <space>
+zenspace < h : yabai -m space --focus 1 ; skhd --key "escape"
+zenspace < j : yabai -m space --focus 2 ; skhd --key "escape"
+zenspace < k : yabai -m space --focus 3 ; skhd --key "escape"
+zenspace < l : yabai -m space --focus 4 ; skhd --key "escape"
+zenspace < 0x29 : yabai -m space --focus 5 ; skhd --key "escape" # ;
+zenspace < 0x27 : yabai -m space --focus 6 ; skhd --key "escape" # '
+zenspace < n : yabai -m space --focus 7 ; skhd --key "escape"
+zenspace < m : yabai -m space --focus 8 ; skhd --key "escape"
+zenspace < 0x2B : yabai -m space --focus 9 ; skhd --key "escape" # ,
+zenspace < 0x2F : yabai -m space --focus 10 ; skhd --key "escape" # .
 
-# send window to desktop and follow focus
-zenspace < shift - 0x31 : yabai -m window --space recent; yabai -m space --focus recent # <space>
-zenspace < shift - h : yabai -m window --space  1; yabai -m space --focus 1
-zenspace < shift - j : yabai -m window --space  2; yabai -m space --focus 2
-zenspace < shift - k : yabai -m window --space  3; yabai -m space --focus 3
-zenspace < shift - l : yabai -m window --space  4; yabai -m space --focus 4
-zenspace < shift - 0x29 : yabai -m window --space  5; yabai -m space --focus 5 # shift - ;
-zenspace < shift - 0x27 : yabai -m window --space  6; yabai -m space --focus 6 # shift - '
-zenspace < shift - n : yabai -m window --space  7; yabai -m space --focus 7
-zenspace < shift - m : yabai -m window --space  8; yabai -m space --focus 8
-zenspace < shift - 0x2B : yabai -m window --space  9; yabai -m space --focus 9 # shift - ,
-zenspace < shift - 0x2F : yabai -m window --space 10; yabai -m space --focus 10 # shift - .
+### send window to desktop and follow focus
+zenspace < ctrl + shift - 0x31 : yabai -m window --space recent; yabai -m space --focus recent # <ctrl-space>
+zenspace < ctrl + shift - h : yabai -m window --space  1; yabai -m space --focus 1
+zenspace < ctrl + shift - j : yabai -m window --space  2; yabai -m space --focus 2
+zenspace < ctrl + shift - k : yabai -m window --space  3; yabai -m space --focus 3
+zenspace < ctrl + shift - l : yabai -m window --space  4; yabai -m space --focus 4
+zenspace < ctrl + shift - 0x29 : yabai -m window --space  5; yabai -m space --focus 5 # shift - ;
+zenspace < ctrl + shift - 0x27 : yabai -m window --space  6; yabai -m space --focus 6 # shift - '
+zenspace < ctrl + shift - n : yabai -m window --space  7; yabai -m space --focus 7
+zenspace < ctrl + shift - m : yabai -m window --space  8; yabai -m space --focus 8
+zenspace < ctrl + shift - 0x2B : yabai -m window --space  9; yabai -m space --focus 9 # shift - ,
+zenspace < ctrl + shift - 0x2F : yabai -m window --space 10; yabai -m space --focus 10 # shift - .
+# end mode
+zenspace < shift - 0x31 : yabai -m window --space recent; yabai -m space --focus recent ; skhd --key "escape" # shift - <space>
+zenspace < shift - h : yabai -m window --space  1; yabai -m space --focus 1 ; skhd --key "escape"
+zenspace < shift - j : yabai -m window --space  2; yabai -m space --focus 2 ; skhd --key "escape"
+zenspace < shift - k : yabai -m window --space  3; yabai -m space --focus 3 ; skhd --key "escape"
+zenspace < shift - l : yabai -m window --space  4; yabai -m space --focus 4 ; skhd --key "escape"
+zenspace < shift - 0x29 : yabai -m window --space  5; yabai -m space --focus 5 ; skhd --key "escape" # shift - ;
+zenspace < shift - 0x27 : yabai -m window --space  6; yabai -m space --focus 6 ; skhd --key "escape" # shift - '
+zenspace < shift - n : yabai -m window --space  7; yabai -m space --focus 7 ; skhd --key "escape"
+zenspace < shift - m : yabai -m window --space  8; yabai -m space --focus 8 ; skhd --key "escape"
+zenspace < shift - 0x2B : yabai -m window --space  9; yabai -m space --focus 9 ; skhd --key "escape" # shift - ,
+zenspace < shift - 0x2F : yabai -m window --space 10; yabai -m space --focus 10 ; skhd --key "escape" # shift - .
 
+# switch back to zen mode
 zenspace < z ; zen
 
-# destroy desktop
-zenspaceq < q : yabai -m space --destroy ; skhd --key "escape"
-# fast focus desktop
-zenspaceq < 0x31 : yabai -m space --focus recent ; skhd --key "escape" # <space>
-zenspaceq < h : yabai -m space --focus 1 ; skhd --key "escape"
-zenspaceq < j : yabai -m space --focus 2 ; skhd --key "escape"
-zenspaceq < k : yabai -m space --focus 3 ; skhd --key "escape"
-zenspaceq < l : yabai -m space --focus 4 ; skhd --key "escape"
-zenspaceq < 0x29 : yabai -m space --focus 5 ; skhd --key "escape" # ;
-zenspaceq < 0x27 : yabai -m space --focus 6 ; skhd --key "escape" # '
-zenspaceq < n : yabai -m space --focus 7 ; skhd --key "escape"
-zenspaceq < m : yabai -m space --focus 8 ; skhd --key "escape"
-zenspaceq < 0x2B : yabai -m space --focus 9 ; skhd --key "escape" # ,
-zenspaceq < 0x2F : yabai -m space --focus 10 ; skhd --key "escape" # .
+# switch between displays/monitors
+zenspace < 0x24 : yabai -m display --focus recent ; skhd --key "escape" # <cr>
 
-# send window to desktop and follow focus
-zenspaceq < shift - 0x31 : yabai -m window --space recent; yabai -m space --focus recent ; skhd --key "escape" # shift - <space>
-zenspaceq < shift - h : yabai -m window --space  1; yabai -m space --focus 1 ; skhd --key "escape"
-zenspaceq < shift - j : yabai -m window --space  2; yabai -m space --focus 2 ; skhd --key "escape"
-zenspaceq < shift - k : yabai -m window --space  3; yabai -m space --focus 3 ; skhd --key "escape"
-zenspaceq < shift - l : yabai -m window --space  4; yabai -m space --focus 4 ; skhd --key "escape"
-zenspaceq < shift - 0x29 : yabai -m window --space  5; yabai -m space --focus 5 ; skhd --key "escape" # shift - ;
-zenspaceq < shift - 0x27 : yabai -m window --space  6; yabai -m space --focus 6 ; skhd --key "escape" # shift - '
-zenspaceq < shift - n : yabai -m window --space  7; yabai -m space --focus 7 ; skhd --key "escape"
-zenspaceq < shift - m : yabai -m window --space  8; yabai -m space --focus 8 ; skhd --key "escape"
-zenspaceq < shift - 0x2B : yabai -m window --space  9; yabai -m space --focus 9 ; skhd --key "escape" # shift - ,
-zenspaceq < shift - 0x2F : yabai -m window --space 10; yabai -m space --focus 10 ; skhd --key "escape" # shift - .
-
-# create desktop, move window and follow focus - uses jq for parsing json (brew install jq)
-zenspaceq < u : yabai -m space --create && \
-  index="$(yabai -m query --spaces --display | jq 'map(select(."native-fullscreen" == 0))[-1].index')" && \
-  yabai -m window --space "${index}" && \
-  yabai -m space --focus "${index}" ; \
-  skhd --key "escape"
-
-# create desktop and follow focus - uses jq for parsing json (brew install jq)
-zenspaceq < i : yabai -m space --create && \
-  index="$(yabai -m query --spaces --display | jq 'map(select(."native-fullscreen" == 0))[-1].index')" && \
-  yabai -m space --focus "${index}" ; \
-  skhd --key "escape"
-
-zenspaceq < 0x24 : yabai -m display --focus recent ; skhd --key "escape" # <cr>
-
-zen, zenwindow, zenspace, zenspaceq < escape ; default
+zen, zenwindow, zenspace < escape ; default
