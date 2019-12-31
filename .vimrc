@@ -649,8 +649,8 @@ let g:airline_section_warning = '%{airline#util#wrap(airline#extensions#coc#get_
 " => vim-polyglot
 
 " Set filetypes jsx & tsx
-autocmd BufNewFile,BufRead *.jsx set filetype=javascript
-autocmd BufNewFile,BufRead *.tsx set filetype=typescript
+autocmd BufNewFile,BufRead *.jsx set filetype=javascript.jsx
+autocmd BufNewFile,BufRead *.tsx set filetype=typescript.tsx
 autocmd BufNewFile,BufRead *.vue set filetype=vue
 autocmd BufNewFile,BufRead *.sbt set filetype=scala
 autocmd BufNewFile,BufRead makefile set filetype=makefile
@@ -868,7 +868,7 @@ nnoremap <leader>rr :checktime<cr>
 au! BufEnter * call SetTabs()
 
 " Universal format mapping
-nnoremap <leader>fd :call FormatCode()<CR>
+nnoremap <silent> <leader>fd :call FormatCode()<CR>
 
 " Open angular component
 nnoremap <leader>ao :call AngularOpenComponent()<CR>
@@ -882,6 +882,9 @@ nnoremap <silent> <Space> @=(foldlevel('.')?'za':"@x")<CR>
 " nnoremap <Space>z zfat
 vnoremap <Space> zf
 
+au! VimLeave * call SaveSession()
+nnoremap <F5> :call SaveSession()<CR>
+nnoremap <F8> :call LoadSession()<CR>
 " Close Hidden Buffers
 nnoremap <leader>ch :call DeleteHiddenBuffers()<CR>
 
