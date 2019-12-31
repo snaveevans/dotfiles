@@ -37,7 +37,6 @@ call plug#begin('~/.vim/plugged')
 
 " Vim
 Plug 'joshdick/onedark.vim'
-Plug 'thaerkh/vim-workspace'
 Plug 'vim-airline/vim-airline'
 
 " General
@@ -495,11 +494,14 @@ function! DeleteHiddenBuffers()
 	endfor
 endfunction
 
+let g:prettier_supported_filetypes = ['js', 'jsx', 'ts', 'tsx', 'css', 'scss', 'html', 'vue']
 function! FormatCode()
-  if &filetype != 'cs' 
+  if &filetype == 'cs'
+    execute 'OmniSharpCodeFormat'
+  elseif index(g:prettier_supported_filetypes, &filetype) >= 0
     execute 'Prettier'
   else
-    execute 'OmniSharpCodeFormat'
+    execute 'Format'
   endif
 endfunction
 
@@ -552,6 +554,13 @@ function! SetTabs()
   endif
 endfunction
 
+function! SaveSession()
+  execute printf('mksession! %s/%s', getcwd(), 'Session.vim')
+endfunction
+function! LoadSession()
+  execute 'source ' . 'Session.vim'
+endfunction
+
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Plugin Configuration
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -576,18 +585,6 @@ augroup NetrwCommands
 	" Ensure netrw doesn't open
 	autocmd VimEnter * silent! au! FileExplorer
 augroup END
-
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" => vim-workspace
-" Toggle workspace
-nnoremap <leader>tw :ToggleWorkspace<CR>
-" Close all hidden buffers
-" nnoremap <leader>ch  :CloseHiddenBuffers<CR>
-" Disable autosave
-let g:workspace_autosave = 0 
-"let g:workspace_session_name = 'Session.vim'
-let g:workspace_session_directory = $HOME . '/.vim/sessions/'
-let g:workspace_persist_undo_history = 0
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Fzf
