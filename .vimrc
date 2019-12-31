@@ -779,23 +779,19 @@ nmap <leader>ff  <Plug>(coc-format-selected)
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => ALE
 " Tell ALE to use OmniSharp for linting C# files, and no other linters.
-let g:ale_linters = { 
-      \'cs': ['OmniSharp'],
-      \'vue': ['eslint', 'vls'],
-      \}
-let g:ale_linter_aliases = {'vue': ['vue', 'javascript']}
+let g:ale_linters = { 'cs': ['OmniSharp'] }
 
 augroup ale_commands
     autocmd!
 
-    autocmd FileType cs,vue nnoremap <buffer> <Leader>an :ALENext<CR>
-    autocmd FileType cs,vue nnoremap <buffer> <Leader>ap :ALEPrevious<CR>
-    autocmd FileType cs,vue nnoremap <buffer> <Leader>ad :ALEDetail<CR>
+    autocmd FileType cs nnoremap <buffer> <silent> <leader>an :ALENext<CR>
+    autocmd FileType cs nnoremap <buffer> <silent> <leader>ap :ALEPrevious<CR>
+    autocmd FileType cs nnoremap <buffer> <silent> <Leader>ad :ALEDetail<CR>
 augroup end
 
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" => omnisharp-vim 
+" => omnisharp-vim
 " Use the stdio OmniSharp-roslyn server
 let g:OmniSharp_server_stdio = 1
 
@@ -803,7 +799,8 @@ let g:OmniSharp_server_stdio = 1
 "let g:OmniSharp_typeLookupInPreview = 1
 
 " Timeout in seconds to wait for a response from the server
-let g:OmniSharp_timeout = 5
+let g:OmniSharp_server_stdio_quickload = 1
+" let g:OmniSharp_timeout = 5
 
 " Fetch full documentation during omnicomplete requests.
 " By default, only Type/Method signatures are fetched. Full documentation can
@@ -893,4 +890,3 @@ nnoremap <leader>ch :call DeleteHiddenBuffers()<CR>
 command! -nargs=0 UP bufdo e! "command will discard changes and reload files
 command! -nargs=0 JK bd
 command! -nargs=0 AngularOpenComponent call AngularOpenComponent()
-
