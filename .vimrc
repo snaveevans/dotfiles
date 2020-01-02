@@ -514,6 +514,10 @@ function! AngularOpenComponent()
 	execute("wincmd h")
 endfunction
 
+function! OpenFileInVsLike(likeness)
+  call OpenFileInWdLike(a:likeness, "vs")
+endfunction
+
 function! OpenFileInWdLike(likeness, mode)
 	let l:files = split(globpath(expand("%:p:h"), "*"), "\n")
 	let l:filteredFiles = filter(l:files, function("FilterComponentFile", [a:likeness]))
@@ -592,6 +596,7 @@ let $FZF_DEFAULT_COMMAND = 'ag -g ""'
 nnoremap <leader>p  :HFiles<CR>
 nnoremap <C-p> :HFiles<CR>
 nnoremap <leader>o  :Buffers<CR>
+nnoremap <C-l> :HFiles <c-r>=expand("%:p:h")<cr>/<CR>
 " nnoremap <C-P> :Buffers<CR>
 " nnoremap <leader>t  :Tags<CR>
 nnoremap <leader>s  :Ag<CR>
@@ -869,11 +874,16 @@ au! BufEnter * call SetTabs()
 " Universal format mapping
 nnoremap <silent> <leader>fd :call FormatCode()<CR>
 
+" Open file
+command! -nargs=1 OpenFile :call OpenFileInVsLike(<f-args>)
+nnoremap <leader>fo :OpenFile 
+
 " Open angular component
 nnoremap <leader>ao :call AngularOpenComponent()<CR>
 nnoremap <leader>at :call OpenFileInWdLike(".component.ts", "vs")<CR>
 nnoremap <leader>am :call OpenFileInWdLike(".html", "vs")<CR>
 nnoremap <leader>as :call OpenFileInWdLike(".scss", "vs")<CR>
+nnoremap <leader>ac :call OpenFileInWdLike(".css", "vs")<CR>
 
 " Create & open folds
 let @x='V%zf' " This macro creates a fold using '%'
