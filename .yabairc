@@ -41,7 +41,8 @@ yabai -m config right_padding                8
 yabai -m config window_gap                   8
 
 yabai -m rule --add app="iterm2" manage=off
-yabai -m rule --add app="^Finder" manage=float
-yabai -m rule --add app="System Preferences" manage=float
-yabai -m rule --add app="Cisco AnyConnect Secure Mobility Client" manage=float
-yabai -m rule --add app="^Alfred Preferences" manage=float
+yabai -m rule --add title='Preferences$' manage=off topmost=on
+yabai -m rule --add app="Cisco AnyConnect Secure Mobility Client" manage=off topmost=on
+yabai -m rule --add app="Finder" manage=off
+yabai -m rule --add app="Activity Monitor" manage=off
+yabai -m rule --add app="Logi Options" manage=off
