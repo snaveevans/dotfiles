@@ -4,12 +4,15 @@
   "suggest.triggerAfterInsertEnter": true,
   "coc.source.OmniSharp.enable": true,
   "coc.source.OmniSharp.triggerCharacters": ".",
+  "eslint.filetypes": [
+    "javascript",
+    "javascriptreact",
+    "typescript",
+    "typescriptreact",
+    "vue"
+  ],
+  "tsserver.npm": "/Users/tyler/.nvm/versions/node/v10.16.3/bin/npm",
   "languageserver": {
-    "metals": {
-      "command": "metals-vim",
-      "rootPatterns": ["build.sbt"],
-      "filetypes": ["scala", "sbt"]
-    },
     "ccls": {
       "command": "ccls",
       "filetypes": ["c", "cpp", "cuda", "objc", "objcpp"],
