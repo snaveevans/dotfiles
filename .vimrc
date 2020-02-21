@@ -45,7 +45,7 @@ Plug 'jiangmiao/auto-pairs'
 Plug '/usr/local/opt/fzf'
 " Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': './install --all' }
 Plug 'junegunn/fzf.vim'
-Plug 'tpope/vim-commentary'
+Plug 'preservim/nerdcommenter'
 Plug 'tpope/vim-surround'
 Plug 'tpope/vim-fugitive'
 Plug 'terryma/vim-multiple-cursors'
@@ -251,9 +251,9 @@ set noswapfile
 " This sets swap directory
 " Set directory^=$HOME/.vim/tmp//
 " Do not store global and local values in a session
-set ssop-=options
+" set ssop-=options
 " Do not store folds
-set ssop-=folds
+" set ssop-=folds
 
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -282,9 +282,6 @@ set smarttab      " Inserts blanks on a <Tab> key (as per sw, ts and sts).
 " Super useful! From an idea by Michael Naumann
 vnoremap <silent> * :<C-u>call VisualSelection('', '')<CR>/<C-R>=@/<CR><CR>
 vnoremap <silent> # :<C-u>call VisualSelection('', '')<CR>?<C-R>=@/<CR><CR>
-
-" Search selected using Ag
-vnoremap <silent> <leader>s :<C-u>call VisualSelection('', '')<CR>:Ag <C-R>=@/<CR><CR>
 
 "copy and cut to  system
 vnoremap <C-c> "+y
@@ -424,7 +421,7 @@ noremap <leader>v mmHmt:%s/<C-V><cr>//ge<cr>'tzt'm
 map <leader>Q :q<cr>
 
 " Quickly open a markdown buffer for scribble
-map <leader>b :e ~/buffer.md<cr>
+map <leader>b :tabedit ~/buffer.md<cr>
 
 " Quickly open a [No Name] buffer for scribble
 map <leader>x :tabnew<cr>
@@ -558,8 +555,11 @@ function! SetTabs()
   endif
 endfunction
 
-function! SaveSession()
-  execute printf('mksession! %s/%s', getcwd(), 'Session.vim')
+function! SaveSession(force)
+  if (filereadable("Session.vim") || a:force)
+    execute printf('mksession! %s/%s', getcwd(), 'Session.vim')
+    echo "Saved Session"
+  endif
 endfunction
 function! LoadSession()
   execute 'source ' . 'Session.vim'
@@ -593,25 +593,35 @@ augroup END
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Fzf
 let $FZF_DEFAULT_COMMAND = 'ag -g ""'
-nnoremap <leader>p  :HFiles<CR>
-nnoremap <C-p> :HFiles<CR>
+nnoremap <silent><space>p :HFiles<CR>
+nnoremap <silent><space><space> :Buffers<CR>
+nnoremap <silent><space>l :HFiles <c-r>=expand("%:p:h")<cr>/<CR>
 nnoremap <leader>o  :Buffers<CR>
-nnoremap <C-l> :HFiles <c-r>=expand("%:p:h")<cr>/<CR>
-" nnoremap <C-P> :Buffers<CR>
-" nnoremap <leader>t  :Tags<CR>
+nnoremap <leader>gh :BCommits<CR>
+nnoremap <leader>ft :Filetypes<CR>
+nnoremap <leader>hp :Helptags<CR>
+nnoremap <leader>m :Maps<CR>
+nnoremap <leader>c<space> :Commands<CR>
+
+let g:fzf_action = {
+  \ 'space': 'tab split',
+  \ 'ctrl-x': 'split',
+  \ 'ctrl-v': 'vsplit' }
+
 nnoremap <leader>s  :Ag<CR>
 nnoremap <leader>S  :Ag 
+" Search selected using Ag
+vnoremap <silent> <leader>s :<C-u>call VisualSelection('', '')<CR>:Ag <C-R>=@/<CR><CR>
+vnoremap <silent> <leader>fa :<C-u>call VisualSelection('', '')<CR>:Rg <C-R>=@/<CR><CR>
+vnoremap <silent> <leader>fe :<C-u>call VisualSelection('', '')<CR>:Rg \b<C-R>=@/<CR>\b<CR>
+nmap <leader>fa :Rg <C-r>=expand("<cword>")<CR><CR>
+nmap <leader>fe :Rg \b<C-r>=expand("<cword>")<CR>\b<CR>
+
 " search selected text using :Ack
 " vnoremap <leader>a :call SearchSelectedText()<CR>
 command! -bang -nargs=* Ag call fzf#vim#ag(<q-args>, {'options': '--delimiter : --nth 4..'}, <bang>0)
 command! -bang -nargs=? -complete=dir HFiles
   \ call fzf#vim#files(<q-args>, {'source': 'ag --hidden --ignore .git -g ""'}, <bang>0)
-
-
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" => vim-commentary
-autocmd FileType cs setlocal commentstring=//\ %s
-autocmd FileType fsharp setlocal commentstring=//\ %s
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => vim-fugitive
@@ -623,7 +633,7 @@ nnoremap <leader>gw  :Gwrite<CR>
 nnoremap <leader>gb  :Gblame<CR>
 
 " macro to open file from GStatus in new tab
-nnoremap <leader>gh @x
+" nnoremap <leader>gh @x
 let @x='_wvg_"hy:tabnew h'
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -659,6 +669,7 @@ autocmd BufNewFile,BufRead *.tsx set filetype=typescript.tsx
 autocmd BufNewFile,BufRead *.vue set filetype=vue
 autocmd BufNewFile,BufRead *.sbt set filetype=scala
 autocmd BufNewFile,BufRead makefile set filetype=makefile
+let g:vue_pre_processors = []
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => vim-closetag
@@ -687,6 +698,9 @@ let g:closetag_regions = {
 "     \'coc-html',
 "     \'coc-css',
 "     \]
+
+autocmd FileType vue let b:coc_root_patterns = ['vue.config.js']
+autocmd FileType typescript.tsx,javascript.jsx,typescript let b:coc_root_patterns = ['tsconfig.json']
 
 " Use tab for trigger completion with characters ahead and navigate.
 " Use command ':verbose imap <tab>' to make sure tab is not mapped by other plugin.
@@ -794,6 +808,12 @@ augroup ale_commands
     autocmd FileType cs nnoremap <buffer> <silent> <Leader>ad :ALEDetail<CR>
 augroup end
 
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" => NERDCommenter
+let g:NERDSpaceDelims = 1
+let g:ft = ''
+nmap gcc <Plug>NERDCommenterToggle
+vmap gc <Plug>NERDCommenterSexy
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => omnisharp-vim
@@ -848,7 +868,7 @@ augroup omnisharp_commands
   autocmd FileType cs nnoremap <buffer> <leader>cj :OmniSharpNavigateDown<CR>
 
   " Find all code errors/warnings for the current solution and populate the quickfix window
-  autocmd FileType cs nnoremap <buffer> <Leader>cc :OmniSharpGlobalCodeCheck<CR>
+  " autocmd FileType cs nnoremap <buffer> <Leader>cc :OmniSharpGlobalCodeCheck<CR>
 
   " Contextual code actions (uses fzf, CtrlP or unite.vim when available)
   autocmd FileType cs nnoremap <buffer> <Leader><Space> :OmniSharpGetCodeActions<CR>
@@ -887,13 +907,13 @@ nnoremap <leader>ac :call OpenFileInWdLike(".css", "vs")<CR>
 
 " Create & open folds
 let @x='V%zf' " This macro creates a fold using '%'
-nnoremap <silent> <Space> @=(foldlevel('.')?'za':"@x")<CR>
+" nnoremap <silent> <Space> @=(foldlevel('.')?'za':"@x")<CR>
 " nnoremap <Space>z zfat
-vnoremap <Space> zf
+" vnoremap <Space> zf
 
-au! VimLeave * call SaveSession()
-nnoremap <F5> :call SaveSession()<CR>
-nnoremap <F8> :call LoadSession()<CR>
+au! VimLeave * call SaveSession(0)
+nnoremap <silent> <F5> :call SaveSession(1)<CR>
+nnoremap <silent> <F8> :call LoadSession()<CR>
 " Close Hidden Buffers
 nnoremap <leader>ch :call DeleteHiddenBuffers()<CR>
 
