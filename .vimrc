@@ -82,11 +82,14 @@ au FocusGained,BufEnter * :checktime
 
 " With a map leader it's possible to do extra key combinations
 " like <leader>w saves the current file
-let mapleader = ","
+let mapleader = " "
+" map <Space> <Leader>
 
 " Fast saving
 nmap <leader>w :w!<cr>
+nmap <leader>aw :wa!<cr>
 nmap <leader>q :q<cr>
+nmap <leader>aq :qa<cr>
 
 " :W sudo saves the file
 " (useful for handling the permission-denied error)
@@ -594,9 +597,10 @@ augroup END
 " => Fzf
 let $FZF_DEFAULT_COMMAND = 'ag -g ""'
 nnoremap <silent><space>p :HFiles<CR>
-nnoremap <silent><space><space> :Buffers<CR>
+" nnoremap <silent><space><space> :Buffers<CR>
 nnoremap <silent><space>l :HFiles <c-r>=expand("%:p:h")<cr>/<CR>
-nnoremap <leader>o  :Buffers<CR>
+nnoremap <silent><space>o :Buffers<CR>
+nnoremap <leader>o :Buffers<CR>
 nnoremap <leader>gh :BCommits<CR>
 nnoremap <leader>ft :Filetypes<CR>
 nnoremap <leader>hp :Helptags<CR>
@@ -779,7 +783,7 @@ augroup coc__commands
   autocmd FileType typescript.tsx,javascript.jsx,typescript,javascript,vue,scala,c,rust nmap <buffer> <silent> <leader>an <Plug>(coc-diagnostic-next)
 
   " Remap for do codeAction of current line
-  autocmd FileType typescript.tsx,javascript.jsx,typescript,javascript,vue,scala,c,rust nmap <buffer> <leader><space>  <Plug>(coc-codeaction)
+  autocmd FileType typescript.tsx,javascript.jsx,typescript,javascript,vue,scala,c,rust nmap <buffer> <leader>ac  <Plug>(coc-codeaction)
   " Fix autofix problem of current line
   autocmd FileType typescript.tsx,javascript.jsx,typescript,javascript,vue,scala,c,rust nmap <buffer> <leader>qf  <Plug>(coc-fix-current)
 
@@ -903,7 +907,7 @@ nnoremap <leader>ao :call AngularOpenComponent()<CR>
 nnoremap <leader>at :call OpenFileInWdLike(".component.ts", "vs")<CR>
 nnoremap <leader>am :call OpenFileInWdLike(".html", "vs")<CR>
 nnoremap <leader>as :call OpenFileInWdLike(".scss", "vs")<CR>
-nnoremap <leader>ac :call OpenFileInWdLike(".css", "vs")<CR>
+" nnoremap <leader>ac :call OpenFileInWdLike(".css", "vs")<CR>
 
 " Create & open folds
 let @x='V%zf' " This macro creates a fold using '%'
