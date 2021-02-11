@@ -39,6 +39,10 @@ ln -s $HOME/.dotfiles/.vimrc $HOME/.vimrc
 rm -rf $HOME/.yabairc
 ln -s $HOME/.dotfiles/.yabairc $HOME/.yabairc
 
+# Removes .spacebarrc from $HOME (if it exists) and symlinks the .spacebarrc file from the .dotfiles
+rm -rf $HOME/.spacebarrc
+ln -s $HOME/.dotfiles/.spacebarrc $HOME/.spacebarrc
+
 # Removes .skhdrc from $HOME (if it exists) and symlinks the .skhdrc file from the .dotfiles
 rm -rf $HOME/.skhdrc
 ln -s $HOME/.dotfiles/.skhdrc $HOME/.skhdrc
