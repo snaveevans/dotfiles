@@ -51,15 +51,19 @@ Plug 'tpope/vim-fugitive'
 Plug 'terryma/vim-multiple-cursors'
 
 " Languages > 1
-Plug 'neoclide/coc.nvim', {'do': { -> coc#util#install()}}
+Plug 'neoclide/coc.nvim', {'branch': 'release'}
 Plug 'sheerun/vim-polyglot'
-Plug 'dense-analysis/ale'
+" Plug 'dense-analysis/ale'
 
 " HTML
 Plug 'alvan/vim-closetag'
 
 " c#
-Plug 'omnisharp/omnisharp-vim'
+" Plug 'omnisharp/omnisharp-vim'
+
+" scala
+" Plug 'scalameta/coc-metals', {'do': 'yarn install --frozen-lockfile'}
+" Plug 'derekwyatt/vim-scala'
 
 " Initialize plugin system
 call plug#end()
@@ -608,7 +612,7 @@ nnoremap <leader>m :Maps<CR>
 nnoremap <leader>c<space> :Commands<CR>
 
 let g:fzf_action = {
-  \ 'space': 'tab split',
+  \ 'ctrl-space': 'tab split',
   \ 'ctrl-x': 'split',
   \ 'ctrl-v': 'vsplit' }
 
@@ -691,17 +695,17 @@ let g:closetag_regions = {
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => coc.nvim
 
-" let g:coc_global_extensions=[
-"     \'coc-vetur',
-"     \'coc-tsserver',
-"     \'coc-eslint',
-"     \'coc-fsharp',
-"     \'coc-java',
-"     \'coc-prettier',
-"     \'coc-json',
-"     \'coc-html',
-"     \'coc-css',
-"     \]
+ let g:coc_global_extensions=[
+     \'coc-vetur',
+     \'coc-tsserver',
+     \'coc-eslint',
+     \'coc-omnisharp',
+     \'coc-java',
+     \'coc-prettier',
+     \'coc-json',
+     \'coc-html',
+     \'coc-css'
+     \]
 
 autocmd FileType vue let b:coc_root_patterns = ['vue.config.js']
 autocmd FileType typescript.tsx,javascript.jsx,typescript let b:coc_root_patterns = ['tsconfig.json']
@@ -766,26 +770,26 @@ nnoremap <silent> <leader>cs  :<C-u>CocList -I symbols<cr>
 " Resume latest coc list
 nnoremap <silent> <leader>cp  :<C-u>CocListResume<CR>
 
+" Remap keys for gotos
+nmap <silent> gd <Plug>(coc-definition)
+nmap <silent> gy <Plug>(coc-type-definition)
+nmap <silent> gi <Plug>(coc-implementation)
+nmap <silent> gr <Plug>(coc-references)
+
+" Use `ap` and `an` to navigate diagnostics
+nmap <silent> <leader>ap <Plug>(coc-diagnostic-prev)
+nmap <silent> <leader>an <Plug>(coc-diagnostic-next)
+
+" Remap for do codeAction of current line
+nmap <silent> <leader>ac  <Plug>(coc-codeaction)
+" Fix autofix problem of current line
+nmap <silent> <leader>qf  <Plug>(coc-fix-current)
+
 augroup coc__commands
     autocmd!
 
   " Setup formatexpr specified filetype(s).
   autocmd FileType typescript.tsx,javascript.jsx,typescript,javascript,vue,scala,c,rust setl formatexpr=CocAction('formatSelected')
-
-  " Remap keys for gotos
-  autocmd FileType typescript.tsx,javascript.jsx,typescript,javascript,vue,scala,c,rust nmap <buffer> <silent> gd <Plug>(coc-definition)
-  autocmd FileType typescript.tsx,javascript.jsx,typescript,javascript,vue,scala,c,rust nmap <buffer> <silent> gy <Plug>(coc-type-definition)
-  autocmd FileType typescript.tsx,javascript.jsx,typescript,javascript,vue,scala,c,rust nmap <buffer> <silent> gi <Plug>(coc-implementation)
-  autocmd FileType typescript.tsx,javascript.jsx,typescript,javascript,vue,scala,c,rust nmap <buffer> <silent> gr <Plug>(coc-references)
-
-  " Use `ap` and `an` to navigate diagnostics
-  autocmd FileType typescript.tsx,javascript.jsx,typescript,javascript,vue,scala,c,rust nmap <buffer> <silent> <leader>ap <Plug>(coc-diagnostic-prev)
-  autocmd FileType typescript.tsx,javascript.jsx,typescript,javascript,vue,scala,c,rust nmap <buffer> <silent> <leader>an <Plug>(coc-diagnostic-next)
-
-  " Remap for do codeAction of current line
-  autocmd FileType typescript.tsx,javascript.jsx,typescript,javascript,vue,scala,c,rust nmap <buffer> <leader>ac  <Plug>(coc-codeaction)
-  " Fix autofix problem of current line
-  autocmd FileType typescript.tsx,javascript.jsx,typescript,javascript,vue,scala,c,rust nmap <buffer> <leader>qf  <Plug>(coc-fix-current)
 
   " Remap for rename current word
   autocmd FileType typescript.tsx,javascript.jsx,typescript,javascript,vue,scala,c,rust nmap <buffer> <leader>rn <Plug>(coc-rename)
@@ -799,18 +803,6 @@ command! -nargs=0 Prettier :CocCommand prettier.formatFile
 vmap <leader>ff  <Plug>(coc-format-selected)
 nmap <leader>ff  <Plug>(coc-format-selected)
 
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" => ALE
-" Tell ALE to use OmniSharp for linting C# files, and no other linters.
-let g:ale_linters = { 'cs': ['OmniSharp'] }
-
-augroup ale_commands
-    autocmd!
-
-    autocmd FileType cs nnoremap <buffer> <silent> <leader>an :ALENext<CR>
-    autocmd FileType cs nnoremap <buffer> <silent> <leader>ap :ALEPrevious<CR>
-    autocmd FileType cs nnoremap <buffer> <silent> <Leader>ad :ALEDetail<CR>
-augroup end
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => NERDCommenter
@@ -818,73 +810,6 @@ let g:NERDSpaceDelims = 1
 let g:ft = ''
 nmap gcc <Plug>NERDCommenterToggle
 vmap gc <Plug>NERDCommenterSexy
-
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" => omnisharp-vim
-" Use the stdio OmniSharp-roslyn server
-let g:OmniSharp_server_stdio = 1
-
-" Set the type lookup function to use the preview window instead of echoing it
-"let g:OmniSharp_typeLookupInPreview = 1
-
-" Timeout in seconds to wait for a response from the server
-let g:OmniSharp_server_stdio_quickload = 1
-" let g:OmniSharp_timeout = 5
-
-" Fetch full documentation during omnicomplete requests.
-" By default, only Type/Method signatures are fetched. Full documentation can
-" still be fetched when you need it with the :OmniSharpDocumentation command.
-let g:omnicomplete_fetch_full_documentation = 1
-
-" Set desired preview window height for viewing documentation.
-" You might also want to look at the echodoc plugin.
-set previewheight=5
-
-" Update semantic highlighting on BufEnter and InsertLeave
-let g:OmniSharp_highlight_types = 2
-
-" Enable snippet completion
-" let g:OmniSharp_want_snippet=1
-
-augroup omnisharp_commands
-  autocmd!
-
-  " Show type information automatically when the cursor stops moving
-  " autocmd CursorHold *.cs call OmniSharp#TypeLookupWithoutDocumentation()
-
-  " The following commands are contextual, based on the cursor position.
-  autocmd FileType cs nnoremap <buffer> gd :OmniSharpGotoDefinition<CR>
-  autocmd FileType cs nnoremap <buffer> <Leader>fi :OmniSharpFindImplementations<CR>
-  autocmd FileType cs nnoremap <buffer> <Leader>fs :OmniSharpFindSymbol<CR>
-  autocmd FileType cs nnoremap <buffer> <Leader>fu :OmniSharpFindUsages<CR>
-
-  " Finds members in the current buffer
-  autocmd FileType cs nnoremap <buffer> <Leader>fm :OmniSharpFindMembers<CR>
-
-  autocmd FileType cs nnoremap <buffer> <Leader>rw :OmniSharpFixUsings<CR>
-  autocmd FileType cs nnoremap <buffer> <Leader>tt :OmniSharpTypeLookup<CR>
-  autocmd FileType cs nnoremap <buffer> <Leader>dc :OmniSharpDocumentation<CR>
-  autocmd FileType cs nnoremap <buffer> <C-\> :OmniSharpSignatureHelp<CR>
-  autocmd FileType cs inoremap <buffer> <C-\> <C-o>:OmniSharpSignatureHelp<CR>
-
-  " Navigate up and down by method/property/field
-  autocmd FileType cs nnoremap <buffer> <leader>ck :OmniSharpNavigateUp<CR>
-  autocmd FileType cs nnoremap <buffer> <leader>cj :OmniSharpNavigateDown<CR>
-
-  " Find all code errors/warnings for the current solution and populate the quickfix window
-  " autocmd FileType cs nnoremap <buffer> <Leader>cc :OmniSharpGlobalCodeCheck<CR>
-
-  " Contextual code actions (uses fzf, CtrlP or unite.vim when available)
-  autocmd FileType cs nnoremap <buffer> <Leader><Space> :OmniSharpGetCodeActions<CR>
-  " Run code actions with text selected in visual mode to extract method
-  autocmd FileType cs xnoremap <buffer> <Leader><Space> :call OmniSharp#GetCodeActions('visual')<CR>
-
-  " Rename with dialog
-  autocmd FileType cs nnoremap <buffer> <leader>rn :OmniSharpRename<CR>
-  autocmd FileType cs nnoremap <buffer> <F2> :OmniSharpRename<CR>
-  " Rename without dialog - with cursor on the symbol to rename: `:Rename newname`
-  autocmd FileType cs command! -nargs=1 Rename :call OmniSharp#RenameTo("<args>")
-augroup end
 
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Misc
