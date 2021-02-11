@@ -27,8 +27,8 @@ cmd + alt - l : yabai -m window --insert east
 # cmd - i : open -na "Firefox"
 # cmd + shift - i : open -na "Firefox" --args -private-window
 
-cmd - i : open -na "Google Chrome"
-cmd + shift - i : open -na "Google Chrome" --args --incognito
+cmd - i : open -na "Brave Browser"
+cmd + shift - i : open -na "Brave Browser" --args --incognito
 
 cmd + shift - p : yabai -m space --focus prev
 cmd + shift - n : yabai -m space --focus next
