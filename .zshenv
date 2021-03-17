@@ -19,3 +19,8 @@ export JAVA_HOME="/usr/bin"
 export LDFLAGS="-L/usr/local/opt/node@10/lib"
 export CPPFLAGS="-I/usr/local/opt/node@10/include"
 export MONO_GAC_PREFIX="/usr/local"
+
+# Setting fd as the default source for fzf
+export FZF_BASE='/usr/local/bin/fzf'
+export FZF_DEFAULT_COMMAND='ag --nocolor --unrestricted --ignore node_modules -g .'
+export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"

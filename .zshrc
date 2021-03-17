@@ -18,25 +18,18 @@ plugins=(
   docker-compose
   npm
   autojump
+  fzf
 )
 
 if type brew &>/dev/null; then
   FPATH=$(brew --prefix)/share/zsh/site-functions:$FPATH
 fi
 
-# export RPS1="%{$reset_color%}"
 source $ZSH/oh-my-zsh.sh
 source /usr/local/share/zsh-autosuggestions/zsh-autosuggestions.zsh
 
 # User configuration
 unsetopt share_history
-
-# bindkey -v
-
-# bindkey '^P' up-history
-# bindkey '^N' down-history
-
-# export KEYTIMEOUT=1
 
 _zen-accept-autosuggest() {
 	zle autosuggest-accept
@@ -50,13 +43,6 @@ bindkey '^e' forward-word
 
 alias vi='nvim'
 alias tabn='open . -a iterm'
-alias gcob="gco beta"
-# alias gbda="git branch --no-color --merged | command grep -vE \"^(\*|\s*(master|develop|dev|beta)\s*$)\" | command xargs -n 1 git branch -d"
-alias gcd="git checkout dev || git checkout develop"
-
-# Setting fd as the default source for fzf
-export FZF_DEFAULT_COMMAND='ag --nocolor --unrestricted --ignore node_modules -g .'
-export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
 
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 autoload -Uz compinit
