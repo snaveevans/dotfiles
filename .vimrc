@@ -328,6 +328,8 @@ map tn  :tabnext<Space>
 map tm  :tabmove<Space>
 map <silent> td  :tabclose<CR>
 map <silent> ty  :tabonly<CR>
+nmap <C-n>  :tabnext<CR>
+nmap <C-p>  :tabprev<CR>
 
 " Let 'tl' toggle between this and the last accessed tab
 let g:lasttab = 1
@@ -633,12 +635,14 @@ command! -bang -nargs=? -complete=dir HFiles
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => vim-fugitive
-nnoremap <leader>gs  :Gstatus<CR>
-nnoremap <leader>gd  :Gdiff<CR>
+nnoremap <leader>gs  :Git<CR>
+nnoremap <leader>gd  :Gdiffsplit!<CR>
 nnoremap <leader>gc  :Gcommit<CR>
 nnoremap <leader>gp  :Gpush<CR>
 nnoremap <leader>gw  :Gwrite<CR>
 nnoremap <leader>gb  :Gblame<CR>
+nnoremap <leader>gm  :Git mergetool<CR>
+nnoremap <leader>gt  :Git difftool<CR>
 
 " macro to open file from GStatus in new tab
 " nnoremap <leader>gh @x
@@ -849,3 +853,6 @@ nnoremap <leader>ch :call DeleteHiddenBuffers()<CR>
 command! -nargs=0 UP bufdo e! "command will discard changes and reload files
 command! -nargs=0 JK bd
 command! -nargs=0 AngularOpenComponent call AngularOpenComponent()
+
+vnoremap <silent> <leader>fs :<C-u>call VisualSelection('', '')<CR>:%s/<C-R>=@/<CR>/
+nmap <leader>fs :%s/<C-r>=expand("<cword>")<CR>/
