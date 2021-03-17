@@ -13,12 +13,14 @@ ZSH_THEME="spaceship"
 # Add wisely, as too many plugins slow down shell startup.
 plugins=(
   git
-  zsh-syntax-highlighting
   docker
   docker-compose
   npm
   autojump
   fzf
+  fzf-tab
+  zsh-syntax-highlighting
+  zsh-autosuggestions
 )
 
 if type brew &>/dev/null; then
@@ -40,10 +42,13 @@ bindkey '^e' forward-word
 alias vi='nvim'
 alias tabn='open . -a iterm'
 
+autoload -Uz compinit; compinit
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
-autoload -Uz compinit
-compinit
+# autoload -Uz compinit
+# compinit
 
 export NVM_DIR="$HOME/.nvm"
 [ -s "/usr/local/opt/nvm/nvm.sh" ] && . "/usr/local/opt/nvm/nvm.sh"  # This loads nvm
 [ -s "/usr/local/opt/nvm/etc/bash_completion" ] && . "/usr/local/opt/nvm/etc/bash_completion"  # This loads nvm bash_completion
+
+enable-fzf-tab
