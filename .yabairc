@@ -43,10 +43,12 @@ yabai -m config left_padding                 8
 yabai -m config right_padding                8
 yabai -m config window_gap                   8
 
-yabai -m rule --add app="iterm2" manage=off
-yabai -m rule --add title='Preferences$' manage=off topmost=on
-yabai -m rule --add app="Cisco AnyConnect Secure Mobility Client" manage=off topmost=on
-yabai -m rule --add app="Finder" manage=off
-yabai -m rule --add app="Activity Monitor" manage=off
-yabai -m rule --add app="Logi Options" manage=off
-yabai -m rule --add app="Rainway" manage=off
+yabai -m rule --add app="iTerm2" manage=off border=off
+yabai -m rule --add title='Preferences$' manage=off topmost=on border=off
+yabai -m rule --add app="Cisco AnyConnect Secure Mobility Client" manage=off topmost=on border=off
+yabai -m rule --add app="Finder" manage=off border=off
+yabai -m rule --add app="Activity Monitor" manage=off border=off
+yabai -m rule --add app="Logi Options" manage=off border=off
+yabai -m rule --add app="Rainway" manage=off border=off
+yabai -m rule --add app="steam" manage=off border=off
+yabai -m rule --add app="steamstreamingclient" manage=off border=off native-fullscreen=on
