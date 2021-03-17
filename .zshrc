@@ -31,10 +31,6 @@ source /usr/local/share/zsh-autosuggestions/zsh-autosuggestions.zsh
 # User configuration
 unsetopt share_history
 
-_zen-accept-autosuggest() {
-	zle autosuggest-accept
-	zle accept-line
-}
 bindkey '^ ' autosuggest-accept
 bindkey '^h' backward-char
 bindkey '^l' forward-char
