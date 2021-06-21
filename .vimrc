@@ -261,6 +261,7 @@ set noswapfile
 " set ssop-=options
 " Do not store folds
 " set ssop-=folds
+set foldmethod=manual
 
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -342,8 +343,6 @@ au TabLeave * let g:lasttab = tabpagenr()
 map <leader>tn :tabedit <c-r>=expand("%:p:h")<cr>/
 
 " Move up & down the buffer easier
-nnoremap <leader>d  <C-f>
-nnoremap <leader>u  <C-b>
 nnoremap <C-j>  <C-d>
 nnoremap <C-k>  <C-u>
 
@@ -502,9 +501,7 @@ endfunction
 
 let g:prettier_supported_filetypes = ['js', 'jsx', 'ts', 'tsx', 'css', 'scss', 'html', 'vue']
 function! FormatCode()
-  if &filetype == 'cs'
-    execute 'OmniSharpCodeFormat'
-  elseif index(g:prettier_supported_filetypes, &filetype) >= 0
+  if index(g:prettier_supported_filetypes, &filetype) >= 0
     execute 'Prettier'
   else
     execute 'Format'
@@ -557,7 +554,7 @@ function! UseSpaces()
 endfunction
 
 function! SetTabs()
-  if (index(['MakeFile'], &filetype) >= 0)
+  if (index(['makefile'], &filetype) >= 0)
     call UseTabs()
   else
     call UseSpaces()
@@ -581,17 +578,22 @@ endfunction
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Netrw
 let g:netrw_banner = 0
-let g:netrw_liststyle = 3
+let g:netrw_liststyle = 1
 let g:netrw_browse_split = 4
 let g:netrw_altv = 1
 let g:netrw_winsize = 25
+let g:netrw_keepdir = 0
+hi! link netrwMarkFile Search
+
 augroup NetrwCommands
 	autocmd!
 	" Open Explorer
-	nnoremap <silent> <leader>e :Vexplore<cr>
+  nnoremap <leader>dc :Vexplore<cr>
+  " nnoremap <leader>dc :Lexplore %:p:h<CR> 
+	nnoremap <leader>dw :Lexplore<cr>
 
 	" Open Explorer in new Tab
-	nnoremap <silent> <leader>n :Texplore<cr>
+	nnoremap <leader>n :Texplore<cr>
 	" Open netrw as side drawer
 	" autocmd VimEnter * :Vexplore
 
@@ -686,7 +688,7 @@ let g:vue_pre_processors = []
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => vim-closetag
 
-let g:closetag_filenames = '*.html,*.xhtml,*.phtml,*.vue,*.jsx,*.tsx'
+let g:closetag_filenames = '*.html,*.xhtml,*.phtml,*.vue,*.jsx,*.tsx,*.js'
 let g:closetag_xhtml_filenames = '*.xhtml,*.jsx,*.tsx'
 let g:closetag_filetypes = 'html,xhtml,phtml,vue'
 let g:closetag_xhtml_filetypes = 'xhtml,jsx,tsx'
@@ -817,8 +819,6 @@ vmap gc <Plug>NERDCommenterSexy
 
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Misc
-" delete without yanking \d
-nnoremap <leader><leader>d "_d
 " reload buffers
 nnoremap <leader>rr :checktime<cr>
 
@@ -843,6 +843,12 @@ let @x='V%zf' " This macro creates a fold using '%'
 " nnoremap <silent> <Space> @=(foldlevel('.')?'za':"@x")<CR>
 " nnoremap <Space>z zfat
 " vnoremap <Space> zf
+nnoremap <silent> , @=(foldlevel('.')?'za':"\,")<CR>
+vnoremap , zf
+inoremap <F9> <C-O>za
+nnoremap <F9> za
+onoremap <F9> <C-C>za
+vnoremap <F9> zf
 
 au! VimLeave * call SaveSession(0)
 nnoremap <silent> <F5> :call SaveSession(1)<CR>
