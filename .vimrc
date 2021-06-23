@@ -645,9 +645,9 @@ command! -bang -nargs=? -complete=dir HFiles
 nnoremap <leader>gs  :Git<CR>
 nnoremap <leader>gd  :Gdiffsplit!<CR>
 nnoremap <leader>gc  :Git commit<CR>
-nnoremap <leader>gp  :Gpush<CR>
 nnoremap <leader>gw  :Gwrite<CR>
-nnoremap <leader>gb  :Gblame<CR>
+nnoremap <leader>gp  :Git push<CR>
+nnoremap <leader>gb  :Git blame<CR>
 nnoremap <leader>gm  :Git mergetool<CR>
 nnoremap <leader>gt  :Git difftool<CR>
 
