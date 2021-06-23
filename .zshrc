@@ -39,7 +39,9 @@ bindkey '^l' forward-char
 bindkey '^b' backward-word
 bindkey '^e' forward-word
 
-alias vi='nvim'
+bindkey -s '^n' 'nvim^M'
+bindkey -s '^o' 'nvim $(fzf)^M'
+
 alias tabn='open . -a iterm'
 
 autoload -Uz compinit; compinit
@@ -51,4 +53,3 @@ export NVM_DIR="$HOME/.nvm"
 [ -s "/usr/local/opt/nvm/nvm.sh" ] && . "/usr/local/opt/nvm/nvm.sh"  # This loads nvm
 [ -s "/usr/local/opt/nvm/etc/bash_completion" ] && . "/usr/local/opt/nvm/etc/bash_completion"  # This loads nvm bash_completion
 
-enable-fzf-tab
