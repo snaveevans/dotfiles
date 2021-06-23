@@ -604,6 +604,11 @@ augroup END
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Fzf
 let $FZF_DEFAULT_COMMAND = 'ag -g ""'
+" [Buffers] Jump to the existing window if possible
+let g:fzf_buffers_jump = 1
+" - Popup window (anchored to the bottom of the current window)
+let g:fzf_layout = { 'window': { 'width': 0.9, 'height': 0.6, 'yoffset': 1.0 } }
+
 nnoremap <silent><space>p :HFiles<CR>
 " nnoremap <silent><space><space> :Buffers<CR>
 nnoremap <silent><space>l :HFiles <c-r>=expand("%:p:h")<cr>/<CR>
@@ -639,7 +644,7 @@ command! -bang -nargs=? -complete=dir HFiles
 " => vim-fugitive
 nnoremap <leader>gs  :Git<CR>
 nnoremap <leader>gd  :Gdiffsplit!<CR>
-nnoremap <leader>gc  :Gcommit<CR>
+nnoremap <leader>gc  :Git commit<CR>
 nnoremap <leader>gp  :Gpush<CR>
 nnoremap <leader>gw  :Gwrite<CR>
 nnoremap <leader>gb  :Gblame<CR>
