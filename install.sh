@@ -31,6 +31,10 @@ mkdir $HOME/Sites
 rm -rf $HOME/.zshrc
 ln -s $HOME/.dotfiles/.zshrc $HOME/.zshrc
 
+# Removes .zshenv from $HOME (if it exists) and symlinks the .zshenv file from the .dotfiles
+rm -rf $HOME/.zshenv
+ln -s $HOME/.dotfiles/.zshenv $HOME/.zshenv
+
 # Removes .vimrc from $HOME (if it exists) and symlinks the .vimrc file from the .dotfiles
 rm -rf $HOME/.vimrc
 ln -s $HOME/.dotfiles/.vimrc $HOME/.vimrc
@@ -58,6 +62,13 @@ ln -s $HOME/.dotfiles/coc-settings.json $HOME/.config/nvim/coc-settings.json
 git clone https://github.com/zsh-users/zsh-syntax-highlighting.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting
 git clone https://github.com/zsh-users/zsh-autosuggestions ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
 git clone https://github.com/Aloxaf/fzf-tab ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/fzf-tab
+
+# zsh theme
+git clone https://github.com/spaceship-prompt/spaceship-prompt.git "$ZSH_CUSTOM/themes/spaceship-prompt" --depth=1
+ln -s "$ZSH_CUSTOM/themes/spaceship-prompt/spaceship.zsh-theme" "$ZSH_CUSTOM/themes/spaceship.zsh-theme"
+
+# install nvm
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.38.0/install.sh | bash
 
 # fzf key bindings
 $(brew --prefix)/opt/fzf/install --all
