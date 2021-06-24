@@ -554,7 +554,7 @@ function! UseSpaces()
 endfunction
 
 function! SetTabs()
-  if (index(['makefile'], &filetype) >= 0)
+  if (index(['Makefile', 'make', 'makefile'], &filetype) >= 0)
     call UseTabs()
   else
     call UseSpaces()
@@ -687,7 +687,7 @@ autocmd BufNewFile,BufRead *.jsx set filetype=javascript.jsx
 autocmd BufNewFile,BufRead *.tsx set filetype=typescript.tsx
 autocmd BufNewFile,BufRead *.vue set filetype=vue
 autocmd BufNewFile,BufRead *.sbt set filetype=scala
-autocmd BufNewFile,BufRead makefile set filetype=makefile
+autocmd BufNewFile,BufRead makefile,Makefile set filetype=make
 let g:vue_pre_processors = []
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""

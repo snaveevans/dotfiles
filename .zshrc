@@ -39,8 +39,8 @@ bindkey '^l' forward-char
 bindkey '^b' backward-word
 bindkey '^e' forward-word
 
-bindkey -s '^n' 'nvim^M'
-bindkey -s '^o' 'nvim $(fzf)^M'
+bindkey -s '^o' 'nvim^M'
+# bindkey -s '^o' 'nvim $(fzf)^M'
 
 alias tabn='open . -a iterm'
 
