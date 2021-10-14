@@ -39,10 +39,13 @@ bindkey '^l' forward-char
 bindkey '^b' backward-word
 bindkey '^e' forward-word
 
+bindkey -s '^l' 'cd ~/workspace/octanner/$(ls ~/workspace/octanner | fzf)^M'
+bindkey -s '^g' '$(git branch | fzf)^M'
 bindkey -s '^o' 'nvim^M'
 # bindkey -s '^o' 'nvim $(fzf)^M'
 
 alias tabn='open . -a iterm'
+alias jsc='/System/Library/Frameworks/JavaScriptCore.framework/Versions/Current/Helpers/jsc'
 
 autoload -Uz compinit; compinit
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh

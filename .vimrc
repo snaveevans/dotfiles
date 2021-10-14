@@ -482,7 +482,7 @@ function! VisualSelection(direction, extra_filter) range
 	let l:pattern = substitute(l:pattern, "\n$", "", "")
 
 	if a:direction == 'gv'
-		call CmdLine("Ag '" . l:pattern . "' " )
+		call CmdLine("Rg '" . l:pattern . "' " )
 	elseif a:direction == 'replace'
 		call CmdLine("%s" . '/'. l:pattern . '/')
 	endif
@@ -603,42 +603,61 @@ augroup END
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Fzf
-let $FZF_DEFAULT_COMMAND = 'ag -g ""'
 " [Buffers] Jump to the existing window if possible
 let g:fzf_buffers_jump = 1
 " - Popup window (anchored to the bottom of the current window)
 let g:fzf_layout = { 'window': { 'width': 0.9, 'height': 0.6, 'yoffset': 1.0 } }
+let g:fzf_preview_window = ['right:50%', 'ctrl-/']
 
-nnoremap <silent><space>p :HFiles<CR>
+nnoremap <silent><Leader>p :AllFiles<CR>
 " nnoremap <silent><space><space> :Buffers<CR>
-nnoremap <silent><space>l :HFiles <c-r>=expand("%:p:h")<cr>/<CR>
-nnoremap <silent><space>o :Buffers<CR>
-nnoremap <leader>o :Buffers<CR>
-nnoremap <leader>gh :BCommits<CR>
-nnoremap <leader>ft :Filetypes<CR>
-nnoremap <leader>hp :Helptags<CR>
-nnoremap <leader>m :Maps<CR>
-nnoremap <leader>c<space> :Commands<CR>
+nnoremap <silent><Leader>l :AllFiles <c-r>=expand("%:p:h")<cr>/<CR>
+nnoremap <silent><Leader>o :Buffers<CR>
+nnoremap <Leader>ft :Filetypes<CR>
+nnoremap <Leader>m :Maps<CR>
+nnoremap <Leader><Leader><Leader> :Commands<CR>
+nnoremap <silent> <Leader>/ :BLines<CR>
+nnoremap <silent> <Leader>' :Marks<CR>
+nnoremap <silent> <Leader>g :Commits<CR>
+nnoremap <silent> <Leader>H :Helptags<CR>
+nnoremap <silent> <Leader>hh :History<CR>
+nnoremap <silent> <Leader>h: :History:<CR>
+nnoremap <silent> <Leader>h/ :History/<CR>
 
 let g:fzf_action = {
   \ 'ctrl-space': 'tab split',
   \ 'ctrl-x': 'split',
   \ 'ctrl-v': 'vsplit' }
 
-nnoremap <leader>s  :Ag<CR>
-nnoremap <leader>S  :Ag 
-" Search selected using Ag
-vnoremap <silent> <leader>s :<C-u>call VisualSelection('', '')<CR>:Ag <C-R>=@/<CR><CR>
+nnoremap <leader>s  :Rg<CR>
+nnoremap <leader>S  :Rg 
+vnoremap <silent> <leader>s :<C-u>call VisualSelection('', '')<CR>:Rg <C-R>=@/<CR><CR>
 vnoremap <silent> <leader>fa :<C-u>call VisualSelection('', '')<CR>:Rg <C-R>=@/<CR><CR>
 vnoremap <silent> <leader>fe :<C-u>call VisualSelection('', '')<CR>:Rg \b<C-R>=@/<CR>\b<CR>
 nmap <leader>fa :Rg <C-r>=expand("<cword>")<CR><CR>
 nmap <leader>fe :Rg \b<C-r>=expand("<cword>")<CR>\b<CR>
 
-" search selected text using :Ack
-" vnoremap <leader>a :call SearchSelectedText()<CR>
-command! -bang -nargs=* Ag call fzf#vim#ag(<q-args>, {'options': '--delimiter : --nth 4..'}, <bang>0)
-command! -bang -nargs=? -complete=dir HFiles
-  \ call fzf#vim#files(<q-args>, {'source': 'ag --hidden --ignore .git -g ""'}, <bang>0)
+command! -bang -nargs=? -complete=dir AllFiles
+  \ call fzf#vim#files(<q-args>, {'source': 'rg --files --hidden --follow -g=\!.git'}, <bang>0)
+" use rg with preview and don't include filename as matches
+command! -bang -nargs=* Rg
+  \ call fzf#vim#grep(
+  \   'rg --column --line-number --no-heading --color=always --smart-case -- '.shellescape(<q-args>),
+  \   1,
+  \   fzf#vim#with_preview({'options': '--delimiter : --nth 4..'}), <bang>0)
+" set internal grep to use rg
+set grepprg=rg\ --vimgrep\ --smart-case\ --follow
+
+function! RipgrepFzf(query, fullscreen)
+  let command_fmt = 'rg --column --line-number --no-heading --color=always --smart-case -- %s || true'
+  let initial_command = printf(command_fmt, shellescape(a:query))
+  let reload_command = printf(command_fmt, '{q}')
+  let spec = {'options': ['--phony', '--query', a:query, '--bind', 'change:reload:'.reload_command]}
+  call fzf#vim#grep(initial_command, 1, fzf#vim#with_preview(spec), a:fullscreen)
+endfunction
+
+command! -nargs=* -bang RG call RipgrepFzf(<q-args>, <bang>0)
+
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => vim-fugitive
@@ -715,6 +734,7 @@ let g:closetag_regions = {
      \'coc-prettier',
      \'coc-json',
      \'coc-html',
+     \'coc-rls',
      \'coc-css'
      \]
 
@@ -867,3 +887,11 @@ command! -nargs=0 AngularOpenComponent call AngularOpenComponent()
 
 vnoremap <silent> <leader>fs :<C-u>call VisualSelection('', '')<CR>:%s/<C-R>=@/<CR>/
 nmap <leader>fs :%s/<C-r>=expand("<cword>")<CR>/
+
+" move lines up and down with alt-j/k
+nnoremap ∆ :m .+1<CR>==
+nnoremap ˚ :m .-2<CR>==
+inoremap ∆ <Esc>:m .+1<CR>==gi
+inoremap ˚ <Esc>:m .-2<CR>==gi
+vnoremap ∆ :m '>+1<CR>gv=gv
+vnoremap ˚ :m '<-2<CR>gv=gv
