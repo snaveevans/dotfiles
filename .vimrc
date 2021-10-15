@@ -726,16 +726,17 @@ let g:closetag_regions = {
 " => coc.nvim
 
  let g:coc_global_extensions=[
-     \'coc-vetur',
-     \'coc-tsserver',
+     \'coc-clangd',
+     \'coc-css',
      \'coc-eslint',
-     \'coc-omnisharp',
-     \'coc-java',
-     \'coc-prettier',
-     \'coc-json',
      \'coc-html',
+     \'coc-java',
+     \'coc-json',
+     \'coc-omnisharp',
+     \'coc-prettier',
      \'coc-rls',
-     \'coc-css'
+     \'coc-tsserver',
+     \'coc-vetur'
      \]
 
 autocmd FileType vue let b:coc_root_patterns = ['vue.config.js']
