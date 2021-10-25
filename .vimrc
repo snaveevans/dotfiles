@@ -517,8 +517,13 @@ endfunction
 let g:prettier_supported_filetypes = ['js', 'jsx', 'ts', 'tsx', 'css', 'scss', 'html', 'vue']
 function! FormatCode()
   if index(g:prettier_supported_filetypes, &filetype) >= 0
+    echo "Formatting using Prettier"
     execute 'Prettier'
+  elseif &filetype == 'rust'
+    echo "Formatting using RustFmt"
+    execute 'RustFmt'
   else
+    echo "Formatting using Format"
     execute 'Format'
   endif
 endfunction
