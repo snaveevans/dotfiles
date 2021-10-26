@@ -48,7 +48,6 @@ Plug 'junegunn/fzf.vim'
 Plug 'preservim/nerdcommenter'
 Plug 'tpope/vim-surround'
 Plug 'tpope/vim-fugitive'
-Plug 'terryma/vim-multiple-cursors'
 
 " Languages > 1
 Plug 'neoclide/coc.nvim', {'branch': 'release'}
@@ -291,12 +290,6 @@ set smarttab      " Inserts blanks on a <Tab> key (as per sw, ts and sts).
 vnoremap <silent> * :<C-u>call VisualSelection('', '')<CR>/<C-R>=@/<CR><CR>
 vnoremap <silent> # :<C-u>call VisualSelection('', '')<CR>?<C-R>=@/<CR><CR>
 
-"copy and cut to  system
-vnoremap <C-c> "+y
-vnoremap <C-d> "+d
-" delete without yanking \d
-vnoremap <leader><leader>d "_d
-
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Moving around, tabs, windows and buffers
@@ -329,8 +322,6 @@ map tn  :tabnext<Space>
 map tm  :tabmove<Space>
 map <silent> td  :tabclose<CR>
 map <silent> ty  :tabonly<CR>
-nmap <C-n>  :tabnext<CR>
-nmap <C-p>  :tabprev<CR>
 
 " Let 'tl' toggle between this and the last accessed tab
 let g:lasttab = 1
@@ -403,19 +394,6 @@ endfun
 if has("autocmd")
     autocmd BufWritePre *.txt,*.js,*.py,*.wiki,*.sh,*.coffee :call CleanExtraSpaces()
 endif
-
-
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" => Spell checking
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Pressing ,ss will toggle and untoggle spell checking
-map <leader>ss :setlocal spell!<cr>
-
-" Shortcuts using <leader>
-map <leader>sn ]s
-map <leader>sp [s
-map <leader>sa zg
-map <leader>s? z=
 
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -613,13 +591,16 @@ augroup NetrwCommands
 	nnoremap <leader>dw :Lexplore<cr>
 
 	" Open Explorer in new Tab
-	nnoremap <leader>n :Texplore<cr>
 	" Open netrw as side drawer
 	" autocmd VimEnter * :Vexplore
 
 	" Ensure netrw doesn't open
 	autocmd VimEnter * silent! au! FileExplorer
 augroup END
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" => vim-easymotion
+nmap s <Plug>(easymotion-s)
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Fzf
@@ -649,7 +630,6 @@ let g:fzf_action = {
   \ 'ctrl-x': 'split',
   \ 'ctrl-v': 'vsplit' }
 
-nnoremap <leader>s  :Rg<CR>
 nnoremap <leader>S  :Rg 
 vnoremap <silent> <leader>s :<C-u>call VisualSelection('', '')<CR>:Rg <C-R>=@/<CR><CR>
 vnoremap <silent> <leader>fa :<C-u>call VisualSelection('', '')<CR>:Rg <C-R>=@/<CR><CR>
@@ -693,20 +673,6 @@ nnoremap <leader>gt  :Git difftool<CR>
 " macro to open file from GStatus in new tab
 " nnoremap <leader>gh @x
 let @x='_wvg_"hy:tabnew h'
-
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" => vim-multiple-cursors
-let g:multi_cursor_use_default_mapping=0
-
-" Default mapping
-let g:multi_cursor_start_word_key      = '<C-n>'
-let g:multi_cursor_select_all_word_key = '<A-n>'
-let g:multi_cursor_start_key           = 'g<C-n>'
-let g:multi_cursor_select_all_key      = 'g<A-n>'
-let g:multi_cursor_next_key            = '<C-n>'
-let g:multi_cursor_prev_key            = '<C-p>'
-let g:multi_cursor_skip_key            = '<C-x>'
-let g:multi_cursor_quit_key            = '<Esc>'
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => airline
@@ -758,6 +724,8 @@ let g:closetag_regions = {
      \'coc-tsserver',
      \'coc-vetur'
      \]
+
+hi CocCursorRange guibg=#b16286 guifg=#ebdbb2
 
 autocmd FileType vue let b:coc_root_patterns = ['vue.config.js']
 autocmd FileType typescript.tsx,javascript.jsx,typescript let b:coc_root_patterns = ['tsconfig.json']
@@ -855,13 +823,22 @@ command! -nargs=0 Prettier :CocCommand prettier.formatFile
 vmap <leader>ff  <Plug>(coc-format-selected)
 nmap <leader>ff  <Plug>(coc-format-selected)
 
+" ******* multiple cursors
+nmap <silent> <C-x> <Plug>(coc-cursors-word)*
+nmap <silent> <C-c> <Plug>(coc-cursors-position)
+nmap <silent> <C-d> <Plug>(coc-cursors-word)
+xmap <silent> <C-d> <Plug>(coc-cursors-range)
+" use normal command like `<leader>xi(`
+nmap <leader>x  <Plug>(coc-cursors-operator)
+
+
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => NERDCommenter
 let g:NERDSpaceDelims = 1
 let g:ft = ''
 nmap gcc <Plug>NERDCommenterToggle
-vmap gc <Plug>NERDCommenterSexy
+vmap gc <Plug>NERDCommenterToggle
 
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Misc
@@ -886,12 +863,8 @@ nnoremap <leader>as :call OpenFileInWdLike(".scss", "vs")<CR>
 " nnoremap <leader>ac :call OpenFileInWdLike(".css", "vs")<CR>
 
 " Create & open folds
-let @x='V%zf' " This macro creates a fold using '%'
-" nnoremap <silent> <Space> @=(foldlevel('.')?'za':"@x")<CR>
-" nnoremap <Space>z zfat
-" vnoremap <Space> zf
-nnoremap <silent> , @=(foldlevel('.')?'za':"\,")<CR>
-vnoremap , zf
+nnoremap , z
+vnoremap , z
 inoremap <F9> <C-O>za
 nnoremap <F9> za
 onoremap <F9> <C-C>za
@@ -907,13 +880,11 @@ command! -nargs=0 UP bufdo e! "command will discard changes and reload files
 command! -nargs=0 JK bd
 command! -nargs=0 AngularOpenComponent call AngularOpenComponent()
 
-vnoremap <silent> <leader>fs :<C-u>call VisualSelection('', '')<CR>:%s/<C-R>=@/<CR>/
-nmap <leader>fs :%s/<C-r>=expand("<cword>")<CR>/
+vnoremap <silent> <leader>fr :<C-u>call VisualSelection('', '')<CR>:%s/<C-R>=@/<CR>/
+nmap <leader>fr :%s/<C-r>=expand("<cword>")<CR>/
 
 " move lines up and down with alt-j/k
 nnoremap ∆ :m .+1<CR>==
 nnoremap ˚ :m .-2<CR>==
-inoremap ∆ <Esc>:m .+1<CR>==gi
-inoremap ˚ <Esc>:m .-2<CR>==gi
 vnoremap ∆ :m '>+1<CR>gv=gv
 vnoremap ˚ :m '<-2<CR>gv=gv
