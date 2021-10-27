@@ -23,6 +23,9 @@ chsh -s $(which zsh)
 # Install oh-my-zsh
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/robbyrussell/oh-my-zsh/master/tools/install.sh)"
 
+# install fisher
+curl -sL https://git.io/fisher | source && fisher install jorgebucaran/fisher
+
 # Create a Sites directory
 # This is a default directory for macOS user accounts but doesn't comes pre-installed
 mkdir $HOME/Sites
@@ -50,6 +53,13 @@ ln -s $HOME/.dotfiles/.spacebarrc $HOME/.spacebarrc
 # Removes .skhdrc from $HOME (if it exists) and symlinks the .skhdrc file from the .dotfiles
 rm -rf $HOME/.skhdrc
 ln -s $HOME/.dotfiles/.skhdrc $HOME/.skhdrc
+
+# configuration for fish
+rm -rf $HOME/.config/fish/config.fish
+rm -rf $HOME/.config/fish/fish_plugins
+ln -s $HOME/.dotfiles/config.fish $HOME/.config/fish/config.fish
+ln -s $HOME/.dotfiles/env.fish $HOME/.config/fish/conf.d/env.fish
+ln -s $HOME/.dotfiles/fish_plugins $HOME/.config/fish/fish_plugins
 
 # Removes coc-settings.json from $HOME/.vim (if it exists) and symlinks the coc-settings.json file from the .dotfiles
 rm -rf $HOME/.vim/coc-settings.json
