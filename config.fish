@@ -2,8 +2,13 @@ if status is-interactive
     # Commands to run in interactive sessions can go here
 end
 
+# remove fish_greeting
+set fish_greeting
+
 function list_branches
-  git branch 2>/dev/null | fzf | sed -n '/\* /s///p'
+  set -l selected (git branch 2>/dev/null | fzf | sed -r 's/^[ \t\*]*//')
+  commandline --append "$selected"
+  commandline --function 'end-of-line'
 end
 
 function git_current_branch
