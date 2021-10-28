@@ -34,6 +34,10 @@ mkdir $HOME/Sites
 rm -rf $HOME/.zshrc
 ln -s $HOME/.dotfiles/.zshrc $HOME/.zshrc
 
+# Removes exiting gitconfig and symlinks the .gitconfig from .dotfiles
+rm -rf $HOME/.gitconfig
+ln -s $HOME/.dotfiles/.gitconfig $HOME/.gitconfig
+
 # Removes .zshenv from $HOME (if it exists) and symlinks the .zshenv file from the .dotfiles
 rm -rf $HOME/.zshenv
 ln -s $HOME/.dotfiles/.zshenv $HOME/.zshenv
@@ -79,16 +83,6 @@ curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.38.0/install.sh | bash
 
 # fzf key bindings
 $(brew --prefix)/opt/fzf/install --all
-
-
-git config --global user.email "snaveevans@users.noreply.github.com"
-git config --global user.name "Tyler Evans"
-
-git config --global init.defaultBranch main
-git config --global init.developBranch dev
-
-git config --global alternative.defaultBranch master
-git config --global alternative.developBranch develop
 
 # Set macOS preferences
 # We will run this last because this will reload the shell
