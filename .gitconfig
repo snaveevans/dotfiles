@@ -1,0 +1,11 @@
+[user]
+	email = snaveevans@users.noreply.github.com
+	name = Tyler Evans
+[init]
+	defaultBranch = main
+	developBranch = dev
+[alternative]
+	defaultBranch = master
+	developBranch = develop
+[pull]
+	rebase = false
