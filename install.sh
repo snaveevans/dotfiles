@@ -55,11 +55,8 @@ rm -rf $HOME/.skhdrc
 ln -s $HOME/.dotfiles/.skhdrc $HOME/.skhdrc
 
 # configuration for fish
-rm -rf $HOME/.config/fish/config.fish
 rm -rf $HOME/.config/fish/fish_plugins
-ln -s $HOME/.dotfiles/config.fish $HOME/.config/fish/config.fish
-ln -s $HOME/.dotfiles/env.fish $HOME/.config/fish/conf.d/env.fish
-ln -s $HOME/.dotfiles/fish_plugins $HOME/.config/fish/fish_plugins
+ln -s $HOME/.dotfiles/*.fish $HOME/.config/fish/conf.d
 
 # Removes coc-settings.json from $HOME/.vim (if it exists) and symlinks the coc-settings.json file from the .dotfiles
 rm -rf $HOME/.vim/coc-settings.json
@@ -82,6 +79,16 @@ curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.38.0/install.sh | bash
 
 # fzf key bindings
 $(brew --prefix)/opt/fzf/install --all
+
+
+git config --global user.email "snaveevans@users.noreply.github.com"
+git config --global user.name "Tyler Evans"
+
+git config --global init.defaultBranch main
+git config --global init.developBranch dev
+
+git config --global alternative.defaultBranch master
+git config --global alternative.developBranch develop
 
 # Set macOS preferences
 # We will run this last because this will reload the shell
