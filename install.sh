@@ -38,6 +38,10 @@ ln -s $HOME/.dotfiles/.zshrc $HOME/.zshrc
 rm -rf $HOME/.gitconfig
 ln -s $HOME/.dotfiles/.gitconfig $HOME/.gitconfig
 
+# Removes exiting rgignore and symlinks the .rgignore from .dotfiles
+rm -rf $HOME/.rgignore
+ln -s $HOME/.dotfiles/.rgignore $HOME/.rgignore
+
 # Removes .zshenv from $HOME (if it exists) and symlinks the .zshenv file from the .dotfiles
 rm -rf $HOME/.zshenv
 ln -s $HOME/.dotfiles/.zshenv $HOME/.zshenv
