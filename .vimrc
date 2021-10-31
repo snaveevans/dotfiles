@@ -600,7 +600,7 @@ augroup END
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => vim-easymotion
-nmap s <Plug>(easymotion-s)
+" nmap s <Plug>(easymotion-s)
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Fzf
@@ -630,6 +630,7 @@ let g:fzf_action = {
   \ 'ctrl-x': 'split',
   \ 'ctrl-v': 'vsplit' }
 
+nnoremap <leader>s  :Rg <CR>
 nnoremap <leader>S  :Rg 
 vnoremap <silent> <leader>s :<C-u>call VisualSelection('', '')<CR>:Rg <C-R>=@/<CR><CR>
 vnoremap <silent> <leader>fa :<C-u>call VisualSelection('', '')<CR>:Rg <C-R>=@/<CR><CR>
@@ -675,8 +676,8 @@ nnoremap <leader>gt  :Git difftool<CR>
 let @x='_wvg_"hy:tabnew h'
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" => airline
-" Show tab number using airline
+" => vim-airline
+" Show tab number using vim-airline
 let g:airline#extensions#tabline#tab_nr_type = 1
 " Airline tabs enabled
 let g:airline#extensions#tabline#enabled = 1
