@@ -881,7 +881,7 @@ command! -nargs=0 UP bufdo e! "command will discard changes and reload files
 command! -nargs=0 JK bd
 command! -nargs=0 AngularOpenComponent call AngularOpenComponent()
 
-vnoremap <silent> <leader>fr :<C-u>call VisualSelection('', '')<CR>:%s/<C-R>=@/<CR>/
+vnoremap <leader>fr :<C-u>call VisualSelection('', '')<CR>:%s/<C-R>=@/<CR>/
 nmap <leader>fr :%s/<C-r>=expand("<cword>")<CR>/
 
 " move lines up and down with alt-j/k
