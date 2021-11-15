@@ -9,3 +9,5 @@
 	developBranch = develop
 [pull]
 	rebase = false
+[core]
+	editor = nvim
