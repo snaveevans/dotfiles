@@ -1,4 +1,4 @@
-:: default : spacebar -m config status_bar_background_color 0xff202020
+:: default : spacebar -m config background_color 0xff202020
 
 .blacklist [
     "iTerm2"
@@ -33,9 +33,9 @@ cmd + shift - i : open -na "Firefox" --args -private-window
 cmd + shift - p : yabai -m space --focus prev
 cmd + shift - n : yabai -m space --focus next
 
-:: zenwindow @ : spacebar -m config status_bar_background_color 0xff24CCAA
+:: zenwindow @ : spacebar -m config background_color 0xff24CCAA
 
-:: zenspace @ : spacebar -m config status_bar_background_color 0xff0081C1
+:: zenspace @ : spacebar -m config background_color 0xff0081C1
 
 zenspace < 0x24 ; zenwindow # <enter>
 zenwindow < 0x31 ; zenspace # <space>
