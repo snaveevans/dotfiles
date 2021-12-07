@@ -110,24 +110,24 @@ zenwindow < f : yabai -m window --toggle zoom-fullscreen
 
 ### create desktop, move window and follow focus - uses jq for parsing json (brew install jq)
 zenspace < ctrl - u : yabai -m space --create && \
-  index="$(yabai -m query --spaces --display | jq 'map(select(."native-fullscreen" == 0))[-1].index')" && \
-  yabai -m window --space "${index}" && \
-  yabai -m space --focus "${index}"
+  set index (yabai -m query --spaces --display | jq 'map(select(."native-fullscreen" == 0))[-1].index') && \
+  yabai -m window --space $index && \
+  yabai -m space --focus $index
 # end mode
 zenspace < u : yabai -m space --create && \
-  index="$(yabai -m query --spaces --display | jq 'map(select(."native-fullscreen" == 0))[-1].index')" && \
-  yabai -m window --space "${index}" && \
-  yabai -m space --focus "${index}" ; \
+  set index (yabai -m query --spaces --display | jq 'map(select(."native-fullscreen" == 0))[-1].index') && \
+  yabai -m window --space $index && \
+  yabai -m space --focus $index ; \
   skhd --key "escape"
 
 ### create desktop and follow focus - uses jq for parsing json (brew install jq)
 zenspace < ctrl - i : yabai -m space --create && \
-  index="$(yabai -m query --spaces --display | jq 'map(select(."native-fullscreen" == 0))[-1].index')" && \
-  yabai -m space --focus "${index}"
+  set index (yabai -m query --spaces --display | jq 'map(select(."native-fullscreen" == 0))[-1].index') && \
+  yabai -m space --focus $index
 # end mode
 zenspace < i : yabai -m space --create && \
-  index="$(yabai -m query --spaces --display | jq 'map(select(."native-fullscreen" == 0))[-1].index')" && \
-  yabai -m space --focus "${index}" ; \
+  set index (yabai -m query --spaces --display | jq 'map(select(."native-fullscreen" == 0))[-1].index') && \
+  yabai -m space --focus $index ; && \
   skhd --key "escape"
 
 ### destroy desktop
