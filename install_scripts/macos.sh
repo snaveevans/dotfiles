@@ -1,6 +1,37 @@
 #!/bin/sh
-
 # Thanks to Mathias Bynens! https://mths.be/macos
+
+echo "Setting up your Mac..."
+
+# Check for Homebrew and install if we don't have it
+if test ! $(which brew); then
+  /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+fi
+
+# Install Xcode command line tools
+xcode-select --install
+
+# Update Homebrew recipes
+brew update
+
+# Install all our dependencies with bundle (See Brewfile)
+brew tap homebrew/bundle
+brew bundle
+
+# Removes .yabairc from $HOME (if it exists) and symlinks the .yabairc file from the .dotfiles
+rm $HOME/.yabairc
+ln -s $HOME/.dotfiles/yabairc $HOME/.yabairc
+
+# Removes .spacebarrc from $HOME (if it exists) and symlinks the .spacebarrc file from the .dotfiles
+rm $HOME/.spacebarrc
+ln -s $HOME/.dotfiles/spacebarrc $HOME/.spacebarrc
+
+# Removes .skhdrc from $HOME (if it exists) and symlinks the .skhdrc file from the .dotfiles
+rm $HOME/.skhdrc
+ln -s $HOME/.dotfiles/skhdrc $HOME/.skhdrc
+
+# fzf key bindings
+$(brew --prefix)/opt/fzf/install --all
 
 # Ask for the administrator password upfront
 sudo -v

@@ -1,3 +1,4 @@
+# TODO handle linux and macos
 set -x PATH "$PATH:$HOME/bin"
 set -x PATH "$PATH:/usr/local/bin"
 set -x PATH "$PATH:/usr/local/share/dotnet"
@@ -7,7 +8,10 @@ set -x PATH "$PATH:/Library/Frameworks/Mono.framework/Versions/Current/Commands"
 set -x PATH "$PATH:$HOME/.cargo/bin"
 set -x PATH "$PATH:/usr/local/opt/make/libexec/gnubin"
 set -x PATH "$PATH:/usr/local/opt/openssl@1.1/bin"
+set -x PATH "$PATH:/usr/local/lib/nodejs/node-v16.13.1-linux-x64/bin"
+set -x PATH "$PATH:$HOME/dotnet"
 
+set -x DOTNET_ROOT "$HOME/dotnet"
 set -x LANG "en_US.UTF-8"
 set -x LC_CTYPE "en_US.UTF-8"
 set -x LC_ALL "en_US.UTF-8"
