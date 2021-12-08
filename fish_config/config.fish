@@ -53,3 +53,6 @@ bind --user \co nvim
 
 [ -f /usr/share/autojump/autojump.fish ]; and source /usr/share/autojump/autojump.fish
 
+source $HOME/.config/fish/alias.fish
+source $HOME/.config/fish/env.fish
+

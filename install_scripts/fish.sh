@@ -11,4 +11,4 @@ curl -sL https://git.io/fisher | source && fisher install jorgebucaran/fisher
 rm $HOME/.config/fish/fish_plugins
 # link dotfile config
 # TODO verify fish config location
-ln -s $HOME/.dotfiles/fish_config/* $HOME/.config/fish/conf.d
+ln -s $HOME/.dotfiles/fish_config/* $HOME/.config/fish

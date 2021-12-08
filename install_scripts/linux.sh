@@ -2,13 +2,13 @@
 
 sudo apt-get update
 
-if test ! $(which fish); then
-  sudo apt-get install fish
-fi
-
-if test ! $(which i3); then
-  sudo apt-get install i3-gaps
-fi
+sudo apt-get install fish
+sudo apt-get install i3-gaps
+sudo apt-get install autojump
+sudo apt-get install ripgrep
+sudo apt-get install fzf
+sudo apt-get install neovim
+# sudo apt-get install bat
 
 # configuration for i3
 rm -rf $HOME/.config/i3
