@@ -1,26 +1,6 @@
-
-" Sections:
-"    -> Plugins Installation
-"    -> General
-"    -> VIM user interface
-"    -> Colors and Fonts
-"    -> Files and backups
-"    -> Text, tab and indent related
-"    -> Visual mode related
-"    -> Moving around, tabs and buffers
-"    -> Status line
-"    -> Editing mappings
-"    -> vimgrep searching and cope displaying
-"    -> Spell checking
-"    -> Misc
-"    -> Helper functions
-"    -> Plugin Configuration
-"
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"======================================================================
 " => Plugins Installation
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"======================================================================
 
 " Install vim-plug if it isn't
 if empty(glob('~/.vim/autoload/plug.vim'))
@@ -35,37 +15,33 @@ endif
 call plug#begin('~/.vim/plugged')
 " Make sure you use single quotes
 
-" Vim
 Plug 'joshdick/onedark.vim'
-Plug 'vim-airline/vim-airline'
-
-" General
+Plug 'itchyny/lightline.vim'
 Plug 'phaazon/hop.nvim'
 Plug 'jiangmiao/auto-pairs'
 Plug '/usr/local/opt/fzf'
 Plug 'junegunn/fzf.vim'
-Plug 'preservim/nerdcommenter'
 Plug 'tpope/vim-surround'
 Plug 'tpope/vim-fugitive'
-
-" Languages > 1
 Plug 'neovim/nvim-lspconfig'
 Plug 'nvim-treesitter/nvim-treesitter', {'do': ':TSUpdate'}
+Plug 'nvim-treesitter/nvim-treesitter-textobjects'
 Plug 'hrsh7th/nvim-cmp'
 Plug 'hrsh7th/cmp-nvim-lsp'
 Plug 'saadparwaiz1/cmp_luasnip'
 Plug 'L3MON4D3/LuaSnip'
-
-" HTML
+Plug 'numToStr/Comment.nvim'
 Plug 'alvan/vim-closetag'
+Plug 'nvim-lua/plenary.nvim'
+Plug 'lewis6991/gitsigns.nvim'
 
 " Initialize plugin system
 call plug#end()
 
 
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"======================================================================
 " => General
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"======================================================================
 " Sets how many lines of history VIM has to remember
 set history=500
 
@@ -83,22 +59,17 @@ au FocusGained,BufEnter * :checktime
 let mapleader = " "
 " map <Space> <Leader>
 
-" Fast saving
-nmap <leader>w :w!<cr>
-nmap <leader>aw :wa!<cr>
-nmap <leader>q :q<cr>
-nmap <leader>aq :qa<cr>
-
 " :W sudo saves the file
 " (useful for handling the permission-denied error)
 command! W w !sudo tee % > /dev/null
 
 
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"======================================================================
 " => VIM user interface
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"======================================================================
 " Set 3 lines to the cursor - when moving vertically using j/k
 set so=3
+set noshowmode
 
 " Enable syntax highlight
 syntax on
@@ -109,8 +80,8 @@ set number
 " Highlight line cursor is on
 set cursorline
 
-" Show vertical line for tabs, · for spaces, and ¶ end of line
-set listchars=tab:\|\ ,space:·,nbsp:␣,trail:•,eol:$,precedes:«,extends:»
+" Show vertical line for tabs, · for spaces, and ↲ end of line
+set listchars=tab:\|\ ,space:·,nbsp:␣,trail:•,eol:↲,precedes:«,extends:»
 
 " For vertical line tabs
 set list
@@ -119,7 +90,6 @@ set list
 set splitright
 set splitbelow
 set diffopt+=vertical
-
 
 " Avoid garbled characters in Chinese language windows OS
 let $LANG='en'
@@ -185,12 +155,6 @@ set novisualbell
 set t_vb=
 set tm=500
 
-" Properly disable sound on errors on MacVim
-if has("gui_macvim")
-    autocmd GUIEnter * set vb t_vb=
-endif
-
-
 " Add a bit extra margin to the left
 set foldcolumn=1
 
@@ -207,9 +171,9 @@ inoremap <expr> <M-,> pumvisible() ? '<C-n>' :
   \ '<C-x><C-o><C-n><C-p><C-r>=pumvisible() ? "\<lt>Down>" : ""<CR>'
 
 
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"======================================================================
 " => Colors and Fonts
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"======================================================================
 " Enable syntax highlighting
 syntax enable
 
@@ -226,14 +190,6 @@ endtry
 
 set background=dark
 
-" Set extra options when running in GUI mode
-if has("gui_running")
-    set guioptions-=T
-    set guioptions-=e
-    set t_Co=256
-    set guitablabel=%M\ %t
-endif
-
 " Set utf8 as standard encoding and en_US as the standard language
 set encoding=utf8
 
@@ -241,26 +197,20 @@ set encoding=utf8
 set ffs=unix,dos,mac
 
 
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"======================================================================
 " => Files, backups and undo
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"======================================================================
 " Turn backup off, since most stuff is in SVN, git et.c anyway...
 set nobackup
 set nowb
 set noswapfile
 
-" This sets swap directory
-" Set directory^=$HOME/.vim/tmp//
-" Do not store global and local values in a session
-" set ssop-=options
-" Do not store folds
-" set ssop-=folds
 set foldmethod=manual
 
 
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"======================================================================
 " => Text, tab and indent related
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"======================================================================
 " Linebreak on 500 characters
 set lbr
 set tw=500
@@ -277,35 +227,20 @@ set autoindent    " Copy indent from current line when starting a new line.
 set smarttab      " Inserts blanks on a <Tab> key (as per sw, ts and sts).
 
 
-""""""""""""""""""""""""""""""
+"======================================================================
 " => Visual mode related
-""""""""""""""""""""""""""""""
+"======================================================================
 " Visual mode pressing * or # searches for the current selection
 " Super useful! From an idea by Michael Naumann
 vnoremap <silent> * :<C-u>call VisualSelection('', '')<CR>/<C-R>=@/<CR><CR>
 vnoremap <silent> # :<C-u>call VisualSelection('', '')<CR>?<C-R>=@/<CR><CR>
 
 
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"======================================================================
 " => Moving around, tabs, windows and buffers
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"======================================================================
 " Disable highlight when <leader><cr> is pressed
 map <silent> <leader><cr> :noh<cr>
-
-" Smart way to move between windows
-map <leader>j <C-W>j
-map <leader>k <C-W>k
-map <leader>h <C-W>h
-map <leader>l <C-W>l
-
-" Close the current buffer
-map <leader>bd :bd<cr>
-
-" Close all the buffers
-map <leader>ba :bufdo bd<cr>
-
-" Useful mappings for managing tabs
-map <leader>t<leader> :tabnext
 
 " Easy tab movement in normal mode
 map <silent> th  :tabfirst<CR>
@@ -313,7 +248,6 @@ map <silent> tk  :tabnext<CR>
 map <silent> tj  :tabprev<CR>
 map <silent> tl  :tablast<CR>
 map tt  :tabedit<Space>
-map tn  :tabnext<Space>
 map tm  :tabmove<Space>
 map <silent> td  :tabclose<CR>
 map <silent> ty  :tabonly<CR>
@@ -332,9 +266,6 @@ map <leader>tn :tabedit <c-r>=expand("%:p:h")<cr>/
 nnoremap <C-j>  <C-d>
 nnoremap <C-k>  <C-u>
 
-" Switch CWD to the directory of the open buffer
-map <leader>cd :cd %:p:h<cr>:pwd<cr>
-
 " Specify the behavior when switching between buffers
 try
   set switchbuf=useopen,usetab,newtab
@@ -348,34 +279,17 @@ au BufReadPost * if line("'\"") > 1 && line("'\"") <= line("$") | exe "normal! g
 nnoremap <leader>z :sus<cr>
 
 
-""""""""""""""""""""""""""""""
-" => Status line
-""""""""""""""""""""""""""""""
-" Always show the status line
-set laststatus=2
-
-" Format the status line
-set statusline=\ %{HasPaste()}%F%m%r%h\ %w\ \ CWD:\ %r%{getcwd()}%h\ \ \ Line:\ %l\ \ Column:\ %c
-
-
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"======================================================================
 " => Editing mappings
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"======================================================================
 " Remap VIM 0 to first non-blank character
 map 0 ^
 
-" Move a line of text using ALT+[jk] or Command+[jk] on mac
-nmap <M-j> mz:m+<cr>`z
-nmap <M-k> mz:m-2<cr>`z
-vmap <M-j> :m'>+<cr>`<my`>mzgv`yo`z
-vmap <M-k> :m'<-2<cr>`>my`<mzgv`yo`z
-
-if has("mac") || has("macunix")
-  nmap <D-j> <M-j>
-  nmap <D-k> <M-k>
-  vmap <D-j> <M-j>
-  vmap <D-k> <M-k>
-endif
+" Move a line of text using ALT+[jk]
+nnoremap ∆ :m .+1<CR>==
+nnoremap ˚ :m .-2<CR>==
+vnoremap ∆ :m '>+1<CR>gv=gv
+vnoremap ˚ :m '<-2<CR>gv=gv
 
 " Delete trailing white space on save, useful for some filetypes ;)
 fun! CleanExtraSpaces()
@@ -391,29 +305,20 @@ if has("autocmd")
 endif
 
 
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"======================================================================
 " => Misc
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"======================================================================
 imap jk <Esc>
-" Remove the Windows ^M - when the encodings gets messed up
-noremap <leader>v mmHmt:%s/<C-V><cr>//ge<cr>'tzt'm
-
-" close buffer
-map <leader>Q :q<cr>
-
 " Quickly open a markdown buffer for scribble
-map <leader>b :tabedit ~/buffer.md<cr>
+map <leader>n :tabedit ~/buffer.md<cr>
 
 " Quickly open a [No Name] buffer for scribble
 map <leader>x :tabnew<cr>
 
-" Toggle paste mode on and off
-" map <leader>pp :setlocal paste!<cr>
 
-
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"======================================================================
 " => Helper functions
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"======================================================================
 
 function! SaveLastReg()
     if v:event['regname']==""
@@ -428,35 +333,6 @@ function! SaveLastReg()
         endif 
     endif
 endfunction 
-
-" Returns true if paste mode is enabled
-function! HasPaste()
-	if &paste
-		return 'PASTE MODE  '
-	endif
-	return ''
-endfunction
-
-" Don't close window, when deleting a buffer
-command! Bclose call <SID>BufcloseCloseIt()
-function! <SID>BufcloseCloseIt()
-	let l:currentBufNum = bufnr("%")
-	let l:alternateBufNum = bufnr("#")
-
-	if buflisted(l:alternateBufNum)
-		buffer #
-	else
-		bnext
-	endif
-
-	if bufnr("%") == l:currentBufNum
-		new
-	endif
-
-	if buflisted(l:currentBufNum)
-		execute("bdelete! ".l:currentBufNum)
-	endif
-endfunction
 
 function! CmdLine(str)
 	call feedkeys(":" . a:str)
@@ -485,29 +361,6 @@ function! DeleteHiddenBuffers()
 	for buf in filter(range(1, bufnr('$')), 'bufexists(v:val) && index(tpbl, v:val)==-1')
 		silent execute 'bwipeout' buf
 	endfor
-endfunction
-
-let g:prettier_supported_filetypes = ['js', 'jsx', 'ts', 'tsx', 'css', 'scss', 'html', 'vue']
-function! FormatCode()
-  if index(g:prettier_supported_filetypes, &filetype) >= 0
-    echo "Formatting using Prettier"
-    execute 'Prettier'
-  elseif &filetype == 'rust'
-    echo "Formatting using RustFmt"
-    execute 'RustFmt'
-  else
-    echo "Formatting using Format"
-    execute 'Format'
-  endif
-endfunction
-
-function! AngularOpenComponent()
-	call OpenFileInWdLike(".component.ts", "e")
-	call OpenFileInWdLike(".html", "vs")
-	call OpenFileInWdLike(".scss", "vs")
-	execute("wincmd =")
-	execute("wincmd h")
-	execute("wincmd h")
 endfunction
 
 function! OpenFileInVsLike(likeness)
@@ -564,11 +417,11 @@ function! LoadSession()
   execute 'source ' . 'Session.vim'
 endfunction
 
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"======================================================================
 " => Plugin Configuration
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"======================================================================
 
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"======================================================================
 " => Netrw
 let g:netrw_banner = 0
 let g:netrw_liststyle = 1
@@ -582,18 +435,29 @@ augroup NetrwCommands
 	autocmd!
 	" Open Explorer
   nnoremap <leader>dc :Vexplore<cr>
-  " nnoremap <leader>dc :Lexplore %:p:h<CR> 
 	nnoremap <leader>dw :Lexplore<cr>
-
-	" Open Explorer in new Tab
-	" Open netrw as side drawer
-	" autocmd VimEnter * :Vexplore
 
 	" Ensure netrw doesn't open
 	autocmd VimEnter * silent! au! FileExplorer
 augroup END
 
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+"======================================================================
+" => itchyny/lightline.vim
+
+let g:lightline = {
+      \ 'colorscheme': 'one',
+      \ 'active': {
+      \   'left': [ [ 'mode', 'paste' ],
+      \             [ 'gitbranch', 'readonly', 'filename', 'modified' ] ]
+      \ },
+      \ 'component_function': {
+      \   'gitbranch': 'FugitiveHead'
+      \ },
+      \ }
+
+
+"======================================================================
 " => hop.nvim
 lua << EOF
   require'hop'.setup()
@@ -614,9 +478,7 @@ lua << EOF
 
 EOF
 
-" nnoremap <Leader><Leader>w :HopWord<CR>
-
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"======================================================================
 " => Fzf
 " [Buffers] Jump to the existing window if possible
 let g:fzf_buffers_jump = 1
@@ -628,9 +490,9 @@ nnoremap <silent><Leader>p :AllFiles<CR>
 " nnoremap <silent><space><space> :Buffers<CR>
 nnoremap <silent><Leader>l :AllFiles <c-r>=expand("%:p:h")<cr>/<CR>
 nnoremap <silent><Leader>o :Buffers<CR>
+nnoremap <c-space> :Buffers<CR>
 nnoremap <Leader>ft :Filetypes<CR>
 nnoremap <Leader>m :Maps<CR>
-nnoremap <Leader><Leader><Leader> :Commands<CR>
 nnoremap <silent> <Leader>/ :BLines<CR>
 nnoremap <silent> <Leader>' :Marks<CR>
 nnoremap <silent> <Leader>g :Commits<CR>
@@ -674,7 +536,7 @@ endfunction
 command! -nargs=* -bang RG call RipgrepFzf(<q-args>, <bang>0)
 
 
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"======================================================================
 " => vim-fugitive
 nnoremap <leader>gs  :Git<CR>
 nnoremap <leader>gd  :Gdiffsplit!<CR>
@@ -687,17 +549,9 @@ nnoremap <leader>gt  :Git difftool<CR>
 
 " macro to open file from GStatus in new tab
 " nnoremap <leader>gh @x
-let @x='_wvg_"hy:tabnew h'
+let @x='_wvg_"hy:tabnew h'
 
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" => vim-airline
-" Show tab number using vim-airline
-let g:airline#extensions#tabline#tab_nr_type = 1
-" Airline tabs enabled
-let g:airline#extensions#tabline#enabled = 1
-let g:airline#extensions#tabline#formatter = 'unique_tail_improved'
-
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"======================================================================
 " => vim-polyglot
 
 " Set filetypes jsx & tsx
@@ -708,7 +562,7 @@ autocmd BufNewFile,BufRead *.sbt set filetype=scala
 autocmd BufNewFile,BufRead makefile,Makefile set filetype=make
 let g:vue_pre_processors = []
 
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"======================================================================
 " => vim-closetag
 
 let g:closetag_filenames = '*.html,*.xhtml,*.phtml,*.vue,*.jsx,*.tsx,*.js'
@@ -721,24 +575,76 @@ let g:closetag_regions = {
     \ 'javascript.jsx': 'jsxRegion',
     \ }
 
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"======================================================================
 " => nvim-treesitter 
 lua <<EOF
-require'nvim-treesitter.configs'.setup {
-  ensure_installed = "maintained",
+require('nvim-treesitter.configs').setup {
+  ensure_installed = { 'bash', 'c', 'cmake', 'comment', 'c_sharp', 'css', 'dockerfile', 'fish', 'html', 'http', 'graphql', 'java', 'javascript', 'jsdoc', 'json', 'json5', 'jsonc', 'lua', 'rust', 'scss', 'tsx', 'typescript', 'vim', 'yaml' },
   sync_install = false,
-  -- ignore_install = { "javascript" }, -- List of parsers to ignore installing
   highlight = {
     enable = true,
-    -- disable = { "c", "rust" },  -- list of language that will be disabled
-    additional_vim_regex_highlighting = false,
+  },
+incremental_selection = {
+    enable = true,
+    keymaps = {
+      init_selection = 'gnn',
+      node_incremental = 'grn',
+      scope_incremental = 'grc',
+      node_decremental = 'grm',
+    },
+  },
+  indent = {
+    enable = true,
+  },
+  textobjects = {
+    select = {
+      enable = true,
+      lookahead = true, -- Automatically jump forward to textobj, similar to targets.vim
+      keymaps = {
+        -- You can use the capture groups defined in textobjects.scm
+        ['af'] = '@function.outer',
+        ['if'] = '@function.inner',
+        ['ac'] = '@class.outer',
+        ['ic'] = '@class.inner',
+        ['aa'] = '@call.outer',
+        ['ia'] = '@call.inner',
+        ['ao'] = '@conditional.outer',
+        ['io'] = '@conditional.inner',
+        ['ar'] = '@parameter.outer',
+        ['ir'] = '@parameter.inner',
+        ['ab'] = '@block.outer',
+        ['ib'] = '@block.inner',
+        ['al'] = '@loop.outer',
+        ['il'] = '@loop.inner',
+      },
+    },
+    move = {
+      enable = true,
+      set_jumps = true, -- whether to set jumps in the jumplist
+      goto_next_start = {
+        [']m'] = '@block.outer',
+        [']]'] = '@call.outer',
+      },
+      goto_next_end = {
+        [']M'] = '@block.outer',
+        [']['] = '@call.outer',
+      },
+      goto_previous_start = {
+        ['[m'] = '@block.outer',
+        ['[['] = '@call.outer',
+      },
+      goto_previous_end = {
+        ['[M'] = '@block.outer',
+        ['[]'] = '@call.outer',
+      },
+    },
   },
 }
 EOF
 
 
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" => lspconfig 
+"======================================================================
+" => neovim/nvim-lspconfig 
 
 lua << EOF
 -- Use an on_attach function to only map the following keys
@@ -770,7 +676,7 @@ local on_attach = function(client, bufnr)
   buf_set_keymap('n', '[d', '<cmd>lua vim.diagnostic.goto_prev()<CR>', opts)
   buf_set_keymap('n', ']d', '<cmd>lua vim.diagnostic.goto_next()<CR>', opts)
   buf_set_keymap('n', '<space>q', '<cmd>lua vim.diagnostic.setloclist()<CR>', opts)
-  buf_set_keymap('n', '<space>f', '<cmd>lua vim.lsp.buf.formatting()<CR>', opts)
+  buf_set_keymap('n', '<space>fd', '<cmd>lua vim.lsp.buf.formatting()<CR>', opts)
 
 end
 
@@ -782,7 +688,7 @@ local lspconfig = require('lspconfig')
 
 -- Use a loop to conveniently call 'setup' on multiple servers and
 -- map buffer local keybindings when the language server attaches
-local servers = { 'tsserver' }
+local servers = { 'tsserver', 'cssls', 'graphql', 'html', 'jsonls' }
 for _, lsp in ipairs(servers) do
   lspconfig[lsp].setup {
     on_attach = on_attach,
@@ -838,38 +744,45 @@ cmp.setup {
 }
 EOF
 
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" => NERDCommenter
-let g:NERDSpaceDelims = 1
-let g:ft = ''
-nmap gcc <Plug>NERDCommenterToggle
-vmap gc <Plug>NERDCommenterToggle
+"======================================================================
+" => numToStr/Comment.nvim
 
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+lua << EOF
+require('Comment').setup()
+EOF
+
+"======================================================================
+" => lewis6991/gitsigns.nvim
+
+lua << EOF
+require('gitsigns').setup {
+  signs = {
+    add = { hl = 'GitGutterAdd', text = '+' },
+    change = { hl = 'GitGutterChange', text = '~' },
+    delete = { hl = 'GitGutterDelete', text = '_' },
+    topdelete = { hl = 'GitGutterDelete', text = '‾' },
+    changedelete = { hl = 'GitGutterChange', text = '~' },
+  },
+  current_line_blame = true,
+  current_line_blame_opts = {
+    virt_text = true,
+    virt_text_pos = 'eol',
+    delay = 250,
+    ignore_whitespace = false,
+  },
+}
+EOF
+
+"======================================================================
 " => Misc
-" reload buffers
-nnoremap <leader>rr :checktime<cr>
-
 au! BufEnter * call SetTabs()
 au! TextYankPost * call SaveLastReg()
-
-" Universal format mapping
-nnoremap <silent> <leader>fd :call FormatCode()<CR>
 
 " Open file
 command! -nargs=1 OpenFile :call OpenFileInVsLike(<f-args>)
 nnoremap <leader>fo :OpenFile 
 
-" Open angular component
-nnoremap <leader>ao :call AngularOpenComponent()<CR>
-nnoremap <leader>at :call OpenFileInWdLike(".component.ts", "vs")<CR>
-nnoremap <leader>am :call OpenFileInWdLike(".html", "vs")<CR>
-nnoremap <leader>as :call OpenFileInWdLike(".scss", "vs")<CR>
-" nnoremap <leader>ac :call OpenFileInWdLike(".css", "vs")<CR>
-
 " Create & open folds
-nnoremap , z
-vnoremap , z
 inoremap <F9> <C-O>za
 nnoremap <F9> za
 onoremap <F9> <C-C>za
@@ -883,13 +796,6 @@ nnoremap <leader>ch :call DeleteHiddenBuffers()<CR>
 
 command! -nargs=0 UP bufdo e! "command will discard changes and reload files
 command! -nargs=0 JK bd
-command! -nargs=0 AngularOpenComponent call AngularOpenComponent()
 
 vnoremap <leader>fr :<C-u>call VisualSelection('', '')<CR>:%s/<C-R>=@/<CR>/
-nmap <leader>fr :%s/<C-r>=expand("<cword>")<CR>/
-
-" move lines up and down with alt-j/k
-nnoremap ∆ :m .+1<CR>==
-nnoremap ˚ :m .-2<CR>==
-vnoremap ∆ :m '>+1<CR>gv=gv
-vnoremap ˚ :m '<-2<CR>gv=gv
+nnoremap <leader>fr :%s/<C-r>=expand("<cword>")<CR>/
