@@ -15,6 +15,11 @@ ln -s $HOME/.dotfiles/.vimrc $HOME/.vimrc
 # configure for nvim
 ln -s $HOME/.dotfiles/init.vim $HOME/.config/nvim/init.vim
 
+# configure kitty
+rm $HOME/.config/kitty/kitty.conf
+mkdir -p $HOME/.config/kitty
+ln -s $HOME/.dotfiles/kitty.conf $HOME/.config/kitty/kitty.conf
+
 # install nvm
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.38.0/install.sh | bash
 
