@@ -13,6 +13,7 @@ rm $HOME/.vimrc
 ln -s $HOME/.dotfiles/.vimrc $HOME/.vimrc
 
 # configure for nvim
+rm $HOME/.config/nvim/init.vim
 ln -s $HOME/.dotfiles/init.vim $HOME/.config/nvim/init.vim
 
 # configure kitty
