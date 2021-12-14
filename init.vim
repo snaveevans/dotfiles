@@ -425,6 +425,7 @@ endfunction
 
 "======================================================================
 " => Netrw
+
 let g:netrw_banner = 0
 let g:netrw_liststyle = 1
 let g:netrw_browse_split = 4
@@ -461,6 +462,7 @@ let g:lightline = {
 
 "======================================================================
 " => hop.nvim
+
 lua << EOF
   require'hop'.setup()
 
@@ -482,6 +484,7 @@ EOF
 
 "======================================================================
 " => Fzf
+
 " [Buffers] Jump to the existing window if possible
 let g:fzf_buffers_jump = 1
 " - Popup window (anchored to the bottom of the current window)
@@ -540,9 +543,9 @@ endfunction
 
 command! -nargs=* -bang RG call RipgrepFzf(<q-args>, <bang>0)
 
-
 "======================================================================
 " => vim-fugitive
+
 nnoremap <leader>gs  :Git<CR>
 nnoremap <leader>gd  :Gdiffsplit!<CR>
 nnoremap <leader>gc  :Git commit<CR>
@@ -555,17 +558,6 @@ nnoremap <leader>gt  :Git difftool<CR>
 " macro to open file from GStatus in new tab
 " nnoremap <leader>gh @x
 let @x='_wvg_"hy:tabnew h'
-
-"======================================================================
-" => vim-polyglot
-
-" Set filetypes jsx & tsx
-autocmd BufNewFile,BufRead *.jsx set filetype=javascript.jsx
-autocmd BufNewFile,BufRead *.tsx set filetype=typescript.tsx
-autocmd BufNewFile,BufRead *.vue set filetype=vue
-autocmd BufNewFile,BufRead *.sbt set filetype=scala
-autocmd BufNewFile,BufRead makefile,Makefile set filetype=make
-let g:vue_pre_processors = []
 
 "======================================================================
 " => vim-closetag
@@ -582,6 +574,7 @@ let g:closetag_regions = {
 
 "======================================================================
 " => nvim-treesitter 
+
 lua <<EOF
 require('nvim-treesitter.configs').setup {
   ensure_installed = { 'bash', 'c', 'cmake', 'comment', 'c_sharp', 'css', 'dockerfile', 'fish', 'html', 'http', 'graphql', 'java', 'javascript', 'jsdoc', 'json', 'json5', 'jsonc', 'lua', 'rust', 'scss', 'tsx', 'typescript', 'vim', 'yaml' },
