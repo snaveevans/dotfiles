@@ -261,7 +261,7 @@ au TabLeave * let g:lasttab = tabpagenr()
 
 " Opens a new tab with the current buffer's path
 " Super useful when editing files in the same directory
-map <leader>tn :tabedit <c-r>=expand("%:p:h")<cr>/
+map <leader>tn :tabedit <c-r>=expand("%:.:h")<cr>/
 
 " Move up & down the buffer easier
 nnoremap <C-j>  <C-d>
@@ -461,18 +461,10 @@ let g:lightline = {
 
 
 "======================================================================
-" => hop.nvim
+" => phaazon/hop.nvim
 
 lua << EOF
   require'hop'.setup()
-
-  -- place this in one of your configuration file(s)
-  vim.api.nvim_set_keymap('n', 'f', "<cmd>lua require'hop'.hint_char1({ direction = require'hop.hint'.HintDirection.AFTER_CURSOR, current_line_only = true })<cr>", {})
-  vim.api.nvim_set_keymap('n', 'F', "<cmd>lua require'hop'.hint_char1({ direction = require'hop.hint'.HintDirection.BEFORE_CURSOR, current_line_only = true })<cr>", {})
-  vim.api.nvim_set_keymap('o', 'f', "<cmd>lua require'hop'.hint_char1({ direction = require'hop.hint'.HintDirection.AFTER_CURSOR, current_line_only = true, inclusive_jump = true })<cr>", {})
-  vim.api.nvim_set_keymap('o', 'F', "<cmd>lua require'hop'.hint_char1({ direction = require'hop.hint'.HintDirection.BEFORE_CURSOR, current_line_only = true, inclusive_jump = true })<cr>", {})
-  vim.api.nvim_set_keymap('', 't', "<cmd>lua require'hop'.hint_char1({ direction = require'hop.hint'.HintDirection.AFTER_CURSOR, current_line_only = true })<cr>", {})
-  vim.api.nvim_set_keymap('', 'T', "<cmd>lua require'hop'.hint_char1({ direction = require'hop.hint'.HintDirection.BEFORE_CURSOR, current_line_only = true })<cr>", {})
 
   vim.api.nvim_set_keymap('n', '<space><space>a', "<cmd>lua require'hop'.hint_words()<cr>", {})
   vim.api.nvim_set_keymap('n', '<space><space>w', "<cmd>lua require'hop'.hint_words({ direction = require'hop.hint'.HintDirection.AFTER_CURSOR })<cr>", {})
@@ -554,6 +546,7 @@ nnoremap <leader>gp  :Git push<CR>
 nnoremap <leader>gb  :Git blame<CR>
 nnoremap <leader>gm  :Git mergetool<CR>
 nnoremap <leader>gt  :Git difftool<CR>
+nnoremap <leader>gv  :GMove <c-r>=expand("%:.")<cr>
 
 " macro to open file from GStatus in new tab
 " nnoremap <leader>gh @x
@@ -799,9 +792,6 @@ nnoremap <silent> <F5> :call SaveSession(1)<CR>
 nnoremap <silent> <F8> :call LoadSession()<CR>
 " Close Hidden Buffers
 nnoremap <leader>ch :call DeleteHiddenBuffers()<CR>
-
-command! -nargs=0 UP bufdo e! "command will discard changes and reload files
-command! -nargs=0 JK bd
 
 vnoremap <leader>fr :<C-u>call VisualSelection('', '')<CR>:%s/<C-R>=@/<CR>/
 nnoremap <leader>fr :%s/<C-r>=expand("<cword>")<CR>/
