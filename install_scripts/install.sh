@@ -21,6 +21,11 @@ rm $HOME/.config/kitty/kitty.conf
 mkdir -p $HOME/.config/kitty
 ln -s $HOME/.dotfiles/kitty.conf $HOME/.config/kitty/kitty.conf
 
+# configure kitty
+rm $HOME/.config/ctags/options.ctags
+mkdir -p $HOME/.config/ctags
+ln -s $HOME/.dotfiles/options.ctags $HOME/.config/ctags/options.ctags
+
 # install nvm
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.38.0/install.sh | bash
 

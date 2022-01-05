@@ -35,6 +35,7 @@ Plug 'alvan/vim-closetag'
 Plug 'nvim-lua/plenary.nvim'
 Plug 'lewis6991/gitsigns.nvim'
 Plug 'sbdchd/neoformat'
+Plug 'ludovicchabant/vim-gutentags'
 
 " Initialize plugin system
 call plug#end()
@@ -490,6 +491,7 @@ nnoremap <silent> <Leader>o :Buffers<CR>
 nnoremap <silent> <c-space> :Buffers<CR>
 nnoremap <silent> <Leader>ft :Filetypes<CR>
 nnoremap <silent> <Leader>m :Maps<CR>
+nnoremap <silent> ; :Tags<CR>
 nnoremap <silent> <Leader>/ :BLines<CR>
 nnoremap <silent> <Leader>' :Marks<CR>
 nnoremap <silent> <Leader>g :Commits<CR>

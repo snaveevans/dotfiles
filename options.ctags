@@ -1,0 +1,5 @@
+--exclude=node_modules
+--exclude=dist
+--exclude=build
+--exclude=package-lock.json
+--exclude=yarn.json
