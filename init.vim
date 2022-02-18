@@ -453,7 +453,7 @@ let g:lightline = {
       \ 'colorscheme': 'one',
       \ 'active': {
       \   'left': [ [ 'mode', 'paste' ],
-      \             [ 'gitbranch', 'readonly', 'filename', 'modified' ] ]
+      \             [ 'gitbranch', 'readonly', 'relativepath', 'modified' ] ]
       \ },
       \ 'component_function': {
       \   'gitbranch': 'FugitiveHead'
@@ -776,7 +776,7 @@ nmap <leader>fd :Neoformat<cr>
 au! BufEnter * call SetTabs()
 au! TextYankPost * call SaveLastReg()
 
-nmap <leader>ve :edit ~/.config/nvim/init.vim<cr>
+nmap <leader>ve :tabedit ~/.config/nvim/init.vim<cr>
 nmap <leader>vr :source ~/.config/nvim/init.vim<cr>
 
 " Open file
