@@ -35,7 +35,6 @@ Plug 'alvan/vim-closetag'
 Plug 'nvim-lua/plenary.nvim'
 Plug 'lewis6991/gitsigns.nvim'
 Plug 'sbdchd/neoformat'
-Plug 'ludovicchabant/vim-gutentags'
 
 " Initialize plugin system
 call plug#end()
@@ -669,6 +668,7 @@ local on_attach = function(client, bufnr)
   buf_set_keymap('n', '[d', '<cmd>lua vim.diagnostic.goto_prev()<CR>', opts)
   buf_set_keymap('n', ']d', '<cmd>lua vim.diagnostic.goto_next()<CR>', opts)
   buf_set_keymap('n', '<space>q', '<cmd>lua vim.diagnostic.setloclist()<CR>', opts)
+  buf_set_keymap('n', '<leader>fx', ':EslintFixAll<CR>', opts)
   -- buf_set_keymap('n', '<space>fd', '<cmd>lua vim.lsp.buf.formatting()<CR>', opts)
 
 end
@@ -681,7 +681,7 @@ local lspconfig = require('lspconfig')
 
 -- Use a loop to conveniently call 'setup' on multiple servers and
 -- map buffer local keybindings when the language server attaches
-local servers = { 'tsserver', 'cssls', 'graphql', 'html', 'jsonls' }
+local servers = { 'tsserver', 'cssls', 'graphql', 'html', 'jsonls', 'eslint' }
 for _, lsp in ipairs(servers) do
   lspconfig[lsp].setup {
     on_attach = on_attach,
