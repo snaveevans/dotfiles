@@ -18,7 +18,16 @@ rm $HOME/.config/kitty/kitty.conf
 mkdir -p $HOME/.config/kitty
 ln -s $HOME/.dotfiles/kitty.conf $HOME/.config/kitty/kitty.conf
 
+# configure npm
+ln -s $HOME/.dotfiles/.npmrc $HOME/.npmrc
+
 # install nvm
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.38.0/install.sh | bash
 
 # TODO run OS install script
+
+
+# post os install
+nvm install 16
+npm install -g yarn
+./yarn.sh

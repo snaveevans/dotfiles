@@ -1,8 +1,5 @@
-# TODO look into getting sudo access before running
+#!/bin/sh
 sudo -v
-
-# Make fish the default shell environment
-sudo chsh -s $(which fish)
 
 # install fisher
 curl -sL https://git.io/fisher | source && fisher install jorgebucaran/fisher
