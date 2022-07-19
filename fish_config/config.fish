@@ -70,4 +70,4 @@ bind --user \ckp kill_process
 
 source $HOME/.config/fish/alias.fish
 source $HOME/.config/fish/env.fish
-
+[ -f $HOME/.config/fish/os-specific.fish ]; and source $HOME/.config/fish/os-specific.fish
