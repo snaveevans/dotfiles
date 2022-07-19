@@ -10,6 +10,7 @@ ln -s $HOME/.dotfiles/.rgignore $HOME/.rgignore
 
 # configure for nvim
 rm $HOME/.config/nvim/init.vim
+mkdir -p $HOME/.config/nvim
 ln -s $HOME/.dotfiles/init.vim $HOME/.config/nvim/init.vim
 
 # configure kitty
