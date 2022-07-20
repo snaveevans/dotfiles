@@ -15,14 +15,7 @@ endif
 call plug#begin('~/.vim/plugged')
 " Make sure you use single quotes
 
-Plug 'joshdick/onedark.vim'
 Plug 'itchyny/lightline.vim'
-Plug 'phaazon/hop.nvim'
-Plug 'jiangmiao/auto-pairs'
-Plug '/usr/local/opt/fzf'
-Plug 'junegunn/fzf.vim'
-Plug 'tpope/vim-surround'
-Plug 'tpope/vim-fugitive'
 Plug 'neovim/nvim-lspconfig'
 Plug 'nvim-treesitter/nvim-treesitter', {'do': ':TSUpdate'}
 Plug 'nvim-treesitter/nvim-treesitter-textobjects'
@@ -32,8 +25,6 @@ Plug 'saadparwaiz1/cmp_luasnip'
 Plug 'L3MON4D3/LuaSnip'
 Plug 'numToStr/Comment.nvim'
 Plug 'alvan/vim-closetag'
-Plug 'nvim-lua/plenary.nvim'
-Plug 'lewis6991/gitsigns.nvim'
 Plug 'sbdchd/neoformat'
 
 " Initialize plugin system
@@ -184,17 +175,6 @@ endif
 
 
 "======================================================================
-" => Misc
-"======================================================================
-imap jk <Esc>
-" Quickly open a markdown buffer for scribble
-map <leader>n :tabedit ~/buffer.md<cr>
-
-" Quickly open a [No Name] buffer for scribble
-map <leader>x :tabnew<cr>
-
-
-"======================================================================
 " => Helper functions
 "======================================================================
 
@@ -299,27 +279,6 @@ endfunction
 " => Plugin Configuration
 "======================================================================
 
-"======================================================================
-" => Netrw
-
-let g:netrw_banner = 0
-let g:netrw_liststyle = 1
-let g:netrw_browse_split = 4
-let g:netrw_altv = 1
-let g:netrw_winsize = 25
-let g:netrw_keepdir = 0
-hi! link netrwMarkFile Search
-
-augroup NetrwCommands
-	autocmd!
-	" Open Explorer
-  nnoremap <leader>dc :Vexplore<cr>
-	nnoremap <leader>dw :Lexplore<cr>
-
-	" Ensure netrw doesn't open
-	autocmd VimEnter * silent! au! FileExplorer
-augroup END
-
 
 "======================================================================
 " => itchyny/lightline.vim
@@ -334,100 +293,6 @@ let g:lightline = {
       \   'gitbranch': 'FugitiveHead'
       \ },
       \ }
-
-
-"======================================================================
-" => phaazon/hop.nvim
-
-lua << EOF
-  require'hop'.setup()
-
-  vim.api.nvim_set_keymap('n', '<space><space>a', "<cmd>lua require'hop'.hint_words()<cr>", {})
-  vim.api.nvim_set_keymap('n', '<space><space>w', "<cmd>lua require'hop'.hint_words({ direction = require'hop.hint'.HintDirection.AFTER_CURSOR })<cr>", {})
-  vim.api.nvim_set_keymap('n', '<space><space>b', "<cmd>lua require'hop'.hint_words({ direction = require'hop.hint'.HintDirection.BEFORE_CURSOR })<cr>", {})
-
-  vim.api.nvim_set_keymap('n', '<space><space>l', "<cmd>lua require'hop'.hint_lines()<cr>", {})
-
-EOF
-
-"======================================================================
-" => Fzf
-
-" [Buffers] Jump to the existing window if possible
-let g:fzf_buffers_jump = 1
-" - Popup window (anchored to the bottom of the current window)
-let g:fzf_layout = { 'window': { 'width': 0.9, 'height': 0.6, 'yoffset': 1.0 } }
-let g:fzf_preview_window = ['right:50%', 'ctrl-/']
-
-nnoremap <silent> <Leader>p :Files<CR>
-nnoremap <silent> <Leader>P :AllFiles<CR>
-nnoremap <silent> <Leader>l :Files <c-r>=expand("%:p:h")<cr>/<CR>
-nnoremap <silent> <Leader>o :Buffers<CR>
-nnoremap <silent> <c-space> :Buffers<CR>
-nnoremap <silent> <Leader>ft :Filetypes<CR>
-nnoremap <silent> <Leader>m :Maps<CR>
-nnoremap <silent> ; :Commands<CR>
-nnoremap <silent> <Leader>/ :BLines<CR>
-nnoremap <silent> <Leader>' :Marks<CR>
-nnoremap <silent> <Leader>g :Commits<CR>
-nnoremap <silent> <Leader>H :Helptags<CR>
-nnoremap <silent> <Leader>hh :History<CR>
-nnoremap <silent> <Leader>h: :History:<CR>
-nnoremap <silent> <Leader>h/ :History/<CR>
-
-let g:fzf_action = {
-  \ 'ctrl-space': 'tab split',
-  \ 'ctrl-x': 'split',
-  \ 'ctrl-v': 'vsplit' }
-
-nnoremap <silent> <leader>s  :Rg <CR>
-nnoremap <silent> <leader>S  :Rg 
-vnoremap <silent> <leader>s :<C-u>call VisualSelection('', '')<CR>:Rg <C-R>=@/<CR><CR>
-vnoremap <silent> <leader>fa :<C-u>call VisualSelection('', '')<CR>:Rg <C-R>=@/<CR><CR>
-vnoremap <silent> <leader>fe :<C-u>call VisualSelection('', '')<CR>:Rg \b<C-R>=@/<CR>\b<CR>
-nmap <silent> <leader>fa :Rg <C-r>=expand("<cword>")<CR><CR>
-nmap <silent> <leader>fe :Rg \b<C-r>=expand("<cword>")<CR>\b<CR>
-
-command! -bang -nargs=? -complete=dir Files
-      \ call fzf#vim#files(<q-args>, {'source': 'rg --files --hidden --follow --glob=\!.git'}, <bang>0)
-
-command! -bang -nargs=? -complete=dir AllFiles
-      \ call fzf#vim#files(<q-args>, {'source': 'rg --files --hidden --follow --no-ignore'}, <bang>0)
-
-command! -bang -nargs=* Rg
-  \ call fzf#vim#grep(
-  \   'rg --column --line-number --no-heading --color=always --smart-case -- '.shellescape(<q-args>),
-  \   1,
-  \   fzf#vim#with_preview({'options': '--delimiter : --nth 4..'}), <bang>0)
-" set internal grep to use rg
-set grepprg=rg\ --vimgrep\ --smart-case\ --follow
-
-function! RipgrepFzf(query, fullscreen)
-  let command_fmt = 'rg --column --line-number --no-heading --color=always --smart-case -- %s || true'
-  let initial_command = printf(command_fmt, shellescape(a:query))
-  let reload_command = printf(command_fmt, '{q}')
-  let spec = {'options': ['--phony', '--query', a:query, '--bind', 'change:reload:'.reload_command]}
-  call fzf#vim#grep(initial_command, 1, fzf#vim#with_preview(spec), a:fullscreen)
-endfunction
-
-command! -nargs=* -bang RG call RipgrepFzf(<q-args>, <bang>0)
-
-"======================================================================
-" => vim-fugitive
-
-nnoremap <leader>gs  :Git<CR>
-nnoremap <leader>gd  :Gdiffsplit!<CR>
-nnoremap <leader>gc  :Git commit<CR>
-nnoremap <leader>gw  :Gwrite<CR>
-nnoremap <leader>gp  :Git push<CR>
-nnoremap <leader>gb  :Git blame<CR>
-nnoremap <leader>gm  :Git mergetool<CR>
-nnoremap <leader>gt  :Git difftool<CR>
-nnoremap <leader>gv  :GMove <c-r>=expand("%:.")<cr>
-
-" macro to open file from GStatus in new tab
-" nnoremap <leader>gh @x
-let @x='_wvg_"hy:tabnew h'
 
 "======================================================================
 " => vim-closetag
@@ -618,28 +483,6 @@ EOF
 
 lua << EOF
 require('Comment').setup()
-EOF
-
-"======================================================================
-" => lewis6991/gitsigns.nvim
-
-lua << EOF
-require('gitsigns').setup {
-  signs = {
-    add = { hl = 'GitGutterAdd', text = '+' },
-    change = { hl = 'GitGutterChange', text = '~' },
-    delete = { hl = 'GitGutterDelete', text = '_' },
-    topdelete = { hl = 'GitGutterDelete', text = '‾' },
-    changedelete = { hl = 'GitGutterChange', text = '~' },
-  },
-  current_line_blame = true,
-  current_line_blame_opts = {
-    virt_text = true,
-    virt_text_pos = 'eol',
-    delay = 250,
-    ignore_whitespace = false,
-  },
-}
 EOF
 
 "======================================================================

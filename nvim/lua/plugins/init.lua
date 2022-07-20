@@ -9,6 +9,23 @@ local plugins = {
         end
     },
     ["tpope/vim-fugitive"] = {},
+    ["phaazon/hop.nvim"] = {
+        branch = 'v2',
+        config = function()
+            require("plugins.configs.others").hop()
+        end
+    },
+    ["jiangmiao/auto-pairs"] = {},
+    ["junegunn/fzf"] = {
+        run = './install --bin',
+    },
+    ["ibhagwan/fzf-lua"] = {
+        require = "junegunn/fzf",
+        config = function()
+            require("plugins.configs.others").fzf()
+        end,
+    },
+    ["tpope/vim-surround"] = {},
     ["lewis6991/gitsigns.nvim"] = {
         ft = "gitcommit",
         config = function()
