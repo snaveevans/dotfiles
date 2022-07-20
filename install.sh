@@ -14,9 +14,6 @@ mkdir -p $HOME/.config/nvim
 ln -s $HOME/.dotfiles/nvim/init.lua $HOME/.config/nvim/init.lua
 ln -s $HOME/.dotfiles/nvim/lua $HOME/.config/nvim/lua
 
-git clone --depth 1 https://github.com/wbthomason/packer.nvim\
- ~/.local/share/nvim/site/pack/packer/start/packer.nvim
-
 # configure kitty
 rm $HOME/.config/kitty/kitty.conf
 mkdir -p $HOME/.config/kitty
@@ -37,8 +34,7 @@ else
         # unsupported osca
 fi
 
-
 # post os install
-# nvm install 16
-# npm install -g yarn
-# ./yarn.sh
+nvm install 16
+npm install -g yarn
+./yarn.sh
