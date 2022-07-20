@@ -1,54 +1,41 @@
 local autocmd = vim.api.nvim_create_autocmd
 local api = vim.api
 
-local buffer_num, buffer_name
-local ignore_buffer = "term"
+local last_buffer
 
 local blacklist_buffers = {
-  ["term"] = function(name, num)
-    if string.sub(name, 1, string.len(ignore_buffer)) == ignore_buffer then
-      return true
-    end
-    return false
+  ["non-listed"] = function(buffer_num)
+    return vim.fn.buflisted(buffer_num) == 0
   end,
-  ["empty"] = function(name, num)
-  end
+  ["last-buffer"] = function(buffer_num)
+    return buffer_num == last_buffer
+  end,
 }
 
 local M = {}
 
 autocmd("BufLeave", {
   callback = function()
-    local name = vim.api.nvim_buf_get_name(0)
-    local num = vim.api.nvim_buf_get_number(0)
-    local is_listed = vim.buffers == 1
-    if not listed then
-      print('not listed')
-      return
-    end
-    print('listed')
+    local buffer_num = vim.api.nvim_buf_get_number(0)
 
-    buffer_name = name
-    buffer_num = buffer
+    for _, is_blacklisted in pairs(blacklist_buffers) do
+      if is_blacklisted(buffer_num) then
+        return
+      end
+    end
+
+    last_buffer = buffer_num
   end,
 })
 
-M.bufferInfo = function()
-  if not buffer_num or not buffer_name then
-    return
-  end
-  print('name: ' .. buffer_name .. ', num: ' .. buffer_num)
-end
-
 M.goToLastBuffer = function()
-  if not buffer_num then
+  if not last_buffer then
     return
   end
 
-  api.nvim_command('buffer ' .. buffer_num)
+  api.nvim_command('buffer ' .. last_buffer)
 end
 
 api.nvim_create_user_command("BufferSwap", M.goToLastBuffer, {})
-api.nvim_create_user_command("BufferInfo", M.bufferInfo, {})
 
 return M

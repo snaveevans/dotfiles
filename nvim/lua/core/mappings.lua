@@ -49,7 +49,6 @@ M.general = {
     ["<leader>tn"] = { ":tabedit <c-r>=expand(\"%:.:h\")<cr>/", "" },
     ["<c-j>"] = { "<c-d>", "move down buffer" },
     ["<c-k>"] = { "<c-u>", "move up buffer" },
-    ["asdf"] = { "<cmd>lua print('buffer: ',vim.api.nvim_buf_get_number(0))<cr>", "testing" },
   },
 }
 
