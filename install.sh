@@ -25,6 +25,13 @@ ln -s $HOME/.dotfiles/.npmrc $HOME/.npmrc
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.38.0/install.sh | bash
 
 # TODO run OS install script
+if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+        ./linux/install.sh
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+        ./macos/install.sh
+else
+        # unsupported osca
+fi
 
 
 # post os install
