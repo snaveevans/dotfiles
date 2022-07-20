@@ -41,31 +41,6 @@ call plug#end()
 
 
 "======================================================================
-" => General
-"======================================================================
-" Sets how many lines of history VIM has to remember
-set history=500
-
-" Enable filetype plugins
-filetype plugin on
-filetype indent on
-
-" Set to auto read when a file is changed from the outside
-set autoread
-au CursorHold,CursorHoldI * checktime
-au FocusGained,BufEnter * :checktime
-
-" With a map leader it's possible to do extra key combinations
-" like <leader>w saves the current file
-let mapleader = " "
-" map <Space> <Leader>
-
-" :W sudo saves the file
-" (useful for handling the permission-denied error)
-command! W w !sudo tee % > /dev/null
-
-
-"======================================================================
 " => VIM user interface
 "======================================================================
 " Set 3 lines to the cursor - when moving vertically using j/k
@@ -75,46 +50,6 @@ set noshowmode
 " Enable syntax highlight
 syntax on
 
-" Show line numbers
-set number
-
-" Highlight line cursor is on
-set cursorline
-
-" Show vertical line for tabs, · for spaces, and ↲ end of line
-set listchars=tab:\|\ ,space:·,nbsp:␣,trail:•,eol:↲,precedes:«,extends:»
-
-" For vertical line tabs
-set list
-
-" Set default splits
-set splitright
-set splitbelow
-set diffopt+=vertical
-
-" Avoid garbled characters in Chinese language windows OS
-let $LANG='en'
-set langmenu=en
-source $VIMRUNTIME/delmenu.vim
-source $VIMRUNTIME/menu.vim
-
-" Turn on the Wild menu
-set wildmenu
-
-" Ignore compiled files
-set wildignore=*.o,*~,*.pyc
-if has("win16") || has("win32")
-    set wildignore+=.git\*,.hg\*,.svn\*
-else
-    set wildignore+=*/.git/*,*/.hg/*,*/.svn/*,*/.DS_Store
-endif
-
-"Always show current position
-set ruler
-
-" Height of the command bar
-set cmdheight=2
-
 " A buffer becomes hidden when it is abandoned
 set hidden
 
@@ -123,41 +58,6 @@ set updatetime=300
 
 " don't give |ins-completion-menu| messages.
 set shortmess+=c
-
-" always show signcolumns
-set signcolumn=yes
-
-" Ignore case when searching
-set ignorecase
-
-" When searching try to be smart about cases
-set smartcase
-
-" Highlight search results
-set hlsearch
-
-" Makes search act like search in modern browsers
-set incsearch
-
-" Don't redraw while executing macros (good performance config)
-set lazyredraw
-
-" For regular expressions turn magic on
-set magic
-
-" Show matching brackets when text indicator is over them
-set showmatch
-" How many tenths of a second to blink when matching brackets
-set mat=2
-
-" No annoying sound on errors
-set noerrorbells
-set novisualbell
-set t_vb=
-set tm=500
-
-" Add a bit extra margin to the left
-set foldcolumn=1
 
 set omnifunc=syntaxcomplete#Complete
 
@@ -220,13 +120,6 @@ set ai "Auto indent
 set si "Smart indent
 set wrap "Wrap lines
 
-set tabstop=2     " Size of a hard tabstop (ts).
-set shiftwidth=2  " Size of an indentation (sw).
-set expandtab     " Always uses spaces instead of tab characters (et).
-set softtabstop=0 " Number of spaces a <Tab> counts for. When 0, featuer is off (sts).
-set autoindent    " Copy indent from current line when starting a new line.
-set smarttab      " Inserts blanks on a <Tab> key (as per sw, ts and sts).
-
 
 "======================================================================
 " => Visual mode related
@@ -240,19 +133,6 @@ vnoremap <silent> # :<C-u>call VisualSelection('', '')<CR>?<C-R>=@/<CR><CR>
 "======================================================================
 " => Moving around, tabs, windows and buffers
 "======================================================================
-" Disable highlight when <leader><cr> is pressed
-map <silent> <leader><cr> :noh<cr>
-
-" Easy tab movement in normal mode
-map <silent> th  :tabfirst<CR>
-map <silent> tk  :tabnext<CR>
-map <silent> tj  :tabprev<CR>
-map <silent> tl  :tablast<CR>
-map tt  :tabedit<Space>
-map tm  :tabmove<Space>
-map <silent> td  :tabclose<CR>
-map <silent> ty  :tabonly<CR>
-
 " Let 'tl' toggle between this and the last accessed tab
 let g:lasttab = 1
 nmap <leader>tl :exe "tabn ".g:lasttab<CR>
@@ -262,10 +142,6 @@ au TabLeave * let g:lasttab = tabpagenr()
 " Opens a new tab with the current buffer's path
 " Super useful when editing files in the same directory
 map <leader>tn :tabedit <c-r>=expand("%:.:h")<cr>/
-
-" Move up & down the buffer easier
-nnoremap <C-j>  <C-d>
-nnoremap <C-k>  <C-u>
 
 " Specify the behavior when switching between buffers
 try

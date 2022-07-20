@@ -1,6 +1,7 @@
 #!/bin/sh
 
 sudo add-apt-repository universe
+sudo add-apt-repository ppa:neovim-ppa/stable -y
 sudo add-apt-repository -y ppa:regolith-linux/release
 
 sudo apt-get update

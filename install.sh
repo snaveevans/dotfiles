@@ -9,9 +9,13 @@ rm $HOME/.rgignore
 ln -s $HOME/.dotfiles/.rgignore $HOME/.rgignore
 
 # configure for nvim
-rm $HOME/.config/nvim/init.vim
+rm -rf $HOME/.config/nvim
 mkdir -p $HOME/.config/nvim
-ln -s $HOME/.dotfiles/init.vim $HOME/.config/nvim/init.vim
+ln -s $HOME/.dotfiles/nvim/init.lua $HOME/.config/nvim/init.lua
+ln -s $HOME/.dotfiles/nvim/lua $HOME/.config/nvim/lua
+
+git clone --depth 1 https://github.com/wbthomason/packer.nvim\
+ ~/.local/share/nvim/site/pack/packer/start/packer.nvim
 
 # configure kitty
 rm $HOME/.config/kitty/kitty.conf
@@ -28,6 +32,6 @@ curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.38.0/install.sh | bash
 
 
 # post os install
-nvm install 16
-npm install -g yarn
-./yarn.sh
+# nvm install 16
+# npm install -g yarn
+# ./yarn.sh
