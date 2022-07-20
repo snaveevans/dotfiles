@@ -45,9 +45,11 @@ M.general = {
     ["tm"] = { ":tabmove<space>", "move current tab to {index}" },
     ["td"] = { "<cmd>tabclose<cr>", "close current tab" },
     ["ty"] = { "<cmd>tabonly<cr>", "close other tabs" },
+    [";"] = { "<cmd>BufferSwap<cr>", "goto last buffer" },
     ["<leader>tn"] = { ":tabedit <c-r>=expand(\"%:.:h\")<cr>/", "" },
     ["<c-j>"] = { "<c-d>", "move down buffer" },
     ["<c-k>"] = { "<c-u>", "move up buffer" },
+    ["asdf"] = { "<cmd>lua print('buffer: ',vim.api.nvim_buf_get_number(0))<cr>", "testing" },
   },
 }
 

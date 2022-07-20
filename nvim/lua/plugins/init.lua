@@ -20,12 +20,17 @@ local plugins = {
         run = './install --bin',
     },
     ["ibhagwan/fzf-lua"] = {
-        require = "junegunn/fzf",
+        requires = "junegunn/fzf",
         config = function()
             require("plugins.configs.others").fzf()
         end,
     },
     ["tpope/vim-surround"] = {},
+    ["nvim-treesitter/nvim-treesitter-textobjects"] = {},
+    ["nvim-treesitter/nvim-treesitter"] = {
+      requires = { "nvim-treesitter/nvim-treesitter-textobjects" },
+      run = ":TSUpdate",
+    },
     ["lewis6991/gitsigns.nvim"] = {
         ft = "gitcommit",
         config = function()
