@@ -1,11 +1,9 @@
-# unbind C-b
-# set -g prefix C-Space
-
 set-option -g default-shell $SHELL
 
 unbind C-b
-# set -g prefix 'C-/'
 set-option -g prefix 'C-a'
+
+set -sg escape-time 0
 
 # reload config
 unbind r
@@ -23,35 +21,35 @@ unbind '"' # Split horizontally
 bind v split-window -h -c "#{pane_current_path}"
 bind b split-window -v -c "#{pane_current_path}"
 
+unbind d
+unbind s
+unbind x
+unbind c
+
 # navigate panes
-bind h select-pane -L
-bind j select-pane -D
-bind k select-pane -U
-bind l select-pane -R
+bind d select-pane -L
+bind s select-pane -D
+bind x select-pane -U
+bind c select-pane -R
 
 # more history
 set -g history-limit 100000
 
+unbind e
 unbind n  #DEFAULT KEY: Move to next window
 unbind w  #DEFAULT KEY: change current window interactively
 
-bind n command-prompt "rename-window '%%'"
+bind e command-prompt "rename-window '%%'"
 bind w new-window -c "#{pane_current_path}"
 
 set -g base-index 1
 set-window-option -g pane-base-index 1
 
-bind [ previous-window
-bind ] next-window
-
-unbind s
-unbind t
-
-bind s resize-pane -D 5
-bind t resize-pane -U 5
-
 # forget the find window.  That is for chumps
 bind-key -r f run-shell "tmux neww ~/.local/bin/tmux-sessionizer"
 
-bind-key -r H run-shell "~/.local/bin/tmux-sessionizer ~/workspace/octanner/prism-ui"
-bind-key -r O run-shell "~/.local/bin/tmux-sessionizer ~/.dotfiles"
+bind-key -r h run-shell "~/.local/bin/tmux-sessionizer ~/workspace/octanner/prism-ui"
+bind-key -r o run-shell "~/.local/bin/tmux-sessionizer ~/.dotfiles"
+bind-key -r k run-shell "~/.local/bin/tmux-sessionizer ~/workspace/octanner/media-library"
+bind-key -r l run-shell "~/.local/bin/tmux-sessionizer ~/workspace/octanner/celebrationsui"
+bind-key -r n run-shell "~/.local/bin/tmux-sessionizer ~/notes"
