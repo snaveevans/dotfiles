@@ -29,6 +29,10 @@ hs.hotkey.bind({"cmd", "shift"}, "a", function()
   hs.application.open("Authy Desktop.app")
 end)
 
+hs.hotkey.bind({"cmd", "shift"}, "m", function()
+  hs.application.open("Microsoft Outlook.app")
+end)
+
 hs.hotkey.bind({"cmd", "shift"}, "\\", function()
   hs.application.open("Zoom.us.app")
 end)
