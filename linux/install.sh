@@ -5,7 +5,7 @@ sudo add-apt-repository -y ppa:regolith-linux/release
 
 sudo apt-get update
 
-sudo apt-get install -yqq fish i3-gaps autojump ripgrep fzf neovim kitty compton hsetroot rxvt-unicode xsel rofi fonts-noto fonts-mplus xsettingsd lxappearance scrot viewnior fonts-firacode
+sudo apt-get install -yqq fish i3 autojump ripgrep fzf neovim kitty compton hsetroot rxvt-unicode xsel rofi fonts-noto fonts-mplus xsettingsd lxappearance scrot viewnior fonts-firacode
 
 #curl -o $HOME/ https://github.com/sharkdp/bat/releases/download/v0.21.0/bat_0.21.0_amd64.deb
 #sudo dpkg -i  $HOME/bat.deb
