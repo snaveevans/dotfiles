@@ -1,0 +1,74 @@
+local padding = 5
+
+
+hs.hotkey.bind({"cmd", "shift"}, "/", function()
+  hs.application.open("kitty.app")
+end)
+
+hs.hotkey.bind({"cmd", "shift"}, "return", function()
+  hs.application.open("Firefox.app")
+end)
+
+hs.hotkey.bind({"cmd", "shift"}, "y", function()
+  hs.application.open("Messages.app")
+end)
+
+hs.hotkey.bind({"cmd", "shift"}, ",", function()
+  hs.application.open("Insomnia.app")
+end)
+
+hs.hotkey.bind({"cmd", "shift"}, ".", function()
+  hs.application.open("Visual Studio Code.app")
+end)
+
+hs.hotkey.bind({"cmd", "shift"}, "A", function()
+  hs.application.open("Authy Desktop.app")
+end)
+
+
+-- windows
+hs.hotkey.bind({"cmd", "shift"}, "9", function()
+  local win = hs.window.focusedWindow()
+  local f = win:frame()
+  local screen = win:screen()
+  local max = screen:frame()
+
+  f.x = max.x + padding
+  f.y = max.y + padding
+  f.w = (max.w / 2) - (padding * 2)
+  f.h = max.h - (padding * 2)
+  win:setFrame(f)
+end)
+
+hs.hotkey.bind({"cmd", "shift"}, "0", function()
+  local win = hs.window.focusedWindow()
+  local f = win:frame()
+  local screen = win:screen()
+  local max = screen:frame()
+
+  f.x = max.x + (max.w / 2) + padding
+  f.y = max.y + padding
+  f.w = (max.w / 2) - (padding * 2)
+  f.h = max.h - (padding * 2)
+  win:setFrame(f)
+end)
+
+hs.hotkey.bind({"cmd", "shift"}, "=", function()
+  local win = hs.window.focusedWindow()
+  local f = win:frame()
+  local screen = win:screen()
+  local max = screen:frame()
+
+  f.x = max.x + padding
+  f.y = max.y + padding
+  f.w = max.w - (padding * 2)
+  f.h = max.h - (padding * 2)
+  win:setFrame(f)
+end)
+
+
+
+hs.hotkey.bind({"cmd", "alt", "ctrl"}, "R", function()
+  hs.reload()
+end)
+hs.alert.show("Config loaded")

@@ -33,7 +33,6 @@ else
         # unsupported osca
 fi
 
-
 # post os install
 nvm install 16
 npm install -g yarn

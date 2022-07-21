@@ -8,6 +8,11 @@ if test ! $(which brew); then
   /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
 fi
 
+# configure hammerspoon
+rm $HOME/.hammerspoon/init.lua
+mkdir -p $HOME/.hammerspoon
+ln -s $HOME/.dotfiles/hammerspoon.lua $HOME/.hammerspoon/init.lua
+
 # Install Xcode command line tools
 xcode-select --install
 
