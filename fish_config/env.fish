@@ -1,6 +1,7 @@
 # TODO handle linux and macos
 set -x PATH "$PATH:$HOME/bin"
 set -x PATH "$PATH:/usr/local/bin"
+set -x PATH "$PATH:$HOME/.local/bin"
 set -x PATH "$PATH:/usr/local/share/dotnet"
 set -x PATH "$PATH:$HOME/.dotnet/tools"
 set -x PATH "$PATH:$HOME/bin/jdk/Contents/Home/bin"

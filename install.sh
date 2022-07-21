@@ -18,6 +18,15 @@ rm $HOME/.config/kitty/kitty.conf
 mkdir -p $HOME/.config/kitty
 ln -s $HOME/.dotfiles/kitty.conf $HOME/.config/kitty/kitty.conf
 
+# configure tmux
+rm $HOME/.tmux.conf
+ln -s $HOME/.dotfiles/tmux/config $HOME/.tmux.conf
+
+mkdir -p $HOME/.local/bin
+
+# configure local bin
+ln -s $HOME/.dotfiles/bin/* $HOME/.local/bin
+
 # configure npm
 ln -s $HOME/.dotfiles/.npmrc $HOME/.npmrc
 
@@ -32,6 +41,9 @@ elif [[ "$OSTYPE" == "darwin"* ]]; then
 else
         # unsupported osca
 fi
+
+which fish | sudo tee -a /etc/shells
+sudo chsh -s $(which fish)
 
 # post os install
 nvm install 16
