@@ -13,6 +13,10 @@ hs.hotkey.bind({"cmd", "shift"}, "y", function()
   hs.application.open("Messages.app")
 end)
 
+hs.hotkey.bind({"cmd", "shift"}, "u", function()
+  hs.application.open("Slack.app")
+end)
+
 hs.hotkey.bind({"cmd", "shift"}, ",", function()
   hs.application.open("Insomnia.app")
 end)
@@ -21,8 +25,12 @@ hs.hotkey.bind({"cmd", "shift"}, ".", function()
   hs.application.open("Visual Studio Code.app")
 end)
 
-hs.hotkey.bind({"cmd", "shift"}, "A", function()
+hs.hotkey.bind({"cmd", "shift"}, "a", function()
   hs.application.open("Authy Desktop.app")
+end)
+
+hs.hotkey.bind({"cmd", "shift"}, "\\", function()
+  hs.application.open("Zoom.us.app")
 end)
 
 
