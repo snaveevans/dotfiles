@@ -1,34 +1,38 @@
 # Path to your oh-my-zsh installation.
 export ZSH="$HOME/.oh-my-zsh"
 
-# Set name of the theme to load --- if set to "random", it will
-# load a random theme each time oh-my-zsh is loaded, in which case,
-# to know which specific one was loaded, run: echo $RANDOM_THEME
-# See https://github.com/robbyrussell/oh-my-zsh/wiki/Themes
 ZSH_THEME="spaceship"
+ZSH_CUSTOM=~/.oh-my-zsh/custom
 
-# Which plugins would you like to load?
-# Standard plugins can be found in ~/.oh-my-zsh/plugins/*
-# Custom plugins may be added to ~/.oh-my-zsh/custom/plugins/
-# Add wisely, as too many plugins slow down shell startup.
 plugins=(
-  git
-  docker
-  docker-compose
-  npm
   autojump
+  brew
+  fast-syntax-highlighting
   fzf
   fzf-tab
-  zsh-syntax-highlighting
+  git
+  npm
+  nvm
+  ripgrep
+  tmux
+  yarn
   zsh-autosuggestions
 )
 
-if type brew &>/dev/null; then
-  FPATH=$(brew --prefix)/share/zsh/site-functions:$FPATH
-fi
-
 source $ZSH/oh-my-zsh.sh
-source /usr/local/share/zsh-autosuggestions/zsh-autosuggestions.zsh
+
+# if type brew &>/dev/null; then
+#   FPATH=$(brew --prefix)/share/zsh/site-functions:$FPATH
+# fi
+
+# source /usr/local/share/zsh-autosuggestions/zsh-autosuggestions.zsh
+
+function _re-source () {
+  source ~/.zshrc
+  source ~/.zshenv
+  echo "reloaded zsh config"
+}
+zle -N _re-source
 
 # User configuration
 unsetopt share_history
@@ -37,20 +41,13 @@ bindkey '^ ' autosuggest-accept
 bindkey '^h' backward-char
 bindkey '^l' forward-char
 bindkey '^b' backward-word
-bindkey '^e' forward-word
+bindkey '^e' _re-source
 
 bindkey -s '^l' 'cd ~/workspace/octanner/$(ls ~/workspace/octanner | fzf)^M'
 bindkey -s '^g' '$(git branch | fzf)^M'
 bindkey -s '^o' 'nvim^M'
-# bindkey -s '^o' 'nvim $(fzf)^M'
 
-alias tabn='open . -a iterm'
-alias jsc='/System/Library/Frameworks/JavaScriptCore.framework/Versions/Current/Helpers/jsc'
+# alias jsc='/System/Library/Frameworks/JavaScriptCore.framework/Versions/Current/Helpers/jsc'
 
-autoload -Uz compinit; compinit
-[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
-# autoload -Uz compinit
-# compinit
-
-export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.nvm" || printf %s "${XDG_CONFIG_HOME}/nvm")"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" # This loads nvm
+# autoload -Uz compinit; compinit
+# [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh

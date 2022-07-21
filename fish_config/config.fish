@@ -7,12 +7,22 @@ set fish_greeting
 
 function kill_process
   set -l process_id (ps -ef | sed 1d | fzf -m | awk '{print $2}')
+
+  if test -z "$process_id"
+    return
+  end
+
   commandline --append "kill -9 $process_id"
   commandline --function 'end-of-line'
 end
 
 function kill_port
   set -l process_id (lsof -P -i TCP -s TCP:LISTEN | fzf -m | awk '{print $2}')
+
+  if test -z "$process_id"
+    return
+  end
+
   commandline --append "kill -9 $process_id"
   commandline --function 'end-of-line'
 end
@@ -52,6 +62,12 @@ function git_develop_branch
   git_get_branch "init.developBranch" "alternative.developBranch"
 end
 
+function re_source
+  source ~/.config/fish/config.fish
+  echo "reloaded fish config"
+  commandline --function 'end-of-line'
+end
+
 bind --user \cf forward-word
 bind --user \cb backward-word
 
@@ -62,6 +78,7 @@ bind --user --key nul end-of-line
 
 bind --user \cg list_branches
 bind --user \co nvim
+bind --user \ce re_source
 bind --user \cko kill_port
 bind --user \ckp kill_process
 

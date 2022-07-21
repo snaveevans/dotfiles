@@ -9,7 +9,7 @@ set -sg escape-time 0
 unbind r
 bind r source-file ~/.tmux.conf \; display "Reloaded ~/.tmux.conf"
 
-bind q kill-session
+bind q detach
 
 # split panes
 unbind v

@@ -42,8 +42,7 @@ else
         # unsupported osca
 fi
 
-which fish | sudo tee -a /etc/shells
-sudo chsh -s $(which fish)
+./zsh_config/install.sh
 
 # post os install
 nvm install 16

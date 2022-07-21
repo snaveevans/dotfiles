@@ -1,6 +1,9 @@
 #!/bin/sh
 sudo -v
 
+which fish | sudo tee -a /etc/shells
+sudo chsh -s $(which fish) $USER
+
 # install fisher
 curl -sL https://git.io/fisher | source && fisher install jorgebucaran/fisher
 
