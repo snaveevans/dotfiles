@@ -40,6 +40,7 @@ end)
 
 -- windows
 hs.hotkey.bind({"cmd", "shift"}, "9", function()
+  -- left half
   local win = hs.window.focusedWindow()
   local f = win:frame()
   local screen = win:screen()
@@ -47,20 +48,21 @@ hs.hotkey.bind({"cmd", "shift"}, "9", function()
 
   f.x = max.x + padding
   f.y = max.y + padding
-  f.w = (max.w / 2) - (padding * 2)
+  f.w = (max.w / 2) - padding - (padding /2)
   f.h = max.h - (padding * 2)
   win:setFrame(f)
 end)
 
 hs.hotkey.bind({"cmd", "shift"}, "0", function()
+  -- right half
   local win = hs.window.focusedWindow()
   local f = win:frame()
   local screen = win:screen()
   local max = screen:frame()
 
-  f.x = max.x + (max.w / 2) + padding
+  f.x = max.x + (max.w / 2) + (padding / 2)
   f.y = max.y + padding
-  f.w = (max.w / 2) - (padding * 2)
+  f.w = (max.w / 2) - padding - (padding /2)
   f.h = max.h - (padding * 2)
   win:setFrame(f)
 end)

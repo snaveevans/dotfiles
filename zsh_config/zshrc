@@ -34,6 +34,15 @@ function _re-source () {
 }
 zle -N _re-source
 
+function _kill-port () {
+  process_id="$(lsof -P -i TCP -s TCP:LISTEN | fzf -m | awk '{print $2}')"
+  if [[ -z process_id ]] then
+    return
+  fi
+  kill -9 "$process_id"
+}
+zle -N _kill-port
+
 # User configuration
 unsetopt share_history
 
@@ -41,7 +50,9 @@ bindkey '^ ' autosuggest-accept
 bindkey '^h' backward-char
 bindkey '^l' forward-char
 bindkey '^b' backward-word
+bindkey '^w' forward-word
 bindkey '^e' _re-source
+bindkey '^ko' _kill-port
 
 bindkey -s '^l' 'cd ~/workspace/octanner/$(ls ~/workspace/octanner | fzf)^M'
 bindkey -s '^g' '$(git branch | fzf)^M'
