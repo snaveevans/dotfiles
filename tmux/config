@@ -4,44 +4,35 @@ unbind C-b
 set-option -g prefix 'C-a'
 
 set -sg escape-time 0
+set -g mouse on
 
 # reload config
 unbind r
 bind r source-file ~/.tmux.conf \; display "Reloaded ~/.tmux.conf"
 
-bind space list-sessions
+bind space choose-tree -Zs
 bind q detach
 
 # split panes
-unbind v
-unbind h
+unbind '"'
+unbind "'"
 
 bind '"' split-window -h -c "#{pane_current_path}"
 bind "'" split-window -v -c "#{pane_current_path}"
 
-unbind d
-unbind s
-unbind x
-unbind c
+unbind [
+unbind @
+unbind _
+unbind ]
 
 # navigate panes
-bind d select-pane -L
-bind s select-pane -D
-bind x select-pane -U
-bind c select-pane -R
+bind [ select-pane -L
+bind @ select-pane -D
+bind _ select-pane -U
+bind ] select-pane -R
 
 # more history
 set -g history-limit 100000
-
-unbind e
-unbind n  #DEFAULT KEY: Move to next window
-unbind w  #DEFAULT KEY: change current window interactively
-
-bind e command-prompt "rename-window '%%'"
-bind w new-window -c "#{pane_current_path}"
-
-set -g base-index 1
-set-window-option -g pane-base-index 1
 
 # forget the find window.  That is for chumps
 bind-key -r f run-shell "tmux neww ~/.local/bin/tmux-sessionizer"
