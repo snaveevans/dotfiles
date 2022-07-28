@@ -27,19 +27,29 @@ source $ZSH/oh-my-zsh.sh
 
 # source /usr/local/share/zsh-autosuggestions/zsh-autosuggestions.zsh
 
+function _clear () {
+  zle && { zle send-break; zle -R }
+}
+
 function _re-source () {
+  printf "reloading..."
   source ~/.zshrc
   source ~/.zshenv
-  echo "reloaded zsh config"
+  printf "done\n"
+  _clear
 }
 zle -N _re-source
 
 function _kill-port () {
   process_id="$(lsof -P -i TCP -s TCP:LISTEN | fzf -m | awk '{print $2}')"
-  if [[ -z process_id ]] then
-    return
+  if [[ -n $process_id ]]
+  then
+    eval "kill -9 $process_id"
+    echo "killed pid:$process_id"
+  else
+    echo "no pid selected"
   fi
-  kill -9 "$process_id"
+  _clear
 }
 zle -N _kill-port
 
