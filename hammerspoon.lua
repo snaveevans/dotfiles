@@ -6,7 +6,7 @@ hs.hotkey.bind({"cmd", "shift"}, "/", function()
 end)
 
 hs.hotkey.bind({"cmd", "shift"}, "return", function()
-  hs.application.open("Firefox.app")
+  hs.application.open("Brave Browser.app")
 end)
 
 hs.hotkey.bind({"cmd", "shift"}, "y", function()
@@ -31,6 +31,10 @@ end)
 
 hs.hotkey.bind({"cmd", "shift"}, "m", function()
   hs.application.open("Microsoft Outlook.app")
+end)
+
+hs.hotkey.bind({"cmd", "shift"}, "b", function()
+  hs.application.open("Music.app")
 end)
 
 hs.hotkey.bind({"cmd", "shift"}, "\\", function()
