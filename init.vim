@@ -285,7 +285,6 @@ nnoremap <leader>z :sus<cr>
 " => Editing mappings
 "======================================================================
 " Remap VIM 0 to first non-blank character
-map 0 ^
 map gf :edit <cfile><cr>
 
 " Move a line of text using ALT+[jk]
@@ -311,13 +310,8 @@ endif
 "======================================================================
 " => Misc
 "======================================================================
-imap jk <Esc>
 " Quickly open a markdown buffer for scribble
 map <leader>n :tabedit ~/buffer.md<cr>
-
-" Quickly open a [No Name] buffer for scribble
-map <leader>x :tabnew<cr>
-
 
 "======================================================================
 " => Helper functions
@@ -358,14 +352,6 @@ function! VisualSelection(direction, extra_filter) range
 	let @" = l:saved_reg
 endfunction
 
-function! DeleteHiddenBuffers()
-	let tpbl=[]
-	call map(range(1, tabpagenr('$')), 'extend(tpbl, tabpagebuflist(v:val))')
-	for buf in filter(range(1, bufnr('$')), 'bufexists(v:val) && index(tpbl, v:val)==-1')
-		silent execute 'bwipeout' buf
-	endfor
-endfunction
-
 function! OpenFileInVsLike(likeness)
   call OpenFileInWdLike(a:likeness, "vs")
 endfunction
@@ -384,30 +370,6 @@ function! FilterComponentFile(desiredFile, idx, filePath)
 	else
 		return 0
 	endif
-endfunction
-
-function! UseTabs()
-  set tabstop=4     " Size of a hard tabstop (ts).
-  set shiftwidth=4  " Size of an indentation (sw).
-  set noexpandtab   " Always uses tabs instead of space characters (noet).
-  set autoindent    " Copy indent from current line when starting a new line (ai).
-endfunction
-
-function! UseSpaces()
-  set tabstop=2     " Size of a hard tabstop (ts).
-  set shiftwidth=2  " Size of an indentation (sw).
-  set expandtab     " Always uses spaces instead of tab characters (et).
-  set softtabstop=0 " Number of spaces a <Tab> counts for. When 0, featuer is off (sts).
-  set autoindent    " Copy indent from current line when starting a new line.
-  set smarttab      " Inserts blanks on a <Tab> key (as per sw, ts and sts).
-endfunction
-
-function! SetTabs()
-  if (index(['Makefile', 'make', 'makefile'], &filetype) >= 0)
-    call UseTabs()
-  else
-    call UseSpaces()
-  endif
 endfunction
 
 function! SaveSession(force)
@@ -773,27 +735,16 @@ nmap <leader>fd :Neoformat<cr>
 
 "======================================================================
 " => Misc
-au! BufEnter * call SetTabs()
+" save last reg into the next reg
 au! TextYankPost * call SaveLastReg()
 
 nmap <leader>ve :tabedit ~/.config/nvim/init.vim<cr>
 nmap <leader>vr :source ~/.config/nvim/init.vim<cr>
 
-" Open file
-command! -nargs=1 OpenFile :call OpenFileInVsLike(<f-args>)
-nnoremap <leader>fo :OpenFile 
-
-" Create & open folds
-inoremap <F9> <C-O>za
-nnoremap <F9> za
-onoremap <F9> <C-C>za
-vnoremap <F9> zf
-
 au! VimLeave * call SaveSession(0)
 nnoremap <silent> <F5> :call SaveSession(1)<CR>
 nnoremap <silent> <F8> :call LoadSession()<CR>
-" Close Hidden Buffers
-nnoremap <leader>ch :call DeleteHiddenBuffers()<CR>
 
+" find & replace
 vnoremap <leader>fr :<C-u>call VisualSelection('', '')<CR>:%s/<C-R>=@/<CR>/
 nnoremap <leader>fr :%s/<C-r>=expand("<cword>")<CR>/
