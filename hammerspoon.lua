@@ -6,7 +6,7 @@ hs.hotkey.bind({"cmd", "shift"}, "/", function()
 end)
 
 hs.hotkey.bind({"cmd", "shift"}, "return", function()
-  hs.application.open("Brave Browser.app")
+  hs.application.open("Firefox.app")
 end)
 
 hs.hotkey.bind({"cmd", "shift"}, "y", function()
