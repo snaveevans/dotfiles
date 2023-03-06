@@ -23,6 +23,10 @@ brew update
 brew tap homebrew/bundle
 brew bundle
 
+# create bin in $HOME and symlinks the files from the .dotfiles
+mkdir $HOME/bin
+ln -s $HOME/.dotfiles/bin/* $HOME/bin/
+
 # Removes .yabairc from $HOME (if it exists) and symlinks the .yabairc file from the .dotfiles
 rm $HOME/.yabairc
 ln -s $HOME/.dotfiles/macos/yabairc $HOME/.yabairc
