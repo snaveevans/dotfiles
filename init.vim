@@ -18,7 +18,7 @@ call plug#begin('~/.vim/plugged')
 Plug 'joshdick/onedark.vim'
 Plug 'itchyny/lightline.vim'
 Plug 'phaazon/hop.nvim'
-Plug 'jiangmiao/auto-pairs'
+Plug 'windwp/nvim-autopairs'
 Plug '/usr/local/opt/fzf'
 Plug 'junegunn/fzf.vim'
 Plug 'tpope/vim-surround'
@@ -31,7 +31,7 @@ Plug 'hrsh7th/cmp-nvim-lsp'
 Plug 'saadparwaiz1/cmp_luasnip'
 Plug 'L3MON4D3/LuaSnip'
 Plug 'numToStr/Comment.nvim'
-Plug 'alvan/vim-closetag'
+Plug 'windwp/nvim-ts-autotag'
 Plug 'nvim-lua/plenary.nvim'
 Plug 'lewis6991/gitsigns.nvim'
 Plug 'sbdchd/neoformat'
@@ -438,6 +438,12 @@ lua << EOF
 EOF
 
 "======================================================================
+" => windwp/nvim-autopairs
+lua << EOF
+require("nvim-autopairs").setup {}
+EOF
+
+"======================================================================
 " => Fzf
 
 " [Buffers] Jump to the existing window if possible
@@ -538,7 +544,7 @@ require('nvim-treesitter.configs').setup {
   highlight = {
     enable = true,
   },
-incremental_selection = {
+  incremental_selection = {
     enable = true,
     keymaps = {
       init_selection = 'gnn',
@@ -548,6 +554,9 @@ incremental_selection = {
     },
   },
   indent = {
+    enable = true,
+  },
+  autotag = {
     enable = true,
   },
   textobjects = {
