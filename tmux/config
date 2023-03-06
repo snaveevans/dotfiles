@@ -35,7 +35,7 @@ bind ] select-pane -R
 set -g history-limit 100000
 
 # forget the find window.  That is for chumps
-bind-key -r f run-shell "tmux neww tmux-sessionizer"
+bind-key -r f run-shell "tmux-sessionizer"
 bind-key -r o run-shell "tmux-session-switcher"
 
 bind-key -r h run-shell "tmux-sessionizer ~/workspace/octanner/prism-ui"
