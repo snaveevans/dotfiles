@@ -6,7 +6,7 @@ hs.hotkey.bind({"cmd", "shift"}, "/", function()
 end)
 
 hs.hotkey.bind({"cmd", "shift"}, "return", function()
-  hs.application.open("Firefox.app")
+  hs.application.open("Google Chrome.app")
 end)
 
 hs.hotkey.bind({"cmd", "shift"}, "y", function()
@@ -25,7 +25,7 @@ hs.hotkey.bind({"cmd", "shift"}, ".", function()
   hs.application.open("Visual Studio Code.app")
 end)
 
-hs.hotkey.bind({"cmd", "shift"}, "a", function()
+hs.hotkey.bind({"cmd", "shift"}, "w", function()
   hs.application.open("Authy Desktop.app")
 end)
 
