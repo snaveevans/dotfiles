@@ -63,6 +63,8 @@ bindkey -s '^o' 'nvim^M'
 
 alias pn=pnpm
 alias lg=lazygit
+alias e="$EDITOR"
+alias cat="bat"
 
 # alias jsc='/System/Library/Frameworks/JavaScriptCore.framework/Versions/Current/Helpers/jsc'
 
