@@ -31,7 +31,7 @@ ln -s $HOME/.dotfiles/bin/* $HOME/.local/bin
 ln -s $HOME/.dotfiles/.npmrc $HOME/.npmrc
 
 # install nvm
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.38.0/install.sh | bash
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash
 
 ./zsh_config/install.sh
 
