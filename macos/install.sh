@@ -28,16 +28,16 @@ mkdir $HOME/bin
 ln -s $HOME/.dotfiles/bin/* $HOME/bin/
 
 # Removes .yabairc from $HOME (if it exists) and symlinks the .yabairc file from the .dotfiles
-rm $HOME/.yabairc
-ln -s $HOME/.dotfiles/macos/yabairc $HOME/.yabairc
+# rm $HOME/.yabairc
+# ln -s $HOME/.dotfiles/macos/yabairc $HOME/.yabairc
 
 # Removes .spacebarrc from $HOME (if it exists) and symlinks the .spacebarrc file from the .dotfiles
-rm $HOME/.spacebarrc
-ln -s $HOME/.dotfiles/macos/spacebarrc $HOME/.spacebarrc
+# rm $HOME/.spacebarrc
+# ln -s $HOME/.dotfiles/macos/spacebarrc $HOME/.spacebarrc
 
 # Removes .skhdrc from $HOME (if it exists) and symlinks the .skhdrc file from the .dotfiles
-rm $HOME/.skhdrc
-ln -s $HOME/.dotfiles/macos/skhdrc $HOME/.skhdrc
+# rm $HOME/.skhdrc
+# ln -s $HOME/.dotfiles/macos/skhdrc $HOME/.skhdrc
 
 # fzf key bindings
 $(brew --prefix)/opt/fzf/install --all

@@ -263,6 +263,7 @@ au TabLeave * let g:lasttab = tabpagenr()
 " Opens a new tab with the current buffer's path
 " Super useful when editing files in the same directory
 map <leader>tn :tabedit <c-r>=expand("%:.:h")<cr>/
+map <leader>n :tabedit <c-r>=expand("%:.:h")<cr>/
 
 " Move up & down the buffer easier
 nnoremap <C-j>  <C-d>
@@ -306,12 +307,6 @@ if has("autocmd")
     autocmd BufWritePre *.txt,*.js,*.py,*.wiki,*.sh,*.coffee :call CleanExtraSpaces()
 endif
 
-
-"======================================================================
-" => Misc
-"======================================================================
-" Quickly open a markdown buffer for scribble
-map <leader>n :tabedit ~/buffer.md<cr>
 
 "======================================================================
 " => Helper functions
