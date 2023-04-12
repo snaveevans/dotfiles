@@ -55,11 +55,6 @@ set autoread
 au CursorHold,CursorHoldI * checktime
 au FocusGained,BufEnter * :checktime
 
-" With a map leader it's possible to do extra key combinations
-" like <leader>w saves the current file
-let mapleader = " "
-" map <Space> <Leader>
-
 " :W sudo saves the file
 " (useful for handling the permission-denied error)
 command! W w !sudo tee % > /dev/null
@@ -150,9 +145,6 @@ vnoremap <silent> # :<C-u>call VisualSelection('', '')<CR>?<C-R>=@/<CR><CR>
 "======================================================================
 " => Moving around, tabs, windows and buffers
 "======================================================================
-" Disable highlight when <leader><cr> is pressed
-map <silent> <leader><cr> :noh<cr>
-
 " Easy tab movement in normal mode
 map <silent> th  :tabfirst<CR>
 map <silent> tk  :tabnext<CR>
@@ -169,33 +161,12 @@ nmap <leader>tl :exe "tabn ".g:lasttab<CR>
 au TabLeave * let g:lasttab = tabpagenr()
 
 
-" Opens a new tab with the current buffer's path
-" Super useful when editing files in the same directory
-map <leader>tn :tabedit <c-r>=expand("%:.:h")<cr>/
-map <leader>n :edit <c-r>=expand("%:.:h")<cr>/
-
-" Move up & down the buffer easier
-nnoremap <C-j>  <C-d>
-nnoremap <C-k>  <C-u>
-
 " Return to last edit position when opening files (You want this!)
 au BufReadPost * if line("'\"") > 1 && line("'\"") <= line("$") | exe "normal! g'\"" | endif
-
-nnoremap <leader>z :sus<cr>
-
 
 "======================================================================
 " => Editing mappings
 "======================================================================
-" Remap VIM 0 to first non-blank character
-map gf :edit <cfile><cr>
-
-" Move a line of text using ALT+[jk]
-nnoremap ∆ :m .+1<CR>==
-nnoremap ˚ :m .-2<CR>==
-vnoremap ∆ :m '>+1<CR>gv=gv
-vnoremap ˚ :m '<-2<CR>gv=gv
-
 " Delete trailing white space on save, useful for some filetypes ;)
 fun! CleanExtraSpaces()
     let save_cursor = getpos(".")
@@ -296,10 +267,6 @@ hi! link netrwMarkFile Search
 
 augroup NetrwCommands
 	autocmd!
-	" Open Explorer
-  nnoremap <leader>dc :Vexplore<cr>
-	nnoremap <leader>dw :Lexplore<cr>
-
 	" Ensure netrw doesn't open
 	autocmd VimEnter * silent! au! FileExplorer
 augroup END
