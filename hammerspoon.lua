@@ -17,6 +17,14 @@ hs.hotkey.bind({"cmd", "shift"}, "u", function()
   hs.application.open("Slack.app")
 end)
 
+hs.hotkey.bind({"cmd", "shift"}, "i", function()
+  hs.application.open("Microsoft Teams.app")
+end)
+
+hs.hotkey.bind({"cmd", "shift"}, "n", function()
+  hs.application.open("Obsidian.app")
+end)
+
 hs.hotkey.bind({"cmd", "shift"}, ",", function()
   hs.application.open("Insomnia.app")
 end)
