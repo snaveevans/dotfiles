@@ -106,14 +106,14 @@ return {
         function()
           require("persistence").save()
         end,
-        mode = "n"
+        mode = "n",
       },
       {
         "<F8>",
         function()
           require("persistence").load()
         end,
-        mode = "n"
+        mode = "n",
       },
     },
     config = function()
