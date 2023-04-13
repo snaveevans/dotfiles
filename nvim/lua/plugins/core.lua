@@ -49,5 +49,15 @@ return {
                 end },
             }
         end
+    },
+    {
+        "sbdchd/neoformat",
+        keys = {
+            { "<leader>fd", ":Neoformat<cr>" }
+        }
+    },
+    {
+      "numToStr/Comment.nvim",
+      config = true
     }
 }
