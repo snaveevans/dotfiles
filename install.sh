@@ -37,5 +37,5 @@ curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash
 
 # post os install
 nvm install 16
-npm install -g yarn
-./yarn.sh
+
+./node.sh
