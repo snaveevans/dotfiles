@@ -58,3 +58,4 @@ vim.opt.listchars = {
   precedes = '»',
 }
 vim.opt.listchars["tab"] = "|"
+vim.opt.diffopt:append { 'vertical' }
