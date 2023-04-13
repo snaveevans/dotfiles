@@ -28,6 +28,7 @@ keymap("n", "<C-j>", "<C-d>", opts)
 keymap("n", "<C-k>", "<C-u>", opts)
 keymap("n", "<leader>z", ":suspend<cr>", opts)
 keymap("n", "<leader>dc", ":Vexplore<cr>", opts)
+keymap("n", "<leader>fr", ':%s/<C-r>=expand("<cword>")<CR>/', cmd_opts)
 
 -- Visual --
 -- Stay in indent mode
