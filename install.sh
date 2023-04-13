@@ -11,7 +11,7 @@ ln -s $HOME/.dotfiles/.rgignore $HOME/.rgignore
 # configure for nvim
 rm $HOME/.config/nvim/init.lua
 mkdir -p $HOME/.config/nvim
-ln -s $HOME/.dotfiles/nvim $HOME/.config/nvim
+ln -s $HOME/.dotfiles/nvim/* $HOME/.config/nvim
 
 # configure kitty
 rm $HOME/.config/kitty/kitty.conf
