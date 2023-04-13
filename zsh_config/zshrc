@@ -9,7 +9,9 @@ plugins=(
   fzf-tab
   git
   ripgrep
+  tmux
   zsh-autosuggestions
+  nvm
 )
 
 source $ZSH/oh-my-zsh.sh
