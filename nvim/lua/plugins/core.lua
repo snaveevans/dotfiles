@@ -37,10 +37,11 @@ return {
         ["--layout"] = "default",
       },
     },
-    command = { ":Rg" },
+    cmd = { "Rg" },
     config = function(p, opts)
       vim.api.nvim_create_user_command("Rg", function(args)
-        require("fzf-lua").grep_project({ search = args })
+        local fargs = table.concat(args.fargs, " ")
+        require("fzf-lua").grep_project({ search = fargs })
       end, { nargs = "?" })
 
       require("fzf-lua").setup(opts)

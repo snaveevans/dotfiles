@@ -1,6 +1,7 @@
 return {
   {
     "tpope/vim-fugitive",
+    cmd = { "Gread" },
     keys = {
       { "<leader>gs", ":Git<cr>" },
       { "<leader>gd", ":Gdiffsplit!<cr>" },

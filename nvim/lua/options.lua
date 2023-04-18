@@ -1,6 +1,5 @@
 local options = {
   backup = false, -- creates a backup file
-  clipboard = "unnamedplus", -- allows neovim to access the system clipboard
   cmdheight = 1, -- more space in the neovim command line for displaying messages
   completeopt = { "longest", "menuone", "preview" }, -- mostly just for cmp
   fileformats = { "unix", "dos", "mac" }, -- Use Unix as the standard file type

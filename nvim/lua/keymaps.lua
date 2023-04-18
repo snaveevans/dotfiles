@@ -24,6 +24,7 @@ vim.g.maplocalleader = " "
 keymap("n", "<leader><cr>", ":noh<cr>", opts)
 keymap("n", "<leader>tn", ':tabedit <c-r>=expand("%:.:h")<cr>/', cmd_opts)
 keymap("n", "<leader>n", ':edit <c-r>=expand("%:.:h")<cr>/', cmd_opts)
+keymap("n", "<leader>v", ':vsplit <c-r>=expand("%:.:h")<cr>/', cmd_opts)
 keymap("n", "<C-j>", "<C-d>", opts)
 keymap("n", "<C-k>", "<C-u>", opts)
 keymap("n", "<leader>z", ":suspend<cr>", opts)
