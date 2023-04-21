@@ -9,7 +9,7 @@ rm $HOME/.rgignore
 ln -s $HOME/.dotfiles/.rgignore $HOME/.rgignore
 
 # configure for nvim
-rm $HOME/.config/nvim/init.lua
+rm -rf $HOME/.config/nvim
 mkdir -p $HOME/.config/nvim
 ln -s $HOME/.dotfiles/nvim/* $HOME/.config/nvim
 
