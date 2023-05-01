@@ -1,52 +1,46 @@
 local padding = 5
 
+local appModalBindings = {
+  { "h", "Music.app" },
+  { "j", "Google Chrome.app" },
+  { "k", "Slack.app" },
+  { "l", "Microsoft Teams.app" },
+  { ";", "Authy Desktop.app" },
+  { "'", "Insomnia.app" },
+  { "o", "Visual Studio Code.app" },
+  { "n", "Obsidian.app" },
+  { "m", "Microsoft Outlook.app" },
+  { "u", "Messages.app" },
+  { "\\", "Zoom.us.app" },
+  { "/", "kitty.app" },
+}
+
 hs.hotkey.bind({ "cmd", "shift" }, "/", function()
   hs.application.open("kitty.app")
 end)
 
-hs.hotkey.bind({ "cmd", "shift" }, "return", function()
-  hs.application.open("Google Chrome.app")
-end)
+function bindAppShortcut(mods, key, app)
+  hs.hotkey.bind(mods, key, function()
+    hs.application.open(app)
+  end)
+end
 
-hs.hotkey.bind({ "cmd", "shift" }, "y", function()
-  hs.application.open("Messages.app")
-end)
+function bindAppModal(modal, key, app)
+  modal:bind("", key, function()
+    hs.application.open(app)
+    modal:exit()
+  end)
+end
 
-hs.hotkey.bind({ "cmd", "shift" }, "u", function()
-  hs.application.open("Slack.app")
-end)
-
-hs.hotkey.bind({ "cmd", "shift" }, "i", function()
-  hs.application.open("Microsoft Teams.app")
-end)
-
-hs.hotkey.bind({ "cmd", "shift" }, "n", function()
-  hs.application.open("Obsidian.app")
-end)
-
-hs.hotkey.bind({ "cmd", "shift" }, ",", function()
-  hs.application.open("Insomnia.app")
-end)
-
-hs.hotkey.bind({ "cmd", "shift" }, ".", function()
-  hs.application.open("Visual Studio Code.app")
-end)
-
-hs.hotkey.bind({ "cmd", "shift" }, "w", function()
-  hs.application.open("Authy Desktop.app")
-end)
-
-hs.hotkey.bind({ "cmd", "shift" }, "m", function()
-  hs.application.open("Microsoft Outlook.app")
-end)
-
-hs.hotkey.bind({ "cmd", "shift" }, "b", function()
-  hs.application.open("Music.app")
-end)
-
-hs.hotkey.bind({ "cmd", "shift" }, "\\", function()
-  hs.application.open("Zoom.us.app")
-end)
+function initModal()
+  local appModal = hs.hotkey.modal.new({ "cmd", "shift" }, "space")
+  appModal:bind("", "escape", function()
+    appModal:exit()
+  end)
+  for i, keyApp in ipairs(appModalBindings) do
+    bindAppModal(appModal, keyApp[1], keyApp[2])
+  end
+end
 
 -- windows
 hs.hotkey.bind({ "cmd", "shift" }, "9", function()
@@ -93,4 +87,7 @@ end)
 hs.hotkey.bind({ "cmd", "alt", "ctrl" }, "R", function()
   hs.reload()
 end)
+
+initModal()
+
 hs.alert.show("Config loaded")
