@@ -10,8 +10,7 @@ fi
 
 # configure hammerspoon
 rm $HOME/.hammerspoon/init.lua
-mkdir -p $HOME/.hammerspoon
-ln -s $HOME/.dotfiles/hammerspoon.lua $HOME/.hammerspoon/init.lua
+ln -s $HOME/.dotfiles/macos/hammerspoon.lua $HOME/.hammerspoon/init.lua
 
 # Install Xcode command line tools
 xcode-select --install
