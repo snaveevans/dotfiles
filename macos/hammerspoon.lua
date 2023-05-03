@@ -16,18 +16,33 @@ local appModalBindings = {
   { "/", "kitty.app" },
 }
 
+local lastWindowId
+
+function pushWindowToRecent()
+  local focusedWindow = hs.window.focusedWindow()
+  lastWindowId = focusedWindow:id()
+end
+
+function swapFocusWithLastWindow()
+  if lastWindowId == nil then
+    return
+  end
+
+  local focusedWindow = hs.window.focusedWindow()
+  local currentWindowId = focusedWindow:id()
+  local lastWindow = hs.window.get(lastWindowId)
+  lastWindow:focus()
+  lastWindowId = currentWindowId
+end
+
 hs.hotkey.bind({ "cmd", "shift" }, "/", function()
+  pushWindowToRecent()
   hs.application.open("kitty.app")
 end)
 
-function bindAppShortcut(mods, key, app)
-  hs.hotkey.bind(mods, key, function()
-    hs.application.open(app)
-  end)
-end
-
 function bindAppModal(modal, key, app)
   modal:bind("", key, function()
+    pushWindowToRecent()
     hs.application.open(app)
     modal:exit()
   end)
@@ -36,6 +51,10 @@ end
 function initModal()
   local appModal = hs.hotkey.modal.new({ "cmd", "shift" }, "space")
   appModal:bind("", "escape", function()
+    appModal:exit()
+  end)
+  appModal:bind("", "space", function()
+    swapFocusWithLastWindow()
     appModal:exit()
   end)
   for i, keyApp in ipairs(appModalBindings) do
