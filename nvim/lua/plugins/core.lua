@@ -68,7 +68,7 @@ return {
           mode = "v",
         },
         {
-          "<leader>S",
+          "<leader>fe",
           function()
             require("fzf-lua").grep_cword()
           end,
