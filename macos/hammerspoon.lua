@@ -37,13 +37,13 @@ end
 
 hs.hotkey.bind({ "cmd", "shift" }, "/", function()
   pushWindowToRecent()
-  hs.application.open("kitty.app")
+  hs.application.launchOrFocus("kitty.app")
 end)
 
 function bindAppModal(modal, key, app)
   modal:bind("", key, function()
     pushWindowToRecent()
-    hs.application.open(app)
+    hs.application.launchOrFocus(app)
     modal:exit()
   end)
 end
