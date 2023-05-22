@@ -35,6 +35,7 @@ keymap("n", "<leader>fr", ':%s/<C-r>=expand("<cword>")<CR>/', cmd_opts)
 -- Stay in indent mode
 keymap("v", "<", "<gv", opts)
 keymap("v", ">", ">gv", opts)
+keymap("v", "<leader>fr", ":<C-u>call VisualSelection('', '')<CR>:%s/<C-R>=@/<CR>/", opts)
 
 -- Move text up and down
 keymap("n", "∆", ":m .+1<CR>==", opts)
