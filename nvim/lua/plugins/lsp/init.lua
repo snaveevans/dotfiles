@@ -137,11 +137,29 @@ return {
 
       -- Use a loop to conveniently call 'setup' on multiple servers and
       -- map buffer local keybindings when the language server attaches
-      local servers = { "tsserver", "cssls", "graphql", "html", "jsonls", "eslint", "rls" }
+      local servers = { "tsserver", "cssls", "graphql", "html", "jsonls", "eslint", "rust_analyzer" }
       for _, lsp in ipairs(servers) do
         lspconfig[lsp].setup({
           on_attach = on_attach,
           capabilities = capabilities,
+          settings = {
+            ["rust-analyzer"] = {
+              imports = {
+                granularity = {
+                  group = "module",
+                },
+                prefix = "self",
+              },
+              cargo = {
+                buildScripts = {
+                  enable = true,
+                },
+              },
+              procMacro = {
+                enable = true,
+              },
+            },
+          },
         })
       end
     end,
