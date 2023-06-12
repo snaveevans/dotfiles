@@ -38,8 +38,10 @@ keymap("v", ">", ">gv", opts)
 keymap("v", "<leader>fr", ":<C-u>call VisualSelection('', '')<CR>:%s/<C-R>=@/<CR>/", opts)
 
 -- Move text up and down
-keymap("n", "∆", ":m .+1<CR>==", opts)
-keymap("n", "˚", ":m .-2<CR>==", opts)
-keymap("v", "∆", ":m '>+1<CR>gv=gv", opts)
-keymap("v", "˚", ":m '<-2<CR>gv=gv", opts)
+keymap("n", "<M-j>", ":m .+1<CR>==", opts)
+keymap("n", "<M-k>", ":m .-2<CR>==", opts)
+keymap("v", "<M-j>", ":m '>+1<CR>gv=gv", opts)
+keymap("v", "<M-k>", ":m '<-2<CR>gv=gv", opts)
+
+-- ??
 keymap("v", "p", '"_dP', opts)

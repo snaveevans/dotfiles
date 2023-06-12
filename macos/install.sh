@@ -44,6 +44,9 @@ $(brew --prefix)/opt/fzf/install --all
 # Ask for the administrator password upfront
 sudo -v
 
+# link no options key keylayout, must manually add it in keyboard settings
+sudo ln -s ./macos/no_option_keys.keylayout /Library/Keyboard\ Layouts
+
 # Keep-alive: update existing `sudo` time stamp until `.macos` has finished
 while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
 
