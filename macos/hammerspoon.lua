@@ -2,12 +2,12 @@ local padding = 5
 
 local appModalBindings = {
   { "h", "Music.app" },
-  { "j", "Google Chrome.app" },
+  { "j", "LibreWolf.app" },
   { "u", "Slack.app" },
   { "l", "Microsoft Teams.app" },
   { ";", "Authy Desktop.app" },
   { "'", "Insomnia.app" },
-  { "return", "Google Chrome.app" },
+  { "return", "LibreWolf.app" },
   { "o", "Visual Studio Code.app" },
   { "n", "Obsidian.app" },
   { "m", "Microsoft Outlook.app" },
