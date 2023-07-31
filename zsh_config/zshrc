@@ -63,6 +63,7 @@ bindkey -s '^l' 'cd ~/workspace/octanner/$(ls ~/workspace/octanner | fzf)^M'
 bindkey -s '^g' '$(git branch | fzf)^M'
 bindkey -s '^o' 'nvim^M'
 
+alias tf=terraform
 alias pn=pnpm
 alias lg=lazygit
 alias e="$EDITOR"
