@@ -94,6 +94,7 @@ return {
       "hrsh7th/nvim-cmp",
     },
     config = function()
+      local Util = require("util")
       -- Use an on_attach function to only map the following keys
       -- after the language server attaches to the current buffer
       local on_attach = function(client, bufnr)
@@ -139,30 +140,57 @@ return {
 
       -- Use a loop to conveniently call 'setup' on multiple servers and
       -- map buffer local keybindings when the language server attaches
-      local servers = { "tsserver", "cssls", "graphql", "html", "jsonls", "eslint", "rust_analyzer", "terraform-ls" }
-      for _, lsp in ipairs(servers) do
-        lspconfig[lsp].setup({
-          on_attach = on_attach,
-          capabilities = capabilities,
-          settings = {
-            ["rust-analyzer"] = {
-              imports = {
-                granularity = {
-                  group = "module",
+      local servers = {
+        { "tsserver" },
+        { "cssls" },
+        { "graphql" },
+        { "html" },
+        { "jsonls" },
+        { "eslint" },
+        {
+          "rust_analyzer",
+          {
+
+            settings = {
+              ["rust-analyzer"] = {
+                imports = {
+                  granularity = {
+                    group = "module",
+                  },
+                  prefix = "self",
                 },
-                prefix = "self",
-              },
-              cargo = {
-                buildScripts = {
+                cargo = {
+                  buildScripts = {
+                    enable = true,
+                  },
+                },
+                procMacro = {
                   enable = true,
                 },
               },
-              procMacro = {
-                enable = true,
-              },
             },
           },
-        })
+        },
+        { "terraformls" },
+        {
+          "omnisharp",
+          {
+            cmd = { "dotnet", "/Users/tylerevans/.bin/omnisharp/OmniSharp.dll" },
+            enable_editorconfig_support = true,
+            organize_imports_on_format = true,
+            enable_import_completion = true,
+          },
+        },
+      }
+      local defaultSettings = {
+        on_attach = on_attach,
+        capabilities = capabilities,
+      }
+      for _, lsp in ipairs(servers) do
+        local server = lsp[1]
+        local settings = lsp[2]
+
+        lspconfig[server].setup(Util.merge(defaultSettings, settings))
       end
     end,
   },
