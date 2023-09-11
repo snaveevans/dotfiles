@@ -12,6 +12,7 @@ plugins=(
   tmux
   zsh-autosuggestions
   nvm
+  spaceship-vi-mode
 )
 
 source $ZSH/oh-my-zsh.sh
@@ -51,15 +52,18 @@ zle -N _kill-port
 # User configuration
 unsetopt share_history
 
+# vi mode
+bindkey -v
+spaceship add --before char vi_mode
+eval spaceship_vi_mode_enable
+
 bindkey '^ ' autosuggest-accept
 bindkey '^h' backward-char
 bindkey '^l' forward-char
 bindkey '^b' backward-word
 bindkey '^w' forward-word
-bindkey '^e' _re-source
 bindkey '^ko' _kill-port
 
-bindkey -s '^l' 'cd ~/workspace/octanner/$(ls ~/workspace/octanner | fzf)^M'
 bindkey -s '^g' '$(git branch | fzf)^M'
 bindkey -s '^o' 'nvim^M'
 
@@ -68,6 +72,7 @@ alias pn=pnpm
 alias lg=lazygit
 alias e="$EDITOR"
 alias cat="bat"
+alias re=_re-source
 
 # alias jsc='/System/Library/Frameworks/JavaScriptCore.framework/Versions/Current/Helpers/jsc'
 
