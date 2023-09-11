@@ -39,7 +39,7 @@ bind-key -r f run-shell "tmux-sessionizer"
 bind-key -r p run-shell "tmux-sessionizer"
 bind-key -r o run-shell "tmux-session-switcher"
 
-bind-key -r i run-shell "tmux-sessionizer ~/workspace/octanner/prism-ui"
+bind-key -r y run-shell "tmux-sessionizer ~/workspace/octanner/prism-ui"
 bind-key -r t run-shell "tmux-sessionizer ~/.dotfiles"
 bind-key -r n run-shell "tmux-sessionizer ~/notes"
 
@@ -47,3 +47,5 @@ bind-key -r -T prefix k resize-pane -U 5
 bind-key -r -T prefix j resize-pane -D 5
 bind-key -r -T prefix h resize-pane -L 5
 bind-key -r -T prefix l resize-pane -R 5
+
+bind-key e command-prompt -p 'save history to filename:' -I './tmux.history' 'capture-pane -S -100000 ; save-buffer %1 ; delete-buffer'
