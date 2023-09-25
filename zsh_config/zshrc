@@ -28,11 +28,8 @@ function _clear () {
 }
 
 function _re-source () {
-  printf "reloading..."
-  source ~/.zshrc
-  source ~/.zshenv
-  printf "done\n"
-  _clear
+  printf "reloading...\n"
+  exec zsh
 }
 zle -N _re-source
 
