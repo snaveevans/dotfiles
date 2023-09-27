@@ -41,7 +41,7 @@ return {
     config = function(p, opts)
       vim.api.nvim_create_user_command("Rg", function(args)
         local fargs = table.concat(args.fargs, " ")
-        require("fzf-lua").grep_project({ search = fargs })
+        require("fzf-lua").grep_project({ search = fargs, cmd = "rg --hidden" })
       end, { nargs = "?" })
 
       require("fzf-lua").setup(opts)
@@ -77,7 +77,7 @@ return {
         {
           "<leader>s",
           function()
-            require("fzf-lua").live_grep()
+            require("fzf-lua").live_grep({ cmd = "rg --hidden" })
           end,
         },
       }
