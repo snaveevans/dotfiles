@@ -16,6 +16,7 @@ return {
   },
   {
     "lewis6991/gitsigns.nvim",
+    event = { "BufReadPre", "BufNewFile" },
     opts = {
       signs = {
         add = { hl = "GitGutterAdd", text = "+" },
@@ -32,5 +33,66 @@ return {
         ignore_whitespace = false,
       },
     },
+    keys = function()
+      local gs = require("gitsigns")
+      return {
+        {
+          "]c",
+          function()
+            gs.next_hunk()
+          end,
+        },
+        {
+          "[c",
+          function()
+            gs.prev_hunk()
+          end,
+        },
+        {
+          "<leader>hs",
+          function()
+            gs.stage_hunk()
+          end,
+        },
+        {
+          "<leader>hr",
+          function()
+            gs.reset_hunk()
+          end,
+        },
+        {
+          "<leader>hs",
+          function()
+            gs.stage_hunk({ vim.fn.line("."), vim.fn.line("v") })
+          end,
+          mode = "v",
+        },
+        {
+          "<leader>hr",
+          function()
+            gs.reset_hunk({ vim.fn.line("."), vim.fn.line("v") })
+          end,
+          mode = "v",
+        },
+        {
+          "<leader>hu",
+          function()
+            gs.undo_stage_hunk()
+          end,
+        },
+        {
+          "<leader>hp",
+          function()
+            gs.preview_hunk()
+          end,
+        },
+        {
+          "<leader>hb",
+          function() 
+            gs.blame_line{full=true} 
+          end,
+        },
+      }
+    end,
   },
 }
