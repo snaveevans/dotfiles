@@ -30,12 +30,11 @@ ln -s $HOME/.dotfiles/bin/* $HOME/.local/bin
 # configure npm
 ln -s $HOME/.dotfiles/.npmrc $HOME/.npmrc
 
-# install nvm
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash
-
 ./zsh_config/install.sh
 
+# TODO: call os install script
+
 # post os install
-nvm install 16
+# volta install node
 
 ./node.sh

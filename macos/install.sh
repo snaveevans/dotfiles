@@ -22,6 +22,9 @@ brew update
 brew tap homebrew/bundle
 brew bundle
 
+# TODO: move to post os install hook
+volta install node
+
 # create bin in $HOME and symlinks the files from the .dotfiles
 mkdir $HOME/bin
 ln -s $HOME/.dotfiles/bin/* $HOME/bin/
