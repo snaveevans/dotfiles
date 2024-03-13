@@ -59,6 +59,8 @@ bindkey '^l' forward-char
 bindkey '^b' backward-word
 bindkey '^w' forward-word
 bindkey '^ko' _kill-port
+bindkey '_' beginning-of-line
+bindkey 'g_' end-of-line
 
 bindkey -s '^g' '$(git branch | fzf)^M'
 bindkey -s '^o' 'nvim^M'
@@ -74,3 +76,4 @@ alias re=_re-source
 
 # autoload -Uz compinit; compinit
 # [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
+eval "$(/Users/tyler.evans/.local/bin/mise activate zsh)"
