@@ -22,8 +22,8 @@ brew update
 brew tap homebrew/bundle
 brew bundle
 
-# TODO: move to post os install hook
-volta install node
+# install mise
+curl https://mise.jdx.dev/install.sh | sh
 
 # create bin in $HOME and symlinks the files from the .dotfiles
 mkdir $HOME/bin

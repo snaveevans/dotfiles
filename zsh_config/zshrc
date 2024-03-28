@@ -76,4 +76,4 @@ alias re=_re-source
 
 # autoload -Uz compinit; compinit
 # [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
-eval "$(/Users/tyler.evans/.local/bin/mise activate zsh)"
+eval "$(~/.local/bin/mise activate zsh)"
