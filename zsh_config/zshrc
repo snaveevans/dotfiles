@@ -53,14 +53,14 @@ bindkey -v
 spaceship add --before char vi_mode
 eval spaceship_vi_mode_enable
 
-bindkey '^ ' autosuggest-accept
 bindkey '^h' backward-char
 bindkey '^l' forward-char
 bindkey '^b' backward-word
 bindkey '^w' forward-word
-bindkey '^ko' _kill-port
-bindkey '_' beginning-of-line
-bindkey 'g_' end-of-line
+bindkey -M viins '^ ' autosuggest-accept
+bindkey -M viins '^ko' _kill-port
+bindkey -M vicmd '_' vi-beginning-of-line 
+bindkey -M vicmd 'g_' vi-end-of-line 
 
 bindkey -s '^g' '$(git branch | fzf)^M'
 bindkey -s '^o' 'nvim^M'
