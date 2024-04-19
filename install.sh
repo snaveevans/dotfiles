@@ -34,7 +34,4 @@ ln -s $HOME/.dotfiles/.npmrc $HOME/.npmrc
 
 # TODO: call os install script
 
-# post os install
-# volta install node
-
 ./node.sh
