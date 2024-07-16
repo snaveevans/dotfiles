@@ -36,6 +36,9 @@ return {
       fzf_opts = {
         ["--layout"] = "default",
       },
+      files = {
+        rg_opts = [[--color=never --files --no-ignore --hidden --follow -g "!.git" -g "!node_modules" -g "!dist"]],
+      },
     },
     cmd = { "Rg" },
     config = function(p, opts)
