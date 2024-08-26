@@ -1,6 +1,6 @@
 return {
   "nvim-lualine/lualine.nvim",
-  optional = true,
+  -- optional = true,
   event = "VeryLazy",
   -- opts = function(_, opts)
   --   local Util = require("util")
@@ -61,6 +61,20 @@ return {
       icon = "",
     }
 
+    local filename = {
+      "filename",
+      file_status = true, -- Displays file status (readonly status, modified status)
+      newfile_status = false, -- Display new file status (new file means no write after created)
+      path = 1, -- 0: Just the filename
+      shorting_target = 40, -- Shortens path to leave 40 spaces in the window
+      symbols = {
+        modified = "[+]", -- Text to show when the file is modified.
+        readonly = "[-]", -- Text to show when the file is non-modifiable or readonly.
+        unnamed = "[No Name]", -- Text to show for unnamed buffers.
+        newfile = "[New]", -- Text to show for newly created file before first write
+      },
+    }
+
     -- cool function for progress
     local progress = function()
       local current_line = vim.fn.line(".")
@@ -81,13 +95,14 @@ return {
         theme = "auto",
         component_separators = { left = "", right = "" },
         section_separators = { left = "", right = "" },
+        -- ignore_focus = { "lua", "typescript", "typescriptreact", "javascript", "javascriptreact" },
         disabled_filetypes = { "alpha", "dashboard", "NvimTree", "Outline" },
         always_divide_middle = true,
       },
       sections = {
         lualine_a = { branch, diagnostics },
         lualine_b = { mode },
-        lualine_c = { "filename" },
+        lualine_c = { filename },
         -- lualine_x = { "encoding", "fileformat", "filetype" },
         lualine_x = { "diff", spaces, "encoding", filetype },
         lualine_y = { "location" },
@@ -96,9 +111,10 @@ return {
       inactive_sections = {
         lualine_a = {},
         lualine_b = {},
-        lualine_c = {},
-        lualine_x = {},
-        lualine_y = {},
+        lualine_c = { filename },
+        -- lualine_x = { "encoding", "fileformat", "filetype" },
+        lualine_x = { spaces, "encoding", filetype },
+        lualine_y = { "location" },
         lualine_z = {},
       },
       tabline = {},
