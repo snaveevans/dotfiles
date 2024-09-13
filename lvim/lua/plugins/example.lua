@@ -1,42 +1,34 @@
+-- since this is just an example spec, don't actually load anything here and return an empty spec
+-- stylua: ignore
+if true then return {} end
+
 -- every spec file under the "plugins" directory will be loaded automatically by lazy.nvim
 --
 -- In your plugin files, you can:
 -- * add extra plugins
 -- * disable/enabled LazyVim plugins
--- * okverride the configuration of LazyVim plugins
+-- * override the configuration of LazyVim plugins
 return {
-  -- change trouble config
-  { "folke/trouble.nvim", enabled = false },
-  { "folke/noice.nvim", enabled = false },
-  { "rcarriga/nvim-notify", enabled = false },
-  { "nvim-telescope/telescope.nvim", enabled = false },
-  { "akinsho/bufferline.nvim", enabled = false },
+  -- add gruvbox
+  { "ellisonleao/gruvbox.nvim" },
+
+  -- Configure LazyVim to load gruvbox
   {
-    "folke/persistence.nvim",
-    event = "BufReadPre",
-    module = "persistence",
-    keys = {
-      {
-        "<F5>",
-        function()
-          require("persistence").save()
-        end,
-        mode = "n",
-        desc = "Save Session",
-      },
-      {
-        "<F8>",
-        function()
-          require("persistence").load()
-        end,
-        mode = "n",
-        desc = "Load Session",
-      },
+    "LazyVim/LazyVim",
+    opts = {
+      colorscheme = "gruvbox",
     },
-    config = function()
-      require("persistence").setup()
-    end,
   },
+
+  -- change trouble config
+  {
+    "folke/trouble.nvim",
+    -- opts will be merged with the parent spec
+    opts = { use_diagnostic_signs = true },
+  },
+
+  -- disable trouble
+  { "folke/trouble.nvim", enabled = false },
 
   -- override nvim-cmp and add cmp-emoji
   {
@@ -48,62 +40,25 @@ return {
     end,
   },
 
+  -- change some telescope options and a keymap to browse plugin files
   {
-    "ibhagwan/fzf-lua",
-    opts = {
-      fzf_opts = {
-        ["--layout"] = "default",
-      },
-      files = {
-        rg_opts = [[--color=never --files --no-ignore --hidden --follow -g "!.git" -g "!node_modules" -g "!dist"]],
+    "nvim-telescope/telescope.nvim",
+    keys = {
+      -- add a keymap to browse plugin files
+      -- stylua: ignore
+      {
+        "<leader>fp",
+        function() require("telescope.builtin").find_files({ cwd = require("lazy.core.config").options.root }) end,
+        desc = "Find Plugin File",
       },
     },
-    cmd = { "Rg" },
-    config = function(_, opts)
-      vim.api.nvim_create_user_command("Rg", function(args)
-        local fargs = table.concat(args.fargs, " ")
-        require("fzf-lua").grep_project({ search = fargs, cmd = "rg --hidden" })
-      end, { nargs = "?" })
-
-      require("fzf-lua").setup(opts)
-    end,
-    keys = {
-      {
-        "<leader>p",
-        function()
-          require("fzf-lua").files()
-        end,
-        desc = "FzF Files",
-      },
-      {
-        "<leader>o",
-        function()
-          require("fzf-lua").buffers()
-        end,
-        desc = "FzF Buffers",
-      },
-      {
-        "s",
-        function()
-          require("fzf-lua").grep_visual()
-        end,
-        mode = "v",
-        desc = "FzF Grep Visual",
-      },
-      {
-        "<leader>fe",
-        function()
-          require("fzf-lua").grep_cword()
-        end,
-        mode = "n",
-        desc = "FzF Grep cword",
-      },
-      {
-        "<leader>s",
-        function()
-          require("fzf-lua").live_grep({ cmd = "rg --hidden" })
-        end,
-        desc = "FzF live Grep",
+    -- change some options
+    opts = {
+      defaults = {
+        layout_strategy = "horizontal",
+        layout_config = { prompt_position = "top" },
+        sorting_strategy = "ascending",
+        winblend = 0,
       },
     },
   },
@@ -140,7 +95,6 @@ return {
       servers = {
         -- tsserver will be automatically installed with mason and loaded with lspconfig
         tsserver = {},
-        jdtls = {},
       },
       -- you can do any additional lsp server setup here
       -- return true if you don't want this server to be setup with lspconfig
@@ -150,9 +104,6 @@ return {
         tsserver = function(_, opts)
           require("typescript").setup({ server = opts })
           return true
-        end,
-        jdtls = function()
-          return true -- avoid duplicate servers
         end,
         -- Specify * to use this function as a fallback for any server
         -- ["*"] = function(server, opts) end,
@@ -171,7 +122,6 @@ return {
       ensure_installed = {
         "bash",
         "html",
-        "java",
         "javascript",
         "json",
         "lua",
@@ -202,6 +152,26 @@ return {
     end,
   },
 
+  -- the opts function can also be used to change the default opts:
+  {
+    "nvim-lualine/lualine.nvim",
+    event = "VeryLazy",
+    opts = function(_, opts)
+      table.insert(opts.sections.lualine_x, "😄")
+    end,
+  },
+
+  -- or you can return new options to override all the defaults
+  {
+    "nvim-lualine/lualine.nvim",
+    event = "VeryLazy",
+    opts = function()
+      return {
+        --[[add your custom lualine config here]]
+      }
+    end,
+  },
+
   -- use mini.starter instead of alpha
   { import = "lazyvim.plugins.extras.ui.mini-starter" },
 
@@ -217,8 +187,6 @@ return {
         "shellcheck",
         "shfmt",
         "flake8",
-        "java-debug-adapter",
-        "java-test",
       },
     },
   },
