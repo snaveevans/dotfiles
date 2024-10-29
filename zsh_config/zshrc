@@ -8,7 +8,6 @@ plugins=(
   fzf
   fzf-tab
   git
-  ripgrep
   tmux
   zsh-autosuggestions
   spaceship-vi-mode
@@ -69,8 +68,10 @@ alias tf=terraform
 alias pn=pnpm
 alias lg=lazygit
 alias e="$EDITOR"
+# alias e='NVIM_APPNAME=lvim nvim'
 alias cat="bat"
 alias re=_re-source
+alias lvim='NVIM_APPNAME=lvim nvim'
 
 # alias jsc='/System/Library/Frameworks/JavaScriptCore.framework/Versions/Current/Helpers/jsc'
 

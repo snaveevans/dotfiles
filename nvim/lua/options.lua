@@ -37,6 +37,7 @@ local options = {
   background = "dark",
   list = true, -- enable listchars
   grepprg = "rg --vimgrep --smart-case --follow", -- default command for :grep
+  laststatus = 1
 }
 
 for k, v in pairs(options) do
