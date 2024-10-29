@@ -37,7 +37,7 @@ return {
         ["--layout"] = "default",
       },
       files = {
-        rg_opts = [[--color=never --files --no-ignore --hidden --follow -g "!.git" -g "!node_modules" -g "!dist"]],
+        rg_opts = [[--color=never --files --no-ignore --hidden --follow -g "!.git" -g "!node_modules" -g "!dist" -g "!.next"]],
       },
     },
     cmd = { "Rg" },
