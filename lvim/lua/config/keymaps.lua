@@ -23,6 +23,8 @@ map("n", "<leader>fn", ':edit <c-r>=expand("%:.:h")<cr>/', merge({ desc = "New f
 map("n", "<leader>fv", ':vsplit <c-r>=expand("%:.:h")<cr>/', merge({ desc = "New file (split)" }, cmd_opts))
 map("n", "<C-j>", "<C-d>", opts)
 map("n", "<C-k>", "<C-u>", opts)
+vim.keymap.del("n", "H") -- revert back to line count from top
+vim.keymap.del("n", "L") -- revert back to line count from bottom
 
 -- Visual --
 -- Stay in indent mode
