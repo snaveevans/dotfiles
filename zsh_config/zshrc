@@ -44,6 +44,11 @@ function _kill-port () {
 }
 zle -N _kill-port
 
+function _kitty-opener () {
+  kitty-opener
+}
+zle -N _kitty-opener
+
 # User configuration
 unsetopt share_history
 
@@ -60,6 +65,7 @@ bindkey -M viins '^ ' autosuggest-accept
 bindkey -M viins '^ko' _kill-port
 bindkey -M vicmd '_' vi-beginning-of-line 
 bindkey -M vicmd 'g_' vi-end-of-line 
+bindkey -M viins '^kp' _kitty-opener
 
 bindkey -s '^g' '$(git branch | fzf)^M'
 bindkey -s '^o' 'nvim^M'
@@ -71,7 +77,6 @@ alias e="$EDITOR"
 # alias e='NVIM_APPNAME=lvim nvim'
 alias cat="bat"
 alias re=_re-source
-alias lvim='NVIM_APPNAME=lvim nvim'
 
 # alias jsc='/System/Library/Frameworks/JavaScriptCore.framework/Versions/Current/Helpers/jsc'
 
