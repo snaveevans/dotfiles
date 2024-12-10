@@ -20,5 +20,28 @@ return {
         ["--layout"] = "default",
       },
     },
+    keys = {
+      {
+        "<leader><leader>",
+        function()
+          require("fzf-lua").files()
+        end,
+        desc = "FzF Files",
+      },
+      {
+        "<leader>p",
+        function()
+          require("fzf-lua").files()
+        end,
+        desc = "FzF Files",
+      },
+      {
+        "<leader>o",
+        function()
+          require("fzf-lua").buffers()
+        end,
+        desc = "FzF Buffers",
+      },
+    },
   },
 }
