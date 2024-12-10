@@ -16,7 +16,7 @@ ln -s $HOME/.dotfiles/nvim/* $HOME/.config/nvim
 # configure kitty
 rm $HOME/.config/kitty/kitty.conf
 mkdir -p $HOME/.config/kitty
-ln -s $HOME/.dotfiles/kitty.conf $HOME/.config/kitty/kitty.conf
+ln -s $HOME/.dotfiles/kitty/* $HOME/.config/kitty
 
 # configure tmux
 rm $HOME/.tmux.conf
