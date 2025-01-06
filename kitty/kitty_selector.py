@@ -24,9 +24,39 @@ def select_directory(directories):
     return result.stdout.strip()
 
 
+def select_open_tab():
+    result = subprocess.run(["kitty", "@", "ls"], capture_output=True, text=True)
+
+    # Parse the JSON output
+    data = json.loads(result.stdout)
+
+    # Extract the list of tabs
+    tabs = []
+    for session in data:
+        for tab in session["tabs"]:
+            tabs.append(tab["title"])
+    homebrew_prefix = "/opt/homebrew"
+    fzf_path = os.path.join(homebrew_prefix, "bin", "fzf")
+    result = subprocess.run(
+        [fzf_path], input="\n".join(tabs), stdout=subprocess.PIPE, text=True
+    )
+    selected_tab = result.stdout.strip()
+    return {"status": "success", "selected_directory": selected_tab}
+
+
 def main(args: list[str]) -> dict[str, str]:
+    kitten_name, mode, *dirs = args
     # Get directories to choose from
-    directories = get_directories(args)
+    directories = get_directories(dirs)
+
+    # return {
+    #     "status": "testing",
+    #     "message": mode,
+    #     "selected_directory": "ccloud-ui",
+    # }
+
+    if mode == "open":
+        return select_open_tab()
 
     if not directories:
         return {"status": "error", "message": "No directories found."}
