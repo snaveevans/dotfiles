@@ -98,7 +98,7 @@ def handle_result(
     # )
     # return
 
-    existing = boss.match_tabs(f"title:^{dir_name}")
+    existing = boss.match_tabs(f"title:^{dir_name}$")
     item = next(existing, None)
 
     # w.paste_text(f"dir_name: {dir_name} ---- item: {item}")
