@@ -80,6 +80,9 @@ alias re=_re-source
 
 # alias jsc='/System/Library/Frameworks/JavaScriptCore.framework/Versions/Current/Helpers/jsc'
 
+# add JAVA_HOME dynamically to path
+. ~/.asdf/plugins/java/set-java-home.zsh
+
 # autoload -Uz compinit; compinit
 # [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 eval "$(~/.local/bin/mise activate zsh)"

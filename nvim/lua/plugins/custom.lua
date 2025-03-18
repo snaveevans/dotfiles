@@ -15,7 +15,6 @@ return {
         "html",
         "http",
         "graphql",
-        "java",
         "javascript",
         "jsdoc",
         "json",

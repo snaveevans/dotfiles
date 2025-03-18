@@ -2,6 +2,7 @@ PATH="$PATH:$HOME/bin"
 PATH="$PATH:/usr/local/bin"
 PATH="$PATH:$HOME/.local/bin"
 PATH="$PATH:$HOME/.cargo/bin"
+PATH="$PATH:${ASDF_DATA_DIR:-$HOME/.asdf}/shims"
 export path
 
 export EDITOR=nvim

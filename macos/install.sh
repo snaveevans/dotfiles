@@ -22,9 +22,6 @@ brew update
 brew tap homebrew/bundle
 brew bundle
 
-# install mise
-curl https://mise.jdx.dev/install.sh | sh
-
 # create bin in $HOME and symlinks the files from the .dotfiles
 mkdir $HOME/bin
 ln -s $HOME/.dotfiles/bin/* $HOME/bin/
