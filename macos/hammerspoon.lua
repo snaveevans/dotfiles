@@ -8,11 +8,11 @@ local appModalBindings = {
   { "'", "Insomnia.app" },
   { "p", "Obsidian.app" },
   { "return", "Brave Browser.app" },
+  { "i", "IntellJ IDEA.app" },
   { "o", "Visual Studio Code.app" },
   { "m", "Microsoft Outlook.app" },
   { "y", "Messages.app" },
   { "\\", "Zoom.us.app" },
-  { "/", "kitty.app" },
 }
 
 local lastWindowId
@@ -36,7 +36,15 @@ end
 
 hs.hotkey.bind({ "cmd", "shift" }, "/", function()
   pushWindowToRecent()
+  -- hs.execute("kitty", true)
   hs.application.launchOrFocus("kitty.app")
+  -- local kitty = hs.application.find("kitty")
+  -- if not kitty then
+  --   hs.execute("/Applications/kitty.app/Contents/MacOS/kitty", true)
+  -- else
+  --   hs.application.launchOrFocus("kitty.app")
+  --   -- hs.alert.show("Kitty is already running")
+  -- end
 end)
 
 function bindAppModal(modal, key, app)

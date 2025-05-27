@@ -8,7 +8,6 @@ plugins=(
   fzf
   fzf-tab
   git
-  tmux
   zsh-autosuggestions
   spaceship-vi-mode
 )
@@ -30,6 +29,11 @@ function _re-source () {
   exec zsh
 }
 zle -N _re-source
+
+function _search() {
+  grep -rl --exclude-dir=node_modules "$1" | fzf
+}
+zle -N _search
 
 function _kill-port () {
   process_id="$(lsof -P -i TCP -s TCP:LISTEN | fzf -m | awk '{print $2}')"
@@ -77,6 +81,8 @@ alias e="$EDITOR"
 # alias e='NVIM_APPNAME=lvim nvim'
 alias cat="bat"
 alias re=_re-source
+alias se=_search
+alias ij='open -a "IntelliJ IDEA" .'
 
 # alias jsc='/System/Library/Frameworks/JavaScriptCore.framework/Versions/Current/Helpers/jsc'
 
@@ -85,4 +91,3 @@ alias re=_re-source
 
 # autoload -Uz compinit; compinit
 # [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
-eval "$(~/.local/bin/mise activate zsh)"

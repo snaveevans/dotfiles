@@ -18,10 +18,6 @@ rm $HOME/.config/kitty/kitty.conf
 mkdir -p $HOME/.config/kitty
 ln -s $HOME/.dotfiles/kitty/* $HOME/.config/kitty
 
-# configure tmux
-rm $HOME/.tmux.conf
-ln -s $HOME/.dotfiles/tmux/config $HOME/.tmux.conf
-
 mkdir -p $HOME/.local/bin
 
 # configure local bin
