@@ -41,6 +41,8 @@ def select_open_tab():
         [fzf_path], input="\n".join(tabs), stdout=subprocess.PIPE, text=True
     )
     selected_tab = result.stdout.strip()
+    if not selected_tab:
+        return {"status": "error", "message": "No open tab selected."}
     return {"status": "success", "selected_directory": selected_tab}
 
 
