@@ -3,6 +3,65 @@ import subprocess
 import os
 import sys
 import json
+import shutil
+
+
+def find_fzf():
+    """Find fzf executable in PATH or common locations."""
+    # On macOS, apps launched from Dock/Launcher don't inherit shell PATH
+    # So we need to check common locations first, then try PATH
+    
+    # Common locations to check first (especially important on macOS)
+    common_locations = [
+        "/opt/homebrew/bin/fzf",  # Homebrew on Apple Silicon
+        "/usr/local/bin/fzf",     # Homebrew on Intel
+        "/usr/bin/fzf",           # System package manager
+        os.path.expanduser("~/.local/bin/fzf"),  # Local install
+        "/snap/bin/fzf",          # Snap package (Linux)
+    ]
+    
+    # Check common locations first
+    for path in common_locations:
+        if os.path.isfile(path) and os.access(path, os.X_OK):
+            return path
+    
+    # Try to find fzf in PATH as fallback
+    fzf_path = shutil.which("fzf")
+    if fzf_path:
+        return fzf_path
+    
+    # Try to source shell profile and get PATH
+    # This helps when apps are launched from Dock on macOS
+    try:
+        # Try to get PATH from user's shell profile
+        shell_profiles = [
+            os.path.expanduser("~/.zshrc"),
+            os.path.expanduser("~/.bashrc"),
+            os.path.expanduser("~/.bash_profile"),
+            os.path.expanduser("~/.profile"),
+        ]
+        
+        for profile in shell_profiles:
+            if os.path.exists(profile):
+                # Source the profile and get PATH
+                result = subprocess.run(
+                    ["bash", "-c", f"source {profile} && echo $PATH"],
+                    capture_output=True, text=True, timeout=5
+                )
+                if result.returncode == 0:
+                    extended_path = result.stdout.strip()
+                    # Split PATH and check each directory
+                    for path_dir in extended_path.split(":"):
+                        fzf_candidate = os.path.join(path_dir, "fzf")
+                        if os.path.isfile(fzf_candidate) and os.access(fzf_candidate, os.X_OK):
+                            return fzf_candidate
+                break
+    except (subprocess.TimeoutExpired, Exception):
+        # If shell sourcing fails, continue with other methods
+        pass
+    
+    # If still not found, return None
+    return None
 
 
 def get_directories(args: list[str]):
@@ -16,8 +75,10 @@ def get_directories(args: list[str]):
 
 def select_directory(directories):
     """Use fzf to select a directory."""
-    homebrew_prefix = "/opt/homebrew"
-    fzf_path = os.path.join(homebrew_prefix, "bin", "fzf")
+    fzf_path = find_fzf()
+    if not fzf_path:
+        raise FileNotFoundError("fzf not found in PATH or common locations")
+    
     result = subprocess.run(
         [fzf_path], input="\n".join(directories), stdout=subprocess.PIPE, text=True
     )
@@ -35,8 +96,11 @@ def select_open_tab():
     for session in data:
         for tab in session["tabs"]:
             tabs.append(tab["title"])
-    homebrew_prefix = "/opt/homebrew"
-    fzf_path = os.path.join(homebrew_prefix, "bin", "fzf")
+    
+    fzf_path = find_fzf()
+    if not fzf_path:
+        return {"status": "error", "message": "fzf not found in PATH or common locations"}
+    
     result = subprocess.run(
         [fzf_path], input="\n".join(tabs), stdout=subprocess.PIPE, text=True
     )
