@@ -140,7 +140,36 @@ function showVSCodeWindowChooser()
   chooser:choices(choices)
   chooser:searchSubText(true)
   chooser:placeholderText("Select VS Code window...")
+  
+  -- Show the chooser first
   chooser:show()
+  
+  -- Add custom hotkeys for navigation while chooser is open
+  local cmdNHotkey = hs.hotkey.bind({"cmd"}, "n", function()
+    local currentRow = chooser:selectedRow()
+    local nextRow = (currentRow % #choices) + 1
+    chooser:selectedRow(nextRow)
+  end)
+  
+  local cmdPHotkey = hs.hotkey.bind({"cmd"}, "p", function()
+    local currentRow = chooser:selectedRow()
+    local prevRow = currentRow == 1 and #choices or currentRow - 1
+    chooser:selectedRow(prevRow)
+  end)
+  
+  -- Clean up hotkeys when chooser is dismissed
+  local originalCallback = chooser:completionCallback()
+  chooser:completionCallback(function(choice)
+    cmdNHotkey:delete()
+    cmdPHotkey:delete()
+    if originalCallback then
+      originalCallback(choice)
+    else
+      if choice then
+        choice.window:focus()
+      end
+    end
+  end)
 end
 
 function initModal()
