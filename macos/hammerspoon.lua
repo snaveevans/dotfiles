@@ -91,7 +91,15 @@ function showVSCodeWindowChooser()
     })
   end
 
+  -- Declare hotkey variables outside so they're accessible in callbacks
+  local cmdNHotkey = nil
+  local cmdPHotkey = nil
+
   local chooser = hs.chooser.new(function(choice)
+    -- Clean up hotkeys immediately when selection is made
+    if cmdNHotkey then cmdNHotkey:delete() end
+    if cmdPHotkey then cmdPHotkey:delete() end
+
     if choice then
       choice.window:focus()
     end
@@ -105,33 +113,38 @@ function showVSCodeWindowChooser()
   chooser:show()
 
   -- Add custom hotkeys for navigation while chooser is open
-  local cmdNHotkey = hs.hotkey.bind({ "cmd" }, "n", function()
+  cmdNHotkey = hs.hotkey.bind({ "cmd" }, "n", function()
     local currentRow = chooser:selectedRow()
     local nextRow = (currentRow % #choices) + 1
     chooser:selectedRow(nextRow)
   end)
 
-  local cmdPHotkey = hs.hotkey.bind({ "cmd" }, "p", function()
+  cmdPHotkey = hs.hotkey.bind({ "cmd" }, "p", function()
     local currentRow = chooser:selectedRow()
     local prevRow = currentRow == 1 and #choices or currentRow - 1
     chooser:selectedRow(prevRow)
   end)
 
-  -- Clean up hotkeys when chooser is dismissed
+  -- Clean up hotkeys when chooser is dismissed (backup cleanup)
   local originalCallback = chooser:completionCallback()
   chooser:completionCallback(function(choice)
-    cmdNHotkey:delete()
-    cmdPHotkey:delete()
+    -- Additional cleanup in case the main callback didn't run
+    if cmdNHotkey then cmdNHotkey:delete() end
+    if cmdPHotkey then cmdPHotkey:delete() end
+
     if originalCallback then
       originalCallback(choice)
     else
       if choice then
         choice.window:focus()
       else
-        -- If user cancelled, re-enter the app modal
-        if appModal then
-          appModal:enter()
-        end
+        -- If user cancelled, re-enter the app modal after a small delay
+        -- to avoid key conflicts
+        hs.timer.doAfter(0.1, function()
+          if appModal then
+            appModal:enter()
+          end
+        end)
       end
     end
   end)
