@@ -1,18 +1,18 @@
 local padding = 5
 
 local appModalBindings = {
-  { "h", "Music.app" },
-  { "u", "Slack.app" },
-  { "l", "Microsoft Teams.app" },
-  { "t", "Reminders.app" },
-  { "'", "Insomnia.app" },
-  { "p", "Obsidian.app" },
+  { "h",      "Music.app" },
+  { "u",      "Slack.app" },
+  { "l",      "Microsoft Teams.app" },
+  { "t",      "Reminders.app" },
+  { "'",      "Insomnia.app" },
+  { "p",      "Obsidian.app" },
   { "return", "Brave Browser.app" },
-  { "i", "IntellJ IDEA.app" },
-  { "o", "Visual Studio Code.app" },
-  { "m", "Microsoft Outlook.app" },
-  { "y", "Messages.app" },
-  { "\\", "Zoom.us.app" },
+  { "i",      "IntellJ IDEA.app" },
+  { "o",      "Visual Studio Code.app" },
+  { "m",      "Microsoft Outlook.app" },
+  { "y",      "Messages.app" },
+  { "\\",     "Zoom.us.app" },
 }
 
 local lastWindowId
@@ -53,6 +53,94 @@ function bindAppModal(modal, key, app)
     hs.application.launchOrFocus(app)
     modal:exit()
   end)
+end
+
+function showVSCodeWindowChooser()
+  -- Try multiple possible names for VS Code
+  local possibleNames = {
+    "Visual Studio Code",
+    "Code",
+    "VSCode",
+    "com.microsoft.VSCode"
+  }
+
+  local vscodeApp = nil
+  for _, name in ipairs(possibleNames) do
+    vscodeApp = hs.application.find(name)
+    if vscodeApp then
+      break
+    end
+  end
+
+  -- Debug: Show all running applications if VS Code not found
+  if not vscodeApp then
+    local runningApps = hs.application.runningApplications()
+    local vscodeApps = {}
+    for _, app in ipairs(runningApps) do
+      local appName = app:name()
+      if string.find(string.lower(appName), "code") or string.find(string.lower(appName), "visual") then
+        table.insert(vscodeApps, appName)
+      end
+    end
+
+    if #vscodeApps > 0 then
+      hs.alert.show("Found code-related apps: " .. table.concat(vscodeApps, ", "))
+      -- Try to use the first one found
+      vscodeApp = hs.application.find(vscodeApps[1])
+    else
+      hs.alert.show("Visual Studio Code is not running")
+      return
+    end
+  end
+
+  if not vscodeApp then
+    hs.alert.show("Could not find VS Code application")
+    return
+  end
+
+  local windows = vscodeApp:allWindows()
+
+  -- Filter out minimized windows
+  local visibleWindows = {}
+  for _, window in ipairs(windows) do
+    if not window:isMinimized() then
+      table.insert(visibleWindows, window)
+    end
+  end
+
+  if #visibleWindows == 0 then
+    hs.alert.show("No visible VS Code windows found")
+    return
+  end
+
+  if #visibleWindows == 1 then
+    visibleWindows[1]:focus()
+    return
+  end
+
+  local choices = {}
+  for i, window in ipairs(visibleWindows) do
+    local title = window:title()
+    if title == "" or title == nil then
+      title = "Untitled"
+    end
+    table.insert(choices, {
+      text = title,
+      subText = "VS Code Window " .. i,
+      window = window
+    })
+  end
+
+  local chooser = hs.chooser.new(function(choice)
+    if choice then
+      choice.window:focus()
+    end
+  end)
+
+  chooser:choices(choices)
+  chooser:searchSubText(true)
+  chooser:placeholderText("Select VS Code window...")
+  chooser:show()
 end
 
 function initModal()
@@ -113,6 +201,11 @@ end)
 
 hs.hotkey.bind({ "cmd", "alt", "ctrl" }, "R", function()
   hs.reload()
+end)
+
+-- VS Code window chooser
+hs.hotkey.bind({ "cmd", "shift" }, "v", function()
+  showVSCodeWindowChooser()
 end)
 
 initModal()
