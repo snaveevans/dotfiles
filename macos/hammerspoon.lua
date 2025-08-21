@@ -1,4 +1,5 @@
 local padding = 5
+local appModal = nil
 
 local appModalBindings = {
   { "h",      "Music.app" },
@@ -15,43 +16,19 @@ local appModalBindings = {
   { "\\",     "Zoom.us.app" },
 }
 
-local lastWindowId
-
-function pushWindowToRecent()
-  local focusedWindow = hs.window.focusedWindow()
-  lastWindowId = focusedWindow:id()
-end
-
-function swapFocusWithLastWindow()
-  if lastWindowId == nil then
-    return
-  end
-
-  local focusedWindow = hs.window.focusedWindow()
-  local currentWindowId = focusedWindow:id()
-  local lastWindow = hs.window.get(lastWindowId)
-  lastWindow:focus()
-  lastWindowId = currentWindowId
-end
-
 hs.hotkey.bind({ "cmd", "shift" }, "/", function()
-  pushWindowToRecent()
-  -- hs.execute("kitty", true)
   hs.application.launchOrFocus("kitty.app")
-  -- local kitty = hs.application.find("kitty")
-  -- if not kitty then
-  --   hs.execute("/Applications/kitty.app/Contents/MacOS/kitty", true)
-  -- else
-  --   hs.application.launchOrFocus("kitty.app")
-  --   -- hs.alert.show("Kitty is already running")
-  -- end
 end)
 
 function bindAppModal(modal, key, app)
   modal:bind("", key, function()
-    pushWindowToRecent()
-    hs.application.launchOrFocus(app)
-    modal:exit()
+    if app == "Visual Studio Code.app" then
+      modal:exit() -- Exit modal first
+      showVSCodeWindowChooser()
+    else
+      hs.application.launchOrFocus(app)
+      modal:exit()
+    end
   end)
 end
 
@@ -72,29 +49,9 @@ function showVSCodeWindowChooser()
     end
   end
 
-  -- Debug: Show all running applications if VS Code not found
+  -- If VS Code is not running, launch it
   if not vscodeApp then
-    local runningApps = hs.application.runningApplications()
-    local vscodeApps = {}
-    for _, app in ipairs(runningApps) do
-      local appName = app:name()
-      if string.find(string.lower(appName), "code") or string.find(string.lower(appName), "visual") then
-        table.insert(vscodeApps, appName)
-      end
-    end
-
-    if #vscodeApps > 0 then
-      hs.alert.show("Found code-related apps: " .. table.concat(vscodeApps, ", "))
-      -- Try to use the first one found
-      vscodeApp = hs.application.find(vscodeApps[1])
-    else
-      hs.alert.show("Visual Studio Code is not running")
-      return
-    end
-  end
-
-  if not vscodeApp then
-    hs.alert.show("Could not find VS Code application")
+    hs.application.launchOrFocus("Visual Studio Code.app")
     return
   end
 
@@ -109,15 +66,18 @@ function showVSCodeWindowChooser()
   end
 
   if #visibleWindows == 0 then
-    hs.alert.show("No visible VS Code windows found")
+    -- If no visible windows, just focus the app (this will show any minimized windows)
+    vscodeApp:activate()
     return
   end
 
   if #visibleWindows == 1 then
+    -- If only one window, just focus it
     visibleWindows[1]:focus()
     return
   end
 
+  -- Multiple windows - show the chooser
   local choices = {}
   for i, window in ipairs(visibleWindows) do
     local title = window:title()
@@ -140,23 +100,23 @@ function showVSCodeWindowChooser()
   chooser:choices(choices)
   chooser:searchSubText(true)
   chooser:placeholderText("Select VS Code window...")
-  
+
   -- Show the chooser first
   chooser:show()
-  
+
   -- Add custom hotkeys for navigation while chooser is open
-  local cmdNHotkey = hs.hotkey.bind({"cmd"}, "n", function()
+  local cmdNHotkey = hs.hotkey.bind({ "cmd" }, "n", function()
     local currentRow = chooser:selectedRow()
     local nextRow = (currentRow % #choices) + 1
     chooser:selectedRow(nextRow)
   end)
-  
-  local cmdPHotkey = hs.hotkey.bind({"cmd"}, "p", function()
+
+  local cmdPHotkey = hs.hotkey.bind({ "cmd" }, "p", function()
     local currentRow = chooser:selectedRow()
     local prevRow = currentRow == 1 and #choices or currentRow - 1
     chooser:selectedRow(prevRow)
   end)
-  
+
   -- Clean up hotkeys when chooser is dismissed
   local originalCallback = chooser:completionCallback()
   chooser:completionCallback(function(choice)
@@ -167,18 +127,22 @@ function showVSCodeWindowChooser()
     else
       if choice then
         choice.window:focus()
+      else
+        -- If user cancelled, re-enter the app modal
+        if appModal then
+          appModal:enter()
+        end
       end
     end
   end)
 end
 
 function initModal()
-  local appModal = hs.hotkey.modal.new({ "cmd", "shift" }, "space")
+  appModal = hs.hotkey.modal.new({ "cmd", "shift" }, "space")
   appModal:bind("", "escape", function()
     appModal:exit()
   end)
   appModal:bind("", "space", function()
-    swapFocusWithLastWindow()
     appModal:exit()
   end)
   for i, keyApp in ipairs(appModalBindings) do
@@ -230,11 +194,6 @@ end)
 
 hs.hotkey.bind({ "cmd", "alt", "ctrl" }, "R", function()
   hs.reload()
-end)
-
--- VS Code window chooser
-hs.hotkey.bind({ "cmd", "shift" }, "v", function()
-  showVSCodeWindowChooser()
 end)
 
 initModal()
