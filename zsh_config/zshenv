@@ -1,7 +1,5 @@
 export ASDF_DATA_DIR="$HOME/.asdf"
 
-# Add asdf shims FIRST in PATH so they take precedence over Homebrew
-PATH="$ASDF_DATA_DIR/shims:$PATH"
 PATH="$PATH:$HOME/bin"
 PATH="$PATH:/usr/local/bin"
 PATH="$PATH:$HOME/.local/bin"
