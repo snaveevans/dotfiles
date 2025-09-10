@@ -87,7 +87,7 @@ alias ij='open -a "IntelliJ IDEA" .'
 # alias jsc='/System/Library/Frameworks/JavaScriptCore.framework/Versions/Current/Helpers/jsc'
 
 # Initialize asdf
-. /opt/homebrew/opt/asdf/libexec/asdf.sh
+. $(brew --prefix)/opt/asdf/libexec/asdf.sh
 
 # add JAVA_HOME dynamically to path
 . ~/.asdf/plugins/java/set-java-home.zsh
