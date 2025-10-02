@@ -1,6 +1,6 @@
 return {
   {
-    "williamboman/mason.nvim",
+    "mason-org/mason.nvim",
     enabled = not vim.g.vscode, -- Disable in VSCode
     opts = {
       ensure_installed = {
