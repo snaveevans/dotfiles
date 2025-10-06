@@ -20,15 +20,14 @@ hs.hotkey.bind({ "cmd", "shift" }, "/", function()
   hs.application.launchOrFocus("kitty.app")
 end)
 
+hs.hotkey.bind({ "cmd", "shift" }, "o", function()
+  showVSCodeWindowChooser()
+end)
+
 function bindAppModal(modal, key, app)
   modal:bind("", key, function()
-    if app == "Visual Studio Code.app" then
-      modal:exit() -- Exit modal first
-      showVSCodeWindowChooser()
-    else
-      hs.application.launchOrFocus(app)
-      modal:exit()
-    end
+    hs.application.launchOrFocus(app)
+    modal:exit()
   end)
 end
 
@@ -38,7 +37,7 @@ function showVSCodeWindowChooser()
     "Visual Studio Code",
     "Code",
     "VSCode",
-    "com.microsoft.VSCode"
+    "com.microsoft.VSCode",
   }
 
   local vscodeApp = nil
@@ -87,7 +86,7 @@ function showVSCodeWindowChooser()
     table.insert(choices, {
       text = title,
       subText = "VS Code Window " .. i,
-      window = window
+      window = window,
     })
   end
 
@@ -97,8 +96,12 @@ function showVSCodeWindowChooser()
 
   local chooser = hs.chooser.new(function(choice)
     -- Clean up hotkeys immediately when selection is made
-    if cmdNHotkey then cmdNHotkey:delete() end
-    if cmdPHotkey then cmdPHotkey:delete() end
+    if cmdNHotkey then
+      cmdNHotkey:delete()
+    end
+    if cmdPHotkey then
+      cmdPHotkey:delete()
+    end
 
     if choice then
       choice.window:focus()
@@ -129,8 +132,12 @@ function showVSCodeWindowChooser()
   local originalCallback = chooser:completionCallback()
   chooser:completionCallback(function(choice)
     -- Additional cleanup in case the main callback didn't run
-    if cmdNHotkey then cmdNHotkey:delete() end
-    if cmdPHotkey then cmdPHotkey:delete() end
+    if cmdNHotkey then
+      cmdNHotkey:delete()
+    end
+    if cmdPHotkey then
+      cmdPHotkey:delete()
+    end
 
     if originalCallback then
       originalCallback(choice)
