@@ -43,32 +43,45 @@ return {
 
     -- Disable terminal and task plugins (VSCode handles these)
     { "akinsho/toggleterm.nvim",                 enabled = false },
-    { "folke/snacks.nvim",                       enabled = false },
+
+    -- Keep Snacks but disable all features (LazyVim depends on it)
+    {
+        "folke/snacks.nvim",
+        enabled = true,
+        opts = {
+            bigfile = { enabled = false },
+            notifier = { enabled = false },
+            quickfile = { enabled = false },
+            statuscolumn = { enabled = false },
+            words = { enabled = false },
+            styles = {},
+        },
+    },
 
     -- Disable git plugins (VSCode handles these better)
-    { "lewis6991/gitsigns.nvim",                 enabled = false },
-    { "kdheepak/lazygit.nvim",                   enabled = false },
+    { "lewis6991/gitsigns.nvim",         enabled = false },
+    { "kdheepak/lazygit.nvim",           enabled = false },
 
     -- Disable debugging plugins (use VSCode debugger)
-    { "mfussenegger/nvim-dap",                   enabled = false },
-    { "rcarriga/nvim-dap-ui",                    enabled = false },
-    { "theHamsta/nvim-dap-virtual-text",         enabled = false },
+    { "mfussenegger/nvim-dap",           enabled = false },
+    { "rcarriga/nvim-dap-ui",            enabled = false },
+    { "theHamsta/nvim-dap-virtual-text", enabled = false },
 
     -- Disable session management (VSCode handles workspaces)
-    { "folke/persistence.nvim",                  enabled = false },
+    { "folke/persistence.nvim",          enabled = false },
 
     -- Disable colorscheme plugins (VSCode theme takes precedence)
-    { "folke/tokyonight.nvim",                   enabled = false },
-    { "catppuccin/nvim",                         enabled = false },
+    { "folke/tokyonight.nvim",           enabled = false },
+    { "catppuccin/nvim",                 enabled = false },
 
     -- Keep useful text manipulation plugins
-    { "nvim-mini/mini.surround",                 enabled = true },
-    { "nvim-mini/mini.comment",                  enabled = true },
-    { "nvim-mini/mini.pairs",                    enabled = true },
-    { "nvim-mini/mini.ai",                       enabled = true },
+    { "nvim-mini/mini.surround",         enabled = true },
+    { "nvim-mini/mini.comment",          enabled = true },
+    { "nvim-mini/mini.pairs",            enabled = true },
+    { "nvim-mini/mini.ai",               enabled = true },
 
     -- Keep useful editing plugins
-    { "folke/flash.nvim",                        enabled = true },
+    { "folke/flash.nvim",                enabled = true },
 
     -- TreeSitter: useful for text objects and syntax
     {
