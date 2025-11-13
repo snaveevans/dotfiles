@@ -2,25 +2,25 @@ local padding = 5
 local appModal = nil
 
 local appModalBindings = {
-  { "h",      "Music.app" },
-  { "u",      "Slack.app" },
-  { "l",      "Microsoft Teams.app" },
-  { "t",      "Reminders.app" },
-  { "'",      "Insomnia.app" },
-  { "p",      "Obsidian.app" },
+  { "h", "Music.app" },
+  { "u", "Slack.app" },
+  { "l", "Microsoft Teams.app" },
+  { "t", "Reminders.app" },
+  { "'", "Insomnia.app" },
+  { "p", "Obsidian.app" },
   { "return", "Brave Browser.app" },
-  { "i",      "IntellJ IDEA.app" },
-  { "o",      "Visual Studio Code.app" },
-  { "m",      "Microsoft Outlook.app" },
-  { "y",      "Messages.app" },
-  { "\\",     "Zoom.us.app" },
+  { "i", "IntellJ IDEA.app" },
+  { "o", "Visual Studio Code.app" },
+  { "m", "Microsoft Outlook.app" },
+  { "y", "Messages.app" },
+  { "\\", "Zoom.us.app" },
 }
 
 hs.hotkey.bind({ "cmd", "shift" }, "/", function()
   hs.application.launchOrFocus("kitty.app")
 end)
 
-hs.hotkey.bind({ "cmd", "shift" }, "o", function()
+hs.hotkey.bind({ "cmd", "shift" }, ".", function()
   showVSCodeWindowChooser()
 end)
 
