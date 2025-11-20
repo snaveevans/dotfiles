@@ -1,0 +1,51 @@
+{{- if eq .chezmoi.os "darwin" -}}
+#!/bin/bash
+
+brew bundle --file=/dev/stdin <<EOF
+
+tap "homebrew/bundle"
+tap "homebrew/cask-drivers"
+tap "homebrew/cask-fonts"
+tap "homebrew/services"
+tap "jdx/tap"
+tap "jesseduffield/lazygit"
+
+brew "git"
+brew "asdf"
+brew "bat"
+brew "chezmoi"
+brew "fzf"
+brew "gawk"
+brew "gh"
+brew "unbound"
+brew "gnutls"
+brew "libassuan"
+brew "libksba"
+brew "pinentry"
+brew "gnupg"
+brew "go"
+brew "httpie"
+brew "jq"
+brew "lazygit"
+brew "maven"
+brew "neovim"
+brew "pipx"
+brew "ripgrep"
+brew "scc"
+brew "stylua"
+brew "tree"
+brew "usage"
+brew "vault"
+brew "zsh"
+cask "alfred"
+cask "bitwarden"
+cask "brave-browser"
+cask "firefox"
+cask "font-fira-code-nerd-font"
+cask "hammerspoon"
+cask "kitty"
+cask "obsidian"
+cask "visual-studio-code"
+
+EOF
+{{ end -}}

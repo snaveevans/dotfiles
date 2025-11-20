@@ -1,4 +1,0 @@
-clear lock
-
-! set caps_lock to escape
-keycode 66 = Escape
