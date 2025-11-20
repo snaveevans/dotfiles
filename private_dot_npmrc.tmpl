@@ -1,0 +1,7 @@
+@snaveevans:registry=https://npm.pkg.github.com
+@octanner:registry=https://npm.pkg.github.com/
+//npm.pkg.github.com/:_authToken={{ (bitwardenFields "item" "github.com").access_token.value }}
+
+@octanner-ui:registry=https://artifactory.octanner.net/api/npm/oct-npmjs/
+//artifactory.octanner.net/api/npm/oct-npmjs/:email={{ (bitwardenFields "item" "artifactory.octanner.net").email.value }}
+//artifactory.octanner.net/api/npm/oct-npmjs/:_auth={{ (bitwardenFields "item" "artifactory.octanner.net").access_token.value }}

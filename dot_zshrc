@@ -79,7 +79,7 @@ alias pn=pnpm
 alias lg=lazygit
 alias e="$EDITOR"
 # alias e='NVIM_APPNAME=lvim nvim'
-alias cat="bat"
+# alias cat="bat"
 alias re=_re-source
 alias se=_search
 alias ij='open -a "IntelliJ IDEA" .'

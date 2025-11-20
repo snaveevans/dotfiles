@@ -1,0 +1,31 @@
+{{ if eq .chezmoi.os "darwin" -}}
+#!/usr/bin/env bash
+
+# This enables 󰘳+ctrl+left mouse to be able to drag on the entire window.
+defaults write -g "NSWindowShouldDragOnGesture" -bool true
+
+# enable key repeat
+defaults write -g "ApplePressAndHoldEnabled" 0
+
+# Key repeat speed
+defaults write -g "InitialKeyRepeat" -int 25
+defaults write -g "KeyRepeat" -int 2
+
+# only show active applications
+defaults write com.apple.dock "static-only" -bool true
+
+# Set the size of the dock to 30 points
+defaults write com.apple.dock "tilesize" -int 40
+
+# Setup dock autohide
+defaults write com.apple.dock "autohide" -bool true
+defaults write com.apple.dock "autohide-delay" -int 0
+defaults write com.apple.dock "autohide-time-modifier" -float "0.12"
+
+# Drag with 3 finger drag
+defaults write com.apple.AppleMultitouchTrackpad "TrackpadThreeFingerDrag" -bool "true"
+
+# kill and restart dock for these changes be applied
+killall Dock
+
+{{ end -}}
