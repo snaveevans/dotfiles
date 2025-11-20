@@ -80,3 +80,15 @@ if not vim.g.vscode then
 end
 
 vim.opt.diffopt:append({ "vertical" })
+
+-- Configure Neovim to use a fixed Node.js version (bypassing asdf project-specific versions)
+-- This ensures consistent behavior across all projects
+local node_version = "22.14.0"
+local node_path = vim.fn.expand("~/.asdf/installs/nodejs/" .. node_version .. "/bin")
+local node_host_prog = node_path .. "/neovim-node-host"
+
+-- Set the node host program for Neovim providers
+vim.g.node_host_prog = node_host_prog
+
+-- Prepend the fixed Node.js version to PATH for all Neovim operations
+vim.env.PATH = node_path .. ":" .. vim.env.PATH
