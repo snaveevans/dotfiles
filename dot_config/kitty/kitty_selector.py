@@ -159,28 +159,31 @@ def handle_result(
         return
     dir_name = os.path.basename(selected_directory)
 
-    # w.paste_text(
-    #     f"Selected directory: {selected_directory} ---- directory name: {dir_name}"
-    # )
-    # return
-
-    existing = boss.match_tabs(f"title:^{dir_name}$")
-    item = next(existing, None)
-
-    # w.paste_text(f"dir_name: {dir_name} ---- item: {item}")
-    # return
-
-    if item is not None:
-        boss.call_remote_control(w, ("focus-tab", f"--match=id:{item.id}"))
-    else:
+    # Check if a tab with this title already exists
+    try:
+        existing_tabs = list(boss.match_tabs(f"title:{dir_name}"))
+        if existing_tabs:
+            # Focus the existing tab
+            boss.call_remote_control(w, ("focus-tab", f"--match=id:{existing_tabs[0].id}"))
+        else:
+            # Create a new tab
+            boss.call_remote_control(
+                w,
+                (
+                    "launch",
+                    "--type=tab",
+                    f"--cwd={selected_directory}",
+                    f"--tab-title={dir_name}",
+                ),
+            )
+    except Exception as e:
+        # If matching fails, just create a new tab
         boss.call_remote_control(
             w,
             (
                 "launch",
                 "--type=tab",
-                "--cwd",
-                selected_directory,
-                "--tab-title",
-                dir_name,
+                f"--cwd={selected_directory}",
+                f"--tab-title={dir_name}",
             ),
         )
