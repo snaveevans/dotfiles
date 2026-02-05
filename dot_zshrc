@@ -10,6 +10,7 @@ plugins=(
   git
   zsh-autosuggestions
   spaceship-vi-mode
+  chezmoi
 )
 
 source $ZSH/oh-my-zsh.sh
@@ -83,6 +84,7 @@ alias e="$EDITOR"
 alias re=_re-source
 alias se=_search
 alias ij='open -a "IntelliJ IDEA" .'
+alias cz=chezmoi
 
 # alias jsc='/System/Library/Frameworks/JavaScriptCore.framework/Versions/Current/Helpers/jsc'
 
