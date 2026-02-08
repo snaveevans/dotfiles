@@ -1,0 +1,131 @@
+{{- if eq .chezmoi.os "linux" -}}
+#!/bin/bash
+
+set -e
+
+echo "Installing packages for Linux..."
+
+# Update package lists
+sudo apt-get update
+
+# Install essential packages
+sudo apt-get install -y \
+  git \
+  curl \
+  wget \
+  build-essential \
+  zsh \
+  fzf \
+  ripgrep \
+  bat \
+  tree \
+  jq \
+  httpie \
+  gnupg \
+  pinentry-tty \
+  unzip \
+  zip \
+  software-properties-common \
+  apt-transport-https \
+  ca-certificates
+
+# Install neovim (latest stable via official repo)
+echo "Installing Neovim..."
+sudo add-apt-repository -y ppa:neovim-ppa/stable
+sudo apt-get update
+sudo apt-get install -y neovim
+
+# Install lazygit
+echo "Installing lazygit..."
+LAZYGIT_VERSION=$(curl -s "https://api.github.com/repos/jesseduffield/lazygit/releases/latest" | grep -Po '"tag_name": "v\K[^"]*')
+curl -Lo lazygit.tar.gz "https://github.com/jesseduffield/lazygit/releases/latest/download/lazygit_${LAZYGIT_VERSION}_Linux_x86_64.tar.gz"
+tar xf lazygit.tar.gz lazygit
+sudo install lazygit /usr/local/bin
+rm lazygit lazygit.tar.gz
+
+# Install kitty terminal
+echo "Installing Kitty terminal..."
+curl -L https://sw.kovidgoyal.net/kitty/installer.sh | sh /dev/stdin
+# Create symlink for kitty
+mkdir -p ~/.local/bin
+ln -sf ~/.local/kitty.app/bin/kitty ~/.local/bin/kitty
+ln -sf ~/.local/kitty.app/bin/kitten ~/.local/bin/kitten
+
+# Install asdf version manager
+echo "Installing asdf..."
+git clone https://github.com/asdf-vm/asdf.git ~/.asdf --branch v0.14.0
+
+# Install go (using official installer)
+echo "Installing Go..."
+GO_VERSION=$(curl -s "https://go.dev/dl/?mode=json" | grep -o '"version": "go[^"]*"' | head -1 | sed 's/"version": "go//' | sed 's/"$//')
+wget "https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz"
+sudo rm -rf /usr/local/go
+sudo tar -C /usr/local -xzf "go${GO_VERSION}.linux-amd64.tar.gz"
+rm "go${GO_VERSION}.linux-amd64.tar.gz"
+
+# Install pipx
+sudo apt-get install -y pipx
+pipx ensurepath
+
+# Install gh CLI
+echo "Installing GitHub CLI..."
+type -p curl >/dev/null || sudo apt install curl -y
+curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+sudo apt-get update
+sudo apt-get install -y gh
+
+# Install i3 window manager and related packages
+echo "Installing i3 window manager..."
+sudo apt-get install -y \
+  i3 \
+  i3status \
+  i3lock \
+  rofi \
+  dmenu \
+  feh \
+  picom \
+  polybar \
+  xclip \
+  lxappearance \
+  arandr
+
+# Install Starship prompt (alternative to spaceship that works well on Linux)
+echo "Installing Starship prompt..."
+curl -sS https://starship.rs/install.sh | sh -s -- -y
+
+# Install fd (better find)
+echo "Installing fd..."
+FD_VERSION=$(curl -s "https://api.github.com/repos/sharkdp/fd/releases/latest" | grep -Po '"tag_name": "v\K[^"]*')
+wget "https://github.com/sharkdp/fd/releases/download/v${FD_VERSION}/fd_${FD_VERSION}_amd64.deb"
+sudo dpkg -i "fd_${FD_VERSION}_amd64.deb"
+rm "fd_${FD_VERSION}_amd64.deb"
+
+# Install stylua
+pipx install stylua
+
+# Install scc (code counter)
+echo "Installing scc..."
+SCC_VERSION=$(curl -s "https://api.github.com/repos/boyter/scc/releases/latest" | grep -Po '"tag_name": "v\K[^"]*')
+wget "https://github.com/boyter/scc/releases/download/v${SCC_VERSION}/scc_${SCC_VERSION}_Linux_x86_64.tar.gz"
+tar -xzf "scc_${SCC_VERSION}_Linux_x86_64.tar.gz"
+sudo mv scc /usr/local/bin/
+rm "scc_${SCC_VERSION}_Linux_x86_64.tar.gz"
+
+# Install JetBrains Mono and Fira Code Nerd Fonts
+echo "Installing Nerd Fonts..."
+mkdir -p ~/.local/share/fonts
+cd ~/.local/share/fonts
+# FiraCode Nerd Font
+curl -fLo "FiraCode.zip" "https://github.com/ryanoasis/nerd-fonts/releases/download/v3.2.1/FiraCode.zip"
+unzip -o "FiraCode.zip" -d FiraCode
+rm "FiraCode.zip"
+# JetBrains Mono Nerd Font
+curl -fLo "JetBrainsMono.zip" "https://github.com/ryanoasis/nerd-fonts/releases/download/v3.2.1/JetBrainsMono.zip"
+unzip -o "JetBrainsMono.zip" -d JetBrainsMono
+rm "JetBrainsMono.zip"
+fc-cache -fv
+
+echo "Linux package installation complete!"
+{{ end -}}

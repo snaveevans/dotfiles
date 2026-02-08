@@ -1,7 +1,12 @@
 # Path to your oh-my-zsh installation.
 export ZSH="$HOME/.oh-my-zsh"
 
+{{ if eq .chezmoi.os "darwin" -}}
 ZSH_THEME="spaceship"
+{{ else -}}
+# Use starship prompt on Linux (installed in the setup script)
+eval "$(starship init zsh)"
+{{ end -}}
 
 plugins=(
   fast-syntax-highlighting
@@ -9,15 +14,19 @@ plugins=(
   fzf-tab
   git
   zsh-autosuggestions
+  {{ if eq .chezmoi.os "darwin" -}}
   spaceship-vi-mode
+  {{ end -}}
   chezmoi
 )
 
 source $ZSH/oh-my-zsh.sh
 
+{{ if eq .chezmoi.os "darwin" -}}
 # if type brew &>/dev/null; then
 #   FPATH=$(brew --prefix)/share/zsh/site-functions:$FPATH
 # fi
+{{ end -}}
 
 # source /usr/local/share/zsh-autosuggestions/zsh-autosuggestions.zsh
 
@@ -37,7 +46,11 @@ function _search() {
 zle -N _search
 
 function _kill-port () {
+  {{ if eq .chezmoi.os "darwin" -}}
   process_id="$(lsof -P -i TCP -s TCP:LISTEN | fzf -m | awk '{print $2}')"
+  {{ else -}}
+  process_id="$(ss -tlnp | fzf -m | awk '{print $7}' | grep -oP '\d+' | head -1)"
+  {{ end -}}
   if [[ -n $process_id ]]
   then
     eval "kill -9 $process_id"
@@ -59,8 +72,10 @@ unsetopt share_history
 
 # vi mode
 bindkey -v
+{{ if eq .chezmoi.os "darwin" -}}
 spaceship add --before char vi_mode
 eval spaceship_vi_mode_enable
+{{ end -}}
 
 bindkey '^h' backward-char
 bindkey '^l' forward-char
@@ -84,7 +99,11 @@ alias e="$EDITOR"
 # alias cat="bat"
 alias re=_re-source
 alias se=_search
+{{ if eq .chezmoi.os "darwin" -}}
 alias ij='open -a "IntelliJ IDEA" .'
+{{ else -}}
+alias ij='idea .'
+{{ end -}}
 
 function chezmoi() {
   local arg
@@ -108,13 +127,21 @@ function chezmoi() {
   command chezmoi "$@"
 }
 
+{{ if eq .chezmoi.os "darwin" -}}
 # alias jsc='/System/Library/Frameworks/JavaScriptCore.framework/Versions/Current/Helpers/jsc'
+{{ end -}}
 
 # Initialize asdf
+{{ if eq .chezmoi.os "darwin" -}}
 . $(brew --prefix)/opt/asdf/libexec/asdf.sh
+{{ else -}}
+. "$HOME/.asdf/asdf.sh"
+{{ end -}}
 
 # add JAVA_HOME dynamically to path
-. ~/.asdf/plugins/java/set-java-home.zsh
+if [[ -f ~/.asdf/plugins/java/set-java-home.zsh ]]; then
+  . ~/.asdf/plugins/java/set-java-home.zsh
+fi
 
 # autoload -Uz compinit; compinit
 # [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh

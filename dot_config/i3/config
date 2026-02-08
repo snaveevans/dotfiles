@@ -1,0 +1,196 @@
+# i3 config file
+# This replaces Hammerspoon functionality on macOS
+
+# Set modifier key (Mod4 = Super/Windows key, Mod1 = Alt)
+set $mod Mod4
+set $alt Mod1
+
+# Font for window titles and bar
+font pango:JetBrainsMono Nerd Font 10
+
+# Use Mouse+$mod to drag floating windows to their wanted position
+floating_modifier $mod
+
+# Start a terminal
+bindsym $mod+Return exec kitty
+
+# Kill focused window
+bindsym $mod+Shift+q kill
+
+# Start rofi (program launcher - replaces cmd+shift+space app launcher)
+bindsym $mod+space exec rofi -show drun -show-icons
+bindsym $mod+Shift+space exec rofi -show window -show-icons
+
+# Window focus (vim keys)
+bindsym $mod+h focus left
+bindsym $mod+j focus down
+bindsym $mod+k focus up
+bindsym $mod+l focus right
+
+# Move focused window
+bindsym $mod+Shift+h move left
+bindsym $mod+Shift+j move down
+bindsym $mod+Shift+k move up
+bindsym $mod+Shift+l move right
+
+# Split in horizontal orientation
+bindsym $mod+b split h
+
+# Split in vertical orientation
+bindsym $mod+v split v
+
+# Enter fullscreen mode for the focused container
+bindsym $mod+f fullscreen toggle
+
+# Change container layout (stacked, tabbed, toggle split)
+bindsym $mod+s layout stacking
+bindsym $mod+w layout tabbed
+bindsym $mod+e layout toggle split
+
+# Toggle tiling / floating
+bindsym $mod+Shift+space floating toggle
+
+# Change focus between tiling / floating windows
+bindsym $mod+semicolon focus mode_toggle
+
+# Focus the parent container
+bindsym $mod+a focus parent
+
+# Define names for default workspaces
+set $ws1 "1"
+set $ws2 "2"
+set $ws3 "3"
+set $ws4 "4"
+set $ws5 "5"
+set $ws6 "6"
+set $ws7 "7"
+set $ws8 "8"
+set $ws9 "9"
+set $ws10 "10"
+
+# Switch to workspace
+bindsym $mod+1 workspace $ws1
+bindsym $mod+2 workspace $ws2
+bindsym $mod+3 workspace $ws3
+bindsym $mod+4 workspace $ws4
+bindsym $mod+5 workspace $ws5
+bindsym $mod+6 workspace $ws6
+bindsym $mod+7 workspace $ws7
+bindsym $mod+8 workspace $ws8
+bindsym $mod+9 workspace $ws9
+bindsym $mod+0 workspace $ws10
+
+# Move focused container to workspace
+bindsym $mod+Shift+1 move container to workspace $ws1
+bindsym $mod+Shift+2 move container to workspace $ws2
+bindsym $mod+Shift+3 move container to workspace $ws3
+bindsym $mod+Shift+4 move container to workspace $ws4
+bindsym $mod+Shift+5 move container to workspace $ws5
+bindsym $mod+Shift+6 move container to workspace $ws6
+bindsym $mod+Shift+7 move container to workspace $ws7
+bindsym $mod+Shift+8 move container to workspace $ws8
+bindsym $mod+Shift+9 move container to workspace $ws9
+bindsym $mod+Shift+0 move container to workspace $ws10
+
+# Window resizing (like Hammerspoon window management)
+# Left half
+bindsym $mod+Shift+9 exec i3-msg "resize set 50 ppt 100 ppt, move position 0 px 0 px"
+# Right half
+bindsym $mod+Shift+0 exec i3-msg "resize set 50 ppt 100 ppt, move position 50 ppt 0 px"
+# Full screen/maximize
+bindsym $mod+Shift+equal exec i3-msg "fullscreen toggle"
+
+# Reload the configuration file
+bindsym $mod+Shift+c reload
+
+# Restart i3 inplace (preserves your layout/session)
+bindsym $mod+Shift+r restart
+
+# Exit i3
+bindsym $mod+Shift+e exec "i3-nagbar -t warning -m 'Exit i3?' -B 'Yes' 'i3-msg exit'"
+
+# Resize window mode
+bindsym $mod+r mode "resize"
+
+mode "resize" {
+        bindsym h resize shrink width 10 px or 10 ppt
+        bindsym j resize grow height 10 px or 10 ppt
+        bindsym k resize shrink height 10 px or 10 ppt
+        bindsym l resize grow width 10 px or 10 ppt
+
+        bindsym Return mode "default"
+        bindsym Escape mode "default"
+        bindsym $mod+r mode "default"
+}
+
+# Colors (matching kitty theme)
+set $bg-color            #272a32
+set $inactive-bg-color   #2f343f
+set $text-color          #abb1bf
+set $inactive-text-color #676767
+set $urgent-bg-color     #bd4f45
+set $indicator-color     #61aeee
+
+# Window colors
+client.focused          $bg-color           $bg-color          $text-color          $indicator-color
+client.focused_inactive $inactive-bg-color  $inactive-bg-color $inactive-text-color $indicator-color
+client.unfocused        $inactive-bg-color  $inactive-bg-color $inactive-text-color $indicator-color
+client.urgent           $urgent-bg-color    $urgent-bg-color   $text-color          $indicator-color
+client.placeholder      $inactive-bg-color  $inactive-bg-color $inactive-text-color $indicator-color
+
+client.background       $bg-color
+
+# Enable gaps (if using i3-gaps)
+gaps inner 10
+gaps outer 5
+
+# Hide edge borders
+hide_edge_borders both
+
+# Startup applications
+exec --no-startup-id dex --autostart --environment i3
+exec --no-startup-id xss-lock --transfer-sleep-lock -- i3lock --nofork
+exec --no-startup-id nm-applet
+
+# Set background wallpaper
+exec --no-startup-id feh --bg-scale ~/.config/wallpaper.jpg
+
+# Start picom compositor for transparency and effects
+exec --no-startup-id picom -b
+
+# Start polybar
+exec --no-startup-id ~/.config/polybar/launch.sh
+
+# Assign specific apps to workspaces (optional)
+assign [class="firefox"] $ws2
+assign [class="Brave"] $ws2
+
+# Float specific windows
+for_window [window_role="pop-up"] floating enable
+for_window [window_type="dialog"] floating enable
+
+# Application shortcuts (like Hammerspoon app bindings)
+# These use rofi or direct exec with Mod+Alt combinations
+bindsym $mod+$alt+h exec firefox         # Music → Browser
+bindsym $mod+$alt+u exec slack           # Slack
+bindsym $mod+$alt+l exec teams           # Teams
+bindsym $mod+$alt+t exec kitty           # Terminal
+bindsym $mod+$alt+p exec obsidian        # Obsidian
+bindsym $mod+$alt+Return exec brave      # Browser
+
+# i3bar configuration (using i3status)
+bar {
+        status_command i3status
+        position bottom
+        font pango:JetBrainsMono Nerd Font 10
+        colors {
+                background $bg-color
+                statusline $text-color
+                separator  $indicator-color
+
+                focused_workspace  $bg-color          $bg-color          $text-color
+                active_workspace   $inactive-bg-color $inactive-bg-color $text-color
+                inactive_workspace $inactive-bg-color $inactive-bg-color $inactive-text-color
+                urgent_workspace   $urgent-bg-color   $urgent-bg-color   $text-color
+        }
+}

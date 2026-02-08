@@ -40,10 +40,18 @@ color15               #fffefe
 selection_foreground  #a7b1be
 
 # advanced
+{{ if eq .chezmoi.os "darwin" -}}
 editor /opt/homebrew/bin/nvim
+{{ else -}}
+editor /usr/bin/nvim
+{{ end -}}
 
 # keyboard shortcuts
+{{ if eq .chezmoi.os "darwin" -}}
 kitty_mod cmd
+{{ else -}}
+kitty_mod ctrl
+{{ end -}}
 
 map kitty_mod+shift+o open_url_with_hints
 
