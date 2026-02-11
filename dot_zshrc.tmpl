@@ -109,19 +109,20 @@ function chezmoi() {
   local arg
   local subcommand=""
 
-  if [[ -z "${BW_SESSION:-}" ]]; then
-    for arg in "$@"; do
-      if [[ "$arg" == --* ]]; then
-        continue
-      fi
-
-      subcommand="$arg"
-      break
-    done
-
-    if [[ "$subcommand" == "apply" ]] && command -v bw >/dev/null 2>&1; then
-      export BW_SESSION="$(bw unlock --raw)" || return 1
+  for arg in "$@"; do
+    if [[ "$arg" == --* ]]; then
+      continue
     fi
+
+    subcommand="$arg"
+    break
+  done
+
+  if [[ "$subcommand" == "apply" ]] && [[ -z "${BW_SESSION:-}" ]] && command -v bw >/dev/null 2>&1; then
+    local bw_session
+    bw_session="$(bw unlock --raw)" || return 1
+    BW_SESSION="$bw_session" command chezmoi "$@"
+    return $?
   fi
 
   command chezmoi "$@"
