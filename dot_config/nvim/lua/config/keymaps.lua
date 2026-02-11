@@ -270,6 +270,9 @@ else
   map("n", "<leader><cr>", ":noh<cr>", merge({ desc = "No highlight" }, cmd_opts))
   map("n", "<leader>fn", ':edit <c-r>=expand("%:.:h")<cr>/', merge({ desc = "New file" }, cmd_opts))
   map("n", "<leader>fv", ':vsplit <c-r>=expand("%:.:h")<cr>/', merge({ desc = "New file (split)" }, cmd_opts))
+  
+  -- Git changed files with fzf
+  map("n", "<leader>i", "<cmd>FzfLua git_status<cr>", merge({ desc = "Git changed files (fzf)" }, opts))
 
   -- Line movement for regular Neovim (Alt+j/k and M-j/k)
   map("n", "<A-j>", ":m .+1<CR>==", opts)
