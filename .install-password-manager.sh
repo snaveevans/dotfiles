@@ -1,17 +1,26 @@
 #!/bin/sh
 
-# exit immediately if password-manager-binary is already in $PATH
-type password-manager-binary >/dev/null 2>&1 && exit
+# exit immediately if bw is already in $PATH
+type bw >/dev/null 2>&1 && exit
 
 case "$(uname -s)" in
 Darwin)
-  # commands to install password-manager-binary on Darwin
+  # commands to install Bitwarden on Darwin
   brew install --cask bitwarden
   brew install bitwarden-cli
-  export BW_SESSION=$(bw unlock --raw)
   ;;
 Linux)
-  # commands to install password-manager-binary on Linux
+  # Install Bitwarden CLI on Linux using snap or direct download
+  if command -v snap >/dev/null 2>&1; then
+    sudo snap install bw
+  else
+    # Download and install directly
+    curl -L "https://vault.bitwarden.com/download/?app=cli&platform=linux" -o /tmp/bw.zip
+    unzip /tmp/bw.zip -d /tmp/
+    sudo mv /tmp/bw /usr/local/bin/bw
+    sudo chmod +x /usr/local/bin/bw
+    rm /tmp/bw.zip
+  fi
   ;;
 *)
   echo "unsupported OS"

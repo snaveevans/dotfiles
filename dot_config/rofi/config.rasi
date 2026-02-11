@@ -1,0 +1,125 @@
+configuration {
+    modi: "drun,window,run";
+    font: "JetBrainsMono Nerd Font 12";
+    show-icons: true;
+    icon-theme: "Papirus";
+    terminal: "kitty";
+    drun-display-format: "{name}";
+    location: 0;
+    disable-history: false;
+    hide-scrollbar: true;
+    display-drun: "  Apps  ";
+    display-window: "  Windows  ";
+    display-run: "  Run  ";
+}
+
+@theme "/dev/null"
+
+* {
+    bg: #272a32;
+    bg-alt: #2f343f;
+    fg: #abb1bf;
+    fg-alt: #676767;
+    
+    primary: #61aeee;
+    secondary: #c477dc;
+    alert: #bd4f45;
+    
+    background-color: @bg;
+    text-color: @fg;
+}
+
+window {
+    width: 600;
+    height: 400;
+    border: 2px;
+    border-color: @primary;
+    background-color: @bg;
+    padding: 20px;
+}
+
+mainbox {
+    background-color: transparent;
+    children: [inputbar, listview];
+    spacing: 15px;
+}
+
+inputbar {
+    background-color: @bg-alt;
+    border-radius: 8px;
+    padding: 12px 16px;
+    children: [prompt, entry];
+    spacing: 12px;
+}
+
+prompt {
+    background-color: transparent;
+    text-color: @primary;
+    font: "JetBrainsMono Nerd Font 14";
+}
+
+entry {
+    background-color: transparent;
+    text-color: @fg;
+    placeholder: "Search...";
+    placeholder-color: @fg-alt;
+    cursor: text;
+}
+
+listview {
+    background-color: transparent;
+    columns: 1;
+    lines: 8;
+    spacing: 8px;
+    fixed-height: false;
+    dynamic: true;
+}
+
+element {
+    background-color: transparent;
+    padding: 10px 16px;
+    border-radius: 6px;
+    spacing: 12px;
+}
+
+element-icon {
+    background-color: transparent;
+    size: 24px;
+}
+
+element-text {
+    background-color: transparent;
+    text-color: @fg;
+    vertical-align: 0.5;
+}
+
+element selected {
+    background-color: @bg-alt;
+    border: 1px;
+    border-color: @primary;
+}
+
+element selected.normal {
+    background-color: @bg-alt;
+    text-color: @primary;
+}
+
+element-text selected.normal {
+    text-color: @fg;
+}
+
+mode-switcher {
+    background-color: transparent;
+}
+
+button {
+    background-color: @bg-alt;
+    text-color: @fg-alt;
+    padding: 8px 16px;
+    border-radius: 6px;
+}
+
+button selected {
+    background-color: @primary;
+    text-color: @bg;
+}
