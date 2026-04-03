@@ -21,6 +21,9 @@ This repo now has a first-pass plain `home/` layout for a conservative set of no
 - `scripts/test-refresh-secrets.sh` for lightweight fake-Bitwarden verification of the dry-run unlock/session path
 - Kitty OS-specific overlay selection via installer-managed `~/.config/kitty/os.conf`
 - Optional local Kitty overrides via `~/.config/kitty/local.conf`
+- `scripts/bootstrap.sh` with explicit OS-dispatched bootstrap flow
+- `scripts/bootstrap-darwin.sh` and `scripts/bootstrap-linux.sh` replacing the old `run_once_*` bootstrap path
+- `docs/bootstrap.md` documenting the new bootstrap -> link -> refresh setup flow
 - Generated local secret artifacts:
   - `~/.config/secrets/env`
   - `~/.npmrc`
@@ -28,11 +31,7 @@ This repo now has a first-pass plain `home/` layout for a conservative set of no
 
 ## Remaining slices
 
-1. **Bootstrap/package install extraction**
-   - Pull useful package/bootstrap knowledge out of `run_once_*` templates.
-   - Keep install steps separate from day-to-day config linking.
-
-2. **Chezmoi-specific cleanup**
+1. **Chezmoi-specific cleanup**
    - Migrate any remaining safe plain files.
    - Remove chezmoi config and legacy templates only after every required path has a replacement.
 
