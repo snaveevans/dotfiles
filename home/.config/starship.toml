@@ -1,0 +1,123 @@
+# Starship configuration for Linux
+# Replaces Spaceship prompt on macOS
+
+format = """
+[░▒▓](#272a32)
+[  ](bg:#272a32)
+$username$hostname[  ](bg:#272a32)
+[▓▒░](#272a32)
+$directory$git_branch$git_status
+$character"""
+
+# Prompt symbols
+[character]
+success_symbol = '[➜](bold #97c178)'
+error_symbol = '[✗](bold #bd4f45)'
+vicmd_symbol = '[❮](bold #61aeee)'
+
+# Username
+[username]
+style_user = 'bg:#272a32 fg:#61aeee bold'
+style_root = 'bg:#272a32 fg:#bd4f45 bold'
+format = '[$user]($style)'
+disabled = false
+show_always = false
+
+# Hostname
+[hostname]
+ssh_only = false
+style = 'bg:#272a32 fg:#c477dc bold'
+format = '[@$hostname]($style)'
+disabled = false
+
+# Directory
+[directory]
+style = 'fg:#61aeee bold'
+format = ' [$path]($style)[$read_only]($read_only_style) '
+truncation_length = 3
+truncation_symbol = '…/'
+
+# Git
+[git_branch]
+symbol = ' '"
+style = 'fg:#c477dc bold'
+format = '[$symbol$branch(:$remote_branch)]($style) '
+
+[git_status]
+style = 'fg:#e2bf8c bold'
+format = '([$all_status$ahead_behind]($style)) '
+up_to_date = ''
+untracked = '?${count}'
+stashed = '$${count}'
+modified = '!${count}'
+staged = '+${count}'
+renamed = '»${count}'
+deleted = '✘${count}'
+ahead = '⇡${count}'
+behind = '⇣${count}'
+diverged = '⇕${count}'
+
+# Languages - only show when relevant
+[nodejs]
+symbol = ' '
+style = 'fg:#97c178 bold'
+format = '[$symbol($version)]($style) '
+detect_files = ['package.json', '.node-version']
+detect_folders = ['node_modules']
+
+[java]
+symbol = ' '
+style = 'fg:#bd4f45 bold'
+format = '[$symbol($version)]($style) '
+
+[rust]
+symbol = ' '
+style = 'fg:#e2bf8c bold'
+format = '[$symbol($version)]($style) '
+
+[golang]
+symbol = ' '
+style = 'fg:#61aeee bold'
+format = '[$symbol($version)]($style) '
+
+[python]
+symbol = ' '
+style = 'fg:#56b4c1 bold'
+format = '[$symbol($version)]($style) '
+
+# Tools
+[terraform]
+symbol = ' '
+style = 'fg:#c477dc bold'
+format = '[$symbol($version)]($style) '
+
+[aws]
+symbol = ' '
+style = 'fg:#e2bf8c bold'
+format = '[$symbol($profile)]($style) '
+
+# Time
+[time]
+disabled = false
+time_format = '%H:%M'
+style = 'fg:#676767'
+format = '[$time]($style) '
+
+# Line break
+[line_break]
+disabled = false
+
+# Vi mode
+[vi_mode]
+disabled = false
+style_normal = 'fg:#97c178 bold'
+style_insert = 'fg:#61aeee bold'
+style_replace = 'fg:#bd4f45 bold'
+style_visual = 'fg:#c477dc bold'
+format = '[$symbol]($style)'
+
+# Command duration
+[cmd_duration]
+min_time = 500
+style = 'fg:#676767'
+format = ' took [$duration]($style)'
