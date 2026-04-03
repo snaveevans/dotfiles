@@ -7,7 +7,7 @@ local appModalBindings = {
   { "l", "Microsoft Teams.app" },
   { "t", "Reminders.app" },
   { "'", "Insomnia.app" },
-  { "p", "Obsidian.app" },
+  { "p", "OpenCode" },
   { "return", "Brave Browser.app" },
   { "i", "IntellJ IDEA.app" },
   { "o", "Visual Studio Code.app" },
