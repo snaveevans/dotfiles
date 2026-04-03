@@ -10,7 +10,7 @@ def find_fzf():
     """Find fzf executable in PATH or common locations."""
     # On macOS, apps launched from Dock/Launcher don't inherit shell PATH
     # So we need to check common locations first, then try PATH
-    
+
     # Common locations to check first (especially important on macOS)
     common_locations = [
         "/opt/homebrew/bin/fzf",  # Homebrew on Apple Silicon
@@ -19,17 +19,17 @@ def find_fzf():
         os.path.expanduser("~/.local/bin/fzf"),  # Local install
         "/snap/bin/fzf",          # Snap package (Linux)
     ]
-    
+
     # Check common locations first
     for path in common_locations:
         if os.path.isfile(path) and os.access(path, os.X_OK):
             return path
-    
+
     # Try to find fzf in PATH as fallback
     fzf_path = shutil.which("fzf")
     if fzf_path:
         return fzf_path
-    
+
     # Try to source shell profile and get PATH
     # This helps when apps are launched from Dock on macOS
     try:
@@ -40,7 +40,7 @@ def find_fzf():
             os.path.expanduser("~/.bash_profile"),
             os.path.expanduser("~/.profile"),
         ]
-        
+
         for profile in shell_profiles:
             if os.path.exists(profile):
                 # Source the profile and get PATH
@@ -59,7 +59,7 @@ def find_fzf():
     except (subprocess.TimeoutExpired, Exception):
         # If shell sourcing fails, continue with other methods
         pass
-    
+
     # If still not found, return None
     return None
 
@@ -78,7 +78,7 @@ def select_directory(directories):
     fzf_path = find_fzf()
     if not fzf_path:
         raise FileNotFoundError("fzf not found in PATH or common locations")
-    
+
     result = subprocess.run(
         [fzf_path], input="\n".join(directories), stdout=subprocess.PIPE, text=True
     )
@@ -96,11 +96,11 @@ def select_open_tab():
     for session in data:
         for tab in session["tabs"]:
             tabs.append(tab["title"])
-    
+
     fzf_path = find_fzf()
     if not fzf_path:
         return {"status": "error", "message": "fzf not found in PATH or common locations"}
-    
+
     result = subprocess.run(
         [fzf_path], input="\n".join(tabs), stdout=subprocess.PIPE, text=True
     )

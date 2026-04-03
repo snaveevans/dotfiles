@@ -2,3 +2,9 @@ Session.vim
 tags
 .DS_Store
 machine_specific.*
+__pycache__/
+*.pyc
+work.patch
+dotfiles-drift-*.patch
+.npmrc
+.config/secrets/

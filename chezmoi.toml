@@ -1,4 +1,0 @@
-[hooks.read-source-state.pre]
-command = "sh .local/share/chezmoi/.install-password-manager.sh"
-[bitwarden]
-unlock = false

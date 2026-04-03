@@ -1,6 +1,6 @@
 # Ubuntu/Linux Setup Guide
 
-This dotfiles project now supports both macOS and Ubuntu/Linux. This guide explains how to use it on an Ubuntu development box.
+This guide explains the current Linux setup flow for the symlink-first dotfiles repo.
 
 ## Prerequisites
 
@@ -10,22 +10,31 @@ This dotfiles project now supports both macOS and Ubuntu/Linux. This guide expla
 
 ## Quick Start
 
-1. **Install chezmoi and clone dotfiles:**
+1. **Clone the dotfiles repo:**
    ```bash
-   sh -c "$(curl -fsLS get.chezmoi.io)"
-   chezmoi init https://github.com/yourusername/dotfiles.git
+   git clone <repo-url> ~/.dotfiles
+   cd ~/.dotfiles
    ```
 
-2. **Apply the configuration:**
+2. **Run Linux bootstrap:**
    ```bash
-   chezmoi apply
+   scripts/bootstrap.sh
    ```
 
-3. **The first run will:**
-   - Install all packages via `run_once_before_install-packages-linux.sh`
-   - Set up i3 window manager
-   - Configure zsh, nvim, kitty, and other tools
-   - Install Bitwarden CLI for secrets management
+3. **Link tracked config into your home directory:**
+   ```bash
+   scripts/install-home-links.sh
+   ```
+
+4. **Log into Bitwarden and generate local secret artifacts:**
+   ```bash
+   bw login
+   scripts/refresh-secrets.sh
+   ```
+   Linux bootstrap now provisions the Bitwarden CLI needed for this step.
+
+5. **Review the general flow doc if needed:**
+   - `docs/bootstrap.md`
 
 ## What's Included
 
@@ -85,15 +94,18 @@ Replaces Alfred/Spotlight:
 | Window Manager | Hammerspoon | i3 |
 | Status Bar | macOS menu bar | Polybar |
 | App Launcher | Alfred/Spotlight | Rofi |
-| Package Manager | Homebrew | apt + snap |
+| Package Manager | Homebrew | apt + direct installers |
 | Shell Prompt | Spaceship | Starship |
 | Terminal Mod Key | Cmd | Ctrl |
 
 ## Secrets Management
 
 Bitwarden CLI is used for secrets on both platforms:
-- Run `chezmoi apply` will prompt for Bitwarden unlock
-- Secrets are stored in templates (e.g., `private_dot_npmrc.tmpl`)
+- `scripts/bootstrap.sh` provisions `bw` on Linux
+- Run `bw login` once if needed
+- Run `scripts/refresh-secrets.sh` to generate local secret artifacts
+- Shell secrets are sourced from `~/.config/secrets/env`
+- npm auth is generated into `~/.npmrc`
 
 ## Post-Installation
 
@@ -138,48 +150,43 @@ Bitwarden CLI is used for secrets on both platforms:
 
 ## Customization
 
-Edit files in `~/.local/share/chezmoi/` and run `chezmoi apply` to update.
+Edit tracked files in `~/.dotfiles/home/` and rerun `scripts/install-home-links.sh` if you need to refresh links on a machine.
 
 ### Adding Linux-specific packages
-Edit: `run_once_before_install-packages-linux.sh.tmpl`
+Edit: `scripts/bootstrap-linux.sh`
 
 ### Changing i3 key bindings
-Edit: `dot_config/i3/config`
+Edit: `home/.config/i3/config`
 
 ### Changing rofi appearance
-Edit: `dot_config/rofi/config.rasi`
+Edit: `home/.config/rofi/config.rasi`
 
 ## File Structure
 
 ```
-dot_config/
-├── i3/
-│   ├── config              # i3 window manager config
-│   └── i3status.conf       # Simple status bar (fallback)
-├── polybar/
-│   ├── config.ini          # Polybar config
-│   └── launch.sh           # Polybar startup script
-├── rofi/
-│   └── config.rasi         # App launcher config
-└── kitty/
-    ├── kitty.conf.tmpl     # Terminal config (cross-platform)
-    └── kitty_selector.py   # Custom kitten for tab management
+home/
+├── .zshenv
+├── .zshrc
+└── .config/
+    ├── i3/
+    ├── kitty/
+    ├── nvim/
+    ├── polybar/
+    └── rofi/
 
-dot_zshrc.tmpl              # Cross-platform zsh config
-dot_zshenv.tmpl             # Environment variables
-
-run_once_before_install-packages-linux.sh.tmpl    # Linux package installer
-run_once_before_install-packages-darwin.sh.tmpl   # macOS package installer
+scripts/
+├── bootstrap.sh
+├── bootstrap-linux.sh
+├── install-home-links.sh
+└── refresh-secrets.sh
 ```
 
 ## Uninstall
 
 ```bash
-# Remove chezmoi managed files
-rm -rf ~/.local/share/chezmoi
-
-# Remove dotfiles (be careful!)
-chezmoi destroy
+# Remove linked config carefully (review before deleting)
+# Example:
+# rm ~/.zshenv ~/.zshrc ~/.gitconfig ~/.rgignore
 
 # Revert to bash
 chsh -s /bin/bash
