@@ -27,8 +27,6 @@ case "$OSTYPE" in
     ;;
 esac
 
-plugins+=(chezmoi)
-
 source "$ZSH/oh-my-zsh.sh"
 
 case "$OSTYPE" in
@@ -109,7 +107,6 @@ bindkey -M viins '^kp' _kitty-opener
 bindkey -s '^g' '$(git branch | fzf)^M'
 bindkey -s '^o' 'nvim^M'
 
-alias cz=chezmoi
 alias tf=terraform
 alias pn=pnpm
 alias lg=lazygit

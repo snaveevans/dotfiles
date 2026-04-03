@@ -1,6 +1,6 @@
 # Secret projection flow
 
-The symlink-first setup keeps tracked config plain and live-editable. Secrets are now refreshed explicitly with one command instead of being injected by chezmoi templates.
+The symlink-first setup keeps tracked config plain and live-editable. Secrets are now refreshed explicitly with one command instead of being injected into tracked config files.
 
 ## Command
 

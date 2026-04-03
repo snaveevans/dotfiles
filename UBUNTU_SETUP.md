@@ -12,8 +12,8 @@ This guide explains the current Linux setup flow for the symlink-first dotfiles 
 
 1. **Clone the dotfiles repo:**
    ```bash
-   git clone <repo-url> ~/.local/share/chezmoi
-   cd ~/.local/share/chezmoi
+   git clone <repo-url> ~/.dotfiles
+   cd ~/.dotfiles
    ```
 
 2. **Run Linux bootstrap:**
@@ -150,7 +150,7 @@ Bitwarden CLI is used for secrets on both platforms:
 
 ## Customization
 
-Edit tracked files in `~/.local/share/chezmoi/home/` and rerun `scripts/install-home-links.sh` if you need to refresh links on a machine.
+Edit tracked files in `~/.dotfiles/home/` and rerun `scripts/install-home-links.sh` if you need to refresh links on a machine.
 
 ### Adding Linux-specific packages
 Edit: `scripts/bootstrap-linux.sh`

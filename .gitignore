@@ -4,3 +4,5 @@ tags
 machine_specific.*
 __pycache__/
 *.pyc
+work.patch
+dotfiles-drift-*.patch

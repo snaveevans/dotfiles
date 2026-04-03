@@ -1,10 +1,14 @@
 # Bootstrap flow
 
-This repo now uses an explicit bootstrap + link + refresh flow instead of relying on `chezmoi apply` for normal setup.
+This repo now uses an explicit bootstrap + link + refresh flow for setup and day-to-day config changes.
 
 ## Recommended setup flow
 
-1. Clone the repo.
+1. Clone the repo to the preferred symlink-first path:
+   ```bash
+   git clone <repo-url> ~/.dotfiles
+   cd ~/.dotfiles
+   ```
 2. Run platform bootstrap:
    ```bash
    scripts/bootstrap.sh
@@ -43,7 +47,7 @@ This repo now uses an explicit bootstrap + link + refresh flow instead of relyin
 - `scripts/bootstrap-linux.sh`
   - apt packages and Linux tooling installs
   - Bitwarden CLI provisioning for the explicit `bw login` + `scripts/refresh-secrets.sh` flow
-  - i3/rofi/polybar/font setup knowledge from the old chezmoi flow
+  - i3/rofi/polybar/font setup knowledge from the legacy bootstrap flow
   - Oh My Zsh and zsh plugin setup for the tracked zsh config
 
 ## Notes
