@@ -40,6 +40,7 @@ require("lazy").setup({
     { import = "lazyvim.plugins.extras.lang.yaml" },
     { import = "lazyvim.plugins.extras.linting.eslint" },
     { import = "lazyvim.plugins.extras.editor.fzf" },
+    { import = "lazyvim.plugins.extras.util.chezmoi" },
     -- { import = "lazyvim.plugins.extras.editor.telescope" },
     -- import/override with your plugins
     { import = "plugins" },
