@@ -53,8 +53,11 @@ case "${1:-}" in
     [[ "$session" == "fake-session-token" ]] || exit 1
 
     case "${3:-}" in
-      synthetic.new)
-        printf '{"name":"synthetic.new","fields":[{"name":"token","value":"synthetic-token"}]}'
+      api-dashboard.search.brave.com)
+        printf '{"name":"api-dashboard.search.brave.com","fields":[{"name":"api_key","value":"brave-token"}]}'
+        ;;
+      context7)
+        printf '{"name":"context7","notes":"context7-token"}'
         ;;
       ebac9653-5fbd-4dac-b22d-af9a0116b6bb)
         printf '{"id":"ebac9653-5fbd-4dac-b22d-af9a0116b6bb","fields":[{"name":"access_token","value":"github-token"}]}'
@@ -86,7 +89,8 @@ grep -Fq 'Dry run complete.' "$OUTPUT_FILE" || fail "expected dry-run completion
 grep -Fq 'status --raw' "$BW_LOG_FILE" || fail "expected bw status call"
 grep -Fq 'unlock --raw' "$BW_LOG_FILE" || fail "expected bw unlock call"
 grep -Fq -- '--session fake-session-token sync' "$BW_LOG_FILE" || fail "expected session-backed bw sync call"
-grep -Fq -- '--session fake-session-token get item synthetic.new --raw' "$BW_LOG_FILE" || fail "expected synthetic item read"
+grep -Fq -- '--session fake-session-token get item api-dashboard.search.brave.com --raw' "$BW_LOG_FILE" || fail "expected Brave item read"
+grep -Fq -- '--session fake-session-token get item context7 --raw' "$BW_LOG_FILE" || fail "expected Context7 item read"
 grep -Fq -- '--session fake-session-token get item ebac9653-5fbd-4dac-b22d-af9a0116b6bb --raw' "$BW_LOG_FILE" || fail "expected github packages item read"
 grep -Fq -- '--session fake-session-token get item artifactory.octanner.net --raw' "$BW_LOG_FILE" || fail "expected artifactory item read"
 

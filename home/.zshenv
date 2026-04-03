@@ -16,8 +16,8 @@ export FZF_DEFAULT_COMMAND="rg --files"
 export FZF_DEFAULT_OPTS="-m --height 50% --border"
 export FZF_CTRL_T_COMMAND="rg --files --follow --hidden --no-ignore --glob=\!.git --glob=\!node_modules --glob=\!.next"
 
-# Optional generated secrets env for the future secret projection layer.
-# This file can export values like SYNTHETIC_API_KEY without templating tracked shell files.
+# Optional generated secrets env for the secret projection layer.
+# This file can export shell-consumed API keys without templating tracked shell files.
 if [[ -r "$HOME/.config/secrets/env" ]]; then
   source "$HOME/.config/secrets/env"
 fi

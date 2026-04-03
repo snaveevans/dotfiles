@@ -21,7 +21,9 @@ This command:
 
 - `~/.config/secrets/env`
   - sourced by `home/.zshenv`
-  - currently exports `SYNTHETIC_API_KEY`
+  - currently exports:
+    - `BRAVE_API_KEY`
+    - `CONTEXT7_API_KEY`
 - `~/.npmrc`
   - generated replacement for the old `private_dot_npmrc.tmpl`
 
@@ -31,9 +33,12 @@ Generated files are written with restrictive permissions and are not tracked in 
 
 Defaults come from the current repo's existing template usage:
 
-- shell env secret
-  - item: `synthetic.new`
-  - field: `token`
+- Brave Search API key
+  - item: `api-dashboard.search.brave.com`
+  - field: `api_key`
+- Context7 API key
+  - item: `context7`
+  - field: `notes`
 - GitHub Packages npm token
   - item: `ebac9653-5fbd-4dac-b22d-af9a0116b6bb`
   - field: `access_token`
@@ -46,15 +51,17 @@ Defaults come from the current repo's existing template usage:
 If your Bitwarden items differ, override the defaults for a run with environment variables before invoking the script:
 
 ```bash
-BW_ITEM_SYNTHETIC="my-item" \
-BW_FIELD_SYNTHETIC_API_KEY="token" \
+BW_ITEM_BRAVE="my-brave-item" \
+BW_FIELD_BRAVE_API_KEY="api_key" \
 scripts/refresh-secrets.sh
 ```
 
 Supported overrides:
 
-- `BW_ITEM_SYNTHETIC`
-- `BW_FIELD_SYNTHETIC_API_KEY`
+- `BW_ITEM_BRAVE`
+- `BW_FIELD_BRAVE_API_KEY`
+- `BW_ITEM_CONTEXT7`
+- `BW_FIELD_CONTEXT7_API_KEY`
 - `BW_ITEM_GITHUB_PACKAGES`
 - `BW_FIELD_GITHUB_PACKAGES_TOKEN`
 - `BW_ITEM_ARTIFACTORY`
