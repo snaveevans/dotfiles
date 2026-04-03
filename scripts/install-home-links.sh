@@ -10,6 +10,8 @@ BACKUP_DIR=""
 DRY_RUN=false
 
 LINK_PATHS=(
+  ".zshenv"
+  ".zshrc"
   ".gitconfig"
   ".rgignore"
   ".hammerspoon"
