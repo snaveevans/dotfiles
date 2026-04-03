@@ -88,6 +88,7 @@ For Linux-specific setup details, see `UBUNTU_SETUP.md`.
 ## Additional Docs
 
 - `docs/bootstrap.md`: bootstrap, linking, and refresh flow
+- `docs/troubleshooting.md`: common recovery steps, including Neovim parser crash fixes
 - `docs/migrations/secret-projection.md`: Bitwarden-backed secret generation
 - `docs/migrations/symlink-first-tracker.md`: migration summary and active surfaces
 - `docs/decisions/ADR-0001-adopt-symlink-first-dotfiles-workflow-with-bitwarden-secret-projection.md`: architecture decision for the current workflow
