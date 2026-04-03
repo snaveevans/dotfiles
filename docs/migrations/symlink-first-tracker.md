@@ -10,6 +10,7 @@ This repo now has a first-pass plain `home/` layout for a conservative set of no
 - `~/.rgignore`
 - `~/.hammerspoon/`
 - `~/.config/nvim/`
+- `~/.config/kitty/`
 - `~/.config/starship.toml`
 - `~/.config/i3/`
 - `~/.config/rofi/`
@@ -18,6 +19,8 @@ This repo now has a first-pass plain `home/` layout for a conservative set of no
 - Generated shell secret env hook at `~/.config/secrets/env`
 - `scripts/refresh-secrets.sh` for explicit Bitwarden-backed secret projection
 - `scripts/test-refresh-secrets.sh` for lightweight fake-Bitwarden verification of the dry-run unlock/session path
+- Kitty OS-specific overlay selection via installer-managed `~/.config/kitty/os.conf`
+- Optional local Kitty overrides via `~/.config/kitty/local.conf`
 - Generated local secret artifacts:
   - `~/.config/secrets/env`
   - `~/.npmrc`
@@ -25,24 +28,17 @@ This repo now has a first-pass plain `home/` layout for a conservative set of no
 
 ## Remaining slices
 
-1. **Kitty mixed static + templated config**
-   - Move safe static Kitty files into `home/.config/kitty/`.
-   - Replace `kitty.conf.tmpl` with a non-templated base plus local/secret overlays.
-
-2. **Bootstrap/package install extraction**
+1. **Bootstrap/package install extraction**
    - Pull useful package/bootstrap knowledge out of `run_once_*` templates.
    - Keep install steps separate from day-to-day config linking.
 
-3. **Chezmoi-specific cleanup**
+2. **Chezmoi-specific cleanup**
    - Migrate any remaining safe plain files.
    - Remove chezmoi config and legacy templates only after every required path has a replacement.
 
 ## Deliberately left for later
 
 - `private_dot_npmrc.tmpl`
-- `dot_config/kitty/kitty.conf.tmpl`
-- `dot_config/kitty/kitty_selector.py`
-- `dot_config/kitty/startup-session.conf`
 - `dot_zshrc.tmpl`
 - `dot_zshenv.tmpl`
 - `chezmoi.toml`
