@@ -24,8 +24,10 @@ This command:
   - currently exports:
     - `BRAVE_API_KEY`
     - `CONTEXT7_API_KEY`
+    - `GITHUB_TOKEN`
 - `~/.npmrc`
   - generated replacement for the old `private_dot_npmrc.tmpl`
+  - GitHub Packages `_authToken` references `${GITHUB_TOKEN}` from the env file; npm expands it at runtime
 
 Generated files are written with restrictive permissions and are not tracked in the repo.
 
