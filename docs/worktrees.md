@@ -7,6 +7,24 @@ Code puts them in `<repo>/.claude/worktrees/`, opencode puts them in
 `~/.local/share/opencode/worktree/<repo-hash>/`, and there was no way to get
 into one without copying a path out of an agent UI.
 
+## The loop
+
+The case this was built for: an agent is working in a worktree and you want to
+be in there too, with your own editor and your own terminal.
+
+1. Kick off work in the Claude desktop app. It creates a worktree under
+   `<repo>/.claude/worktrees/`.
+2. `wt` in any terminal. Pick the `claude` row — it sorts near the top, because
+   rows are ordered by commit recency. Your shell is now in that worktree.
+3. Work normally: `nvim`, run the tests, run the app.
+4. `cmd+enter w` to jump between that worktree and the primary checkout. Each
+   gets its own Kitty tab, so each keeps its own Neovim and its own shell state.
+5. `wt rm` once the branch is merged. It refuses if you have uncommitted
+   changes, and takes the branch with it if you pass `--delete-branch`.
+
+For work you start yourself, `wt new tyler/CCLOUD-1234-thing` does step 1 and
+leaves you in the new worktree.
+
 ## Install
 
 `wt` lives at `home/.local/bin/wt` and is linked into `~/.local/bin` by

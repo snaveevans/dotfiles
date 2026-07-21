@@ -76,7 +76,9 @@ wt list     # print the worktrees in scope
 wt new BRANCH
 ```
 
-See `docs/worktrees.md` for the key bindings and the Kitty and Neovim pickers.
+Key bindings: `Ctrl-k w` in zsh, `cmd+enter w` in Kitty, `<leader>gw` in Neovim.
+`wt --help` repeats them. See `docs/worktrees.md` for the full flow and
+`docs/keybindings.md` for every custom binding in this repo.
 
 ## Secrets
 
@@ -104,6 +106,7 @@ For Linux-specific setup details, see `UBUNTU_SETUP.md`.
 ## Additional Docs
 
 - `docs/bootstrap.md`: bootstrap, linking, and refresh flow
+- `docs/keybindings.md`: every custom zsh, Kitty, Neovim, and Hammerspoon binding
 - `docs/troubleshooting.md`: common recovery steps, including Neovim parser crash fixes
 - `docs/worktrees.md`: the `wt` worktree command and its Kitty and Neovim pickers
 - `docs/migrations/secret-projection.md`: Bitwarden-backed secret generation

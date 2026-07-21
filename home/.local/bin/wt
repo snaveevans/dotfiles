@@ -53,9 +53,17 @@ Options:
       --dry-run    Print planned actions without changing anything
   -h, --help       Show this help message
 
+Key bindings:
+  Ctrl-k w         zsh: pick a worktree and cd into it
+  cmd+enter w      Kitty: pick a worktree, open or focus its tab
+  <leader>gw       Neovim: worktrees in this repo
+  <leader>gW       Neovim: worktrees across every repo
+
 Environment:
   WT_ROOT          Where `wt new` creates worktrees (default: ~/worktrees)
   WT_WORKSPACE     Where repos are scanned from (default: ~/workspace)
+
+See docs/worktrees.md in the dotfiles repo for the full flow.
 EOF
 }
 

@@ -83,6 +83,7 @@ Do not run `scripts/bootstrap.sh`, `scripts/bootstrap-darwin.sh`, or `scripts/bo
 - Edit `home/...`, not the linked destination in `$HOME`.
 - Edit tracked Kitty config in `home/.config/kitty/` and let `install-home-links.sh` manage runtime links.
 - Edit docs in `docs/` when changing setup or migration behavior.
+- If you add or change a keybinding, update `docs/keybindings.md` in the same change.
 - Do not commit `.npmrc`, `.config/secrets/`, or real credentials.
 - If you change setup or secret generation, review `docs/bootstrap.md` and `docs/migrations/secret-projection.md`.
 
