@@ -28,6 +28,16 @@ This command:
 - `~/.npmrc`
   - generated replacement for the old `private_dot_npmrc.tmpl`
   - GitHub Packages `_authToken` references `${GITHUB_TOKEN}` from the env file; npm expands it at runtime
+- `~/.gradle/gradle.properties`
+  - provides `centralUsername` and `centralPassword` for Gradle Artifactory authentication
+  - uses the same Bitwarden item as the npmrc Artifactory block (`artifactory.octanner.net`)
+  - `centralUsername` is derived from the `email` field (everything before `@`)
+  - `centralPassword` comes from the `encrypted_password` field
+  - `gradle.properties` is a Java Properties file and does not support env var interpolation, so values are written literally
+- `~/.m2/settings.xml`
+  - provides Maven server credentials for the `central` server id
+  - uses the same derived username and `encrypted_password` as the Gradle properties file
+  - overwrites the entire file; if you have other Maven server entries, they must be managed separately
 
 Generated files are written with restrictive permissions and are not tracked in the repo.
 
@@ -49,6 +59,7 @@ Defaults come from the current repo's existing template usage:
   - fields:
     - `email`
     - `access_token`
+    - `encrypted_password`
 
 If your Bitwarden items differ, override the defaults for a run with environment variables before invoking the script:
 
@@ -69,6 +80,7 @@ Supported overrides:
 - `BW_ITEM_ARTIFACTORY`
 - `BW_FIELD_ARTIFACTORY_EMAIL`
 - `BW_FIELD_ARTIFACTORY_TOKEN`
+- `BW_FIELD_ARTIFACTORY_ENCRYPTED_PASSWORD`
 
 ## Notes
 
