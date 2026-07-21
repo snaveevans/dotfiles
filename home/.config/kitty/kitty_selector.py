@@ -3,6 +3,7 @@ import subprocess
 import os
 import sys
 import json
+import re
 import shutil
 
 
@@ -64,6 +65,58 @@ def find_fzf():
     return None
 
 
+def find_wt():
+    """Find the wt executable, which Dock-launched Kitty cannot see via PATH."""
+    common_locations = [
+        os.path.expanduser("~/.local/bin/wt"),
+        os.path.expanduser("~/bin/wt"),
+        "/usr/local/bin/wt",
+    ]
+
+    for path in common_locations:
+        if os.path.isfile(path) and os.access(path, os.X_OK):
+            return path
+
+    return shutil.which("wt")
+
+
+def select_worktree() -> dict[str, str]:
+    """Pick a git worktree and return its path plus the tab title to use."""
+    wt_path = find_wt()
+    if not wt_path:
+        return {"status": "error", "message": "wt not found in PATH or common locations"}
+
+    fzf_path = find_fzf()
+    if not fzf_path:
+        return {"status": "error", "message": "fzf not found in PATH or common locations"}
+
+    listing = subprocess.run(
+        [wt_path, "list", "--all", "--format=fzf"],
+        stdout=subprocess.PIPE,
+        text=True,
+    )
+    rows = [row for row in listing.stdout.split("\n") if row.strip()]
+    if not rows:
+        return {"status": "error", "message": "No worktrees found."}
+
+    # wt emits "display<TAB>tab title<TAB>path"; fzf only shows the first field.
+    result = subprocess.run(
+        [fzf_path, "+m", "--delimiter=\t", "--with-nth=1", "--prompt=worktree> "],
+        input="\n".join(rows),
+        stdout=subprocess.PIPE,
+        text=True,
+    )
+    selected = result.stdout.strip()
+    if not selected:
+        return {"status": "error", "message": "no worktree selected"}
+
+    fields = selected.split("\t")
+    if len(fields) < 3:
+        return {"status": "error", "message": "unexpected wt output"}
+
+    return {"status": "success", "selected_directory": fields[2], "tab_title": fields[1]}
+
+
 def get_directories(args: list[str]):
     """Get the list of directories using the 'find' command."""
     expanded_paths = list(map(os.path.expanduser, args))
@@ -112,17 +165,15 @@ def select_open_tab():
 
 def main(args: list[str]) -> dict[str, str]:
     kitten_name, mode, *dirs = args
-    # Get directories to choose from
-    directories = get_directories(dirs)
-
-    # return {
-    #     "status": "testing",
-    #     "message": mode,
-    #     "selected_directory": "ccloud-ui",
-    # }
 
     if mode == "open":
         return select_open_tab()
+
+    if mode == "worktree":
+        return select_worktree()
+
+    # Get directories to choose from
+    directories = get_directories(dirs)
 
     if not directories:
         return {"status": "error", "message": "No directories found."}
@@ -157,11 +208,15 @@ def handle_result(
     selected_directory = value.get("selected_directory")
     if selected_directory is None:
         return
-    dir_name = os.path.basename(selected_directory)
+
+    # Worktrees need a repo-qualified title because two checkouts of different
+    # repos can share a basename. The match is anchored for the same reason:
+    # an unanchored "prism-ui" also matches the "prism-ui:some-worktree" tab.
+    dir_name = value.get("tab_title") or os.path.basename(selected_directory)
 
     # Check if a tab with this title already exists
     try:
-        existing_tabs = list(boss.match_tabs(f"title:{dir_name}"))
+        existing_tabs = list(boss.match_tabs(f"title:^{re.escape(dir_name)}$"))
         if existing_tabs:
             # Focus the existing tab
             boss.call_remote_control(w, ("focus-tab", f"--match=id:{existing_tabs[0].id}"))
