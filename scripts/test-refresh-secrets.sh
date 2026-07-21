@@ -63,7 +63,7 @@ case "${1:-}" in
         printf '{"id":"ebac9653-5fbd-4dac-b22d-af9a0116b6bb","fields":[{"name":"access_token","value":"github-token"}]}'
         ;;
       artifactory.octanner.net)
-        printf '{"name":"artifactory.octanner.net","fields":[{"name":"email","value":"user@example.com"},{"name":"access_token","value":"artifactory-token"}]}'
+        printf '{"name":"artifactory.octanner.net","fields":[{"name":"email","value":"user@example.com"},{"name":"access_token","value":"artifactory-token"},{"name":"encrypted_password","value":"artifactory-encrypted-password"}]}'
         ;;
       *)
         exit 1
@@ -96,5 +96,7 @@ grep -Fq -- '--session fake-session-token get item artifactory.octanner.net --ra
 
 [[ ! -e "$TARGET_HOME/.config/secrets/env" ]] || fail "dry run should not write env artifact"
 [[ ! -e "$TARGET_HOME/.npmrc" ]] || fail "dry run should not write npmrc artifact"
+[[ ! -e "$TARGET_HOME/.gradle/gradle.properties" ]] || fail "dry run should not write gradle artifact"
+[[ ! -e "$TARGET_HOME/.m2/settings.xml" ]] || fail "dry run should not write maven settings artifact"
 
 printf 'refresh-secrets fake-bw verification passed\n'
