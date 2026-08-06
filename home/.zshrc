@@ -174,6 +174,3 @@ fi
 
 # autoload -Uz compinit; compinit
 # [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
-
-# opencode
-export PATH=/Users/tyler.evans/.opencode/bin:$PATH
