@@ -40,11 +40,14 @@ stylua home/.config/nvim/lua/config/keymaps.lua
 bash -n scripts/refresh-secrets.sh
 
 # Syntax-check all main shell scripts
-bash -n scripts/{bootstrap,bootstrap-darwin,bootstrap-linux,install-home-links,refresh-secrets,test-refresh-secrets}.sh
+bash -n scripts/{bootstrap,bootstrap-darwin,bootstrap-linux,install-home-links,refresh-secrets,test-refresh-secrets,test-wt}.sh
+
+# Syntax-check the personal commands under home/
+bash -n home/.local/bin/wt
 
 # Shell lint/format when available locally
-shellcheck scripts/*.sh home/.config/polybar/launch.sh
-shfmt -w scripts/*.sh home/.config/polybar/launch.sh
+shellcheck scripts/*.sh home/.local/bin/wt home/.config/polybar/launch.sh
+shfmt -w scripts/*.sh home/.local/bin/wt home/.config/polybar/launch.sh
 
 # Python syntax-check the Kitty kitten
 python3 -m py_compile home/.config/kitty/kitty_selector.py
@@ -56,14 +59,18 @@ scripts/install-home-links.sh --dry-run --home "$(mktemp -d)"
 # Secret refresh validation
 scripts/refresh-secrets.sh --dry-run
 scripts/test-refresh-secrets.sh
+
+# Worktree command validation
+scripts/test-wt.sh
 ```
 
 ## Single-Test Guidance
 
-There is currently one explicit automated test script: `scripts/test-refresh-secrets.sh`
+There are currently two explicit automated test scripts: `scripts/test-refresh-secrets.sh` and `scripts/test-wt.sh`
 
 Use the narrowest check for the file type you changed:
 - secret refresh logic: `scripts/test-refresh-secrets.sh`
+- worktree command logic: `scripts/test-wt.sh`
 - link-install behavior: `scripts/install-home-links.sh --dry-run --home "$(mktemp -d)"`
 - one shell file: `bash -n path/to/file.sh`
 - one Lua file: `stylua path/to/file.lua`
@@ -76,6 +83,7 @@ Do not run `scripts/bootstrap.sh`, `scripts/bootstrap-darwin.sh`, or `scripts/bo
 - Edit `home/...`, not the linked destination in `$HOME`.
 - Edit tracked Kitty config in `home/.config/kitty/` and let `install-home-links.sh` manage runtime links.
 - Edit docs in `docs/` when changing setup or migration behavior.
+- If you add or change a keybinding, update `docs/keybindings.md` in the same change.
 - Do not commit `.npmrc`, `.config/secrets/`, or real credentials.
 - If you change setup or secret generation, review `docs/bootstrap.md` and `docs/migrations/secret-projection.md`.
 
@@ -160,6 +168,7 @@ Pick the narrowest relevant checks:
 - run `bash -n` for changed shell scripts
 - run `python3 -m py_compile` for Python edits
 - run `scripts/test-refresh-secrets.sh` for secret refresh changes
+- run `scripts/test-wt.sh` for changes to `home/.local/bin/wt`
 - run `scripts/install-home-links.sh --dry-run` for link-install changes
 
 If you changed user-visible setup behavior, update the README or docs in the same change.

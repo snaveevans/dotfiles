@@ -170,6 +170,11 @@ install_kitty() {
   link_runtime_symlink ".config/kitty/os.conf" ".config/kitty/os/${os_name}.conf"
 }
 
+install_local_bin() {
+  ensure_real_directory ".local/bin"
+  link_path ".local/bin/wt"
+}
+
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --dry-run)
@@ -209,6 +214,7 @@ for relative_path in "${LINK_PATHS[@]}"; do
 done
 
 install_kitty
+install_local_bin
 
 if [[ -n "$BACKUP_DIR" ]]; then
   log "Backup directory: $BACKUP_DIR"

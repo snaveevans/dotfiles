@@ -77,10 +77,31 @@ function _kill-port () {
 }
 zle -N _kill-port
 
-function _kitty-opener () {
-  kitty-opener
+# Shadows ~/.local/bin/wt so switching can change this shell's directory.
+# Everything else passes straight through to the binary.
+function wt () {
+  local dir
+
+  case "${1:-}" in
+    "" | s | switch)
+      dir="$(command wt path ${2:+"$2"})" || return
+      [[ -n "$dir" ]] && cd "$dir"
+      ;;
+    n | new)
+      dir="$(command wt "$@")" || return
+      [[ -n "$dir" ]] && cd "$dir"
+      ;;
+    *)
+      command wt "$@"
+      ;;
+  esac
 }
-zle -N _kitty-opener
+
+function _worktree () {
+  wt
+  _clear
+}
+zle -N _worktree
 
 # User configuration
 unsetopt share_history
@@ -102,7 +123,7 @@ bindkey -M viins '^ ' autosuggest-accept
 bindkey -M viins '^ko' _kill-port
 bindkey -M vicmd '_' vi-beginning-of-line
 bindkey -M vicmd 'g_' vi-end-of-line
-bindkey -M viins '^kp' _kitty-opener
+bindkey -M viins '^kw' _worktree
 
 bindkey -s '^g' '$(git branch | fzf)^M'
 bindkey -s '^o' 'nvim^M'
@@ -153,6 +174,3 @@ fi
 
 # autoload -Uz compinit; compinit
 # [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
-
-# opencode
-export PATH=/Users/tyler.evans/.opencode/bin:$PATH

@@ -1,11 +1,12 @@
 export ASDF_DATA_DIR="$HOME/.asdf"
 
-PATH="${ASDF_DATA_DIR:-$HOME/.asdf}/shims:$PATH"
 PATH="$PATH:$HOME/bin"
 PATH="$PATH:/usr/local/bin"
 PATH="$PATH:$HOME/.local/bin"
 PATH="$PATH:$HOME/.cargo/bin"
 PATH="$PATH:$HOME/.rover/bin"
+PATH="${ASDF_DATA_DIR:-$HOME/.asdf}/shims:$PATH"
+PATH="$HOME/.opencode/bin:$PATH"
 export PATH
 
 export APOLLO_GRAPH_REF="Culture-Cloud-Gateway-4r4qva@qa" # cc-web-config supergraph, for rover CLI

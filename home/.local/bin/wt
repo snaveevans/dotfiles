@@ -1,0 +1,792 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+# Worktrees created by agents live wherever those tools put them, so discovery
+# always goes through `git worktree list`. WT_ROOT only decides where `wt new`
+# puts the worktrees you create by hand.
+WT_ROOT="${WT_ROOT:-$HOME/worktrees}"
+WT_WORKSPACE="${WT_WORKSPACE:-$HOME/workspace}"
+
+SCOPE_ALL=false
+SHOW_STATUS=false
+FORMAT=tty
+DRY_RUN=false
+FORCE=false
+DELETE_BRANCH=false
+REPO_FILTER=""
+FROM_REF=""
+TARGET_PATH=""
+TAB_TITLE=""
+CURRENT_MAIN=""
+RECORDS_FILE=""
+ORIGIN=""
+META_SHAS=()
+META_TIMES=()
+META_AGES=()
+
+usage() {
+  cat <<'EOF'
+Usage: wt [command] [options] [query]
+
+List and switch between git worktrees, including those created by Claude Code
+and opencode.
+
+Commands:
+  path [query]     Pick a worktree and print its path (default)
+  list [query]     Print worktrees in scope
+  new BRANCH       Create a worktree under $WT_ROOT and print its path
+  rm [query]       Pick a worktree and remove it
+  prune            Drop stale worktree registrations
+  tab [query]      Open or focus a Kitty tab for a worktree
+
+Options:
+  -a, --all        Scan every repo under $WT_WORKSPACE, not just this one
+  -s, --status     Compute dirty markers (slower on large repos)
+      --repo NAME  Act on NAME under $WT_WORKSPACE instead of the current repo
+      --path PATH  Act on PATH instead of prompting
+      --title NAME Kitty tab title to pair with --path
+      --from REF   Base ref for `wt new` (default: origin's HEAD branch)
+      --format FMT Output format for `list`: tty, tsv, or fzf
+      --force      Remove a worktree even when it has uncommitted changes
+      --delete-branch  Also delete the branch when removing a worktree
+      --dry-run    Print planned actions without changing anything
+  -h, --help       Show this help message
+
+Key bindings:
+  Ctrl-k w         zsh: pick a worktree and cd into it
+  cmd+enter w      Kitty: pick a worktree, open or focus its tab
+  <leader>gw       Neovim: worktrees in this repo
+  <leader>gW       Neovim: worktrees across every repo
+
+Environment:
+  WT_ROOT          Where `wt new` creates worktrees (default: ~/worktrees)
+  WT_WORKSPACE     Where repos are scanned from (default: ~/workspace)
+
+See docs/worktrees.md in the dotfiles repo for the full flow.
+EOF
+}
+
+# stdout is a data channel here: `wt path` and `wt new` print a path that the
+# zsh wrapper cds into, so all human-facing output goes to stderr.
+log() {
+  printf '%s\n' "$*" >&2
+}
+
+die() {
+  printf 'Error: %s\n' "$*" >&2
+  exit 1
+}
+
+require_cmd() {
+  command -v "$1" >/dev/null 2>&1 || die "Required command not found: $1"
+}
+
+run() {
+  if "$DRY_RUN"; then
+    log "DRY-RUN: $*"
+    return 0
+  fi
+
+  "$@"
+}
+
+cleanup() {
+  if [[ -n "$RECORDS_FILE" && -f "$RECORDS_FILE" ]]; then
+    rm -f "$RECORDS_FILE"
+  fi
+}
+
+trap cleanup EXIT
+
+# git always reports physical paths, so the roots we compare against have to be
+# resolved too or nothing under /var (macOS) or a symlinked home classifies.
+physical_path() {
+  local path="$1"
+
+  if [[ -d "$path" ]]; then
+    (cd "$path" && pwd -P)
+  else
+    printf '%s\n' "$path"
+  fi
+}
+
+main_worktree_of() {
+  local dir="$1"
+  local first
+
+  first="$(git -C "$dir" worktree list --porcelain 2>/dev/null)" || return 1
+  first="${first%%$'\n'*}"
+
+  case "$first" in
+    "worktree "*)
+      printf '%s\n' "${first#worktree }"
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+# A main worktree always has a .git directory; linked worktrees have a .git
+# file. Testing that is free and keeps sibling worktrees such as
+# ~/workspace/mig-ccloudui-followup-cleanup from listing their repo twice.
+workspace_repos() {
+  local dir
+
+  for dir in "$WT_WORKSPACE"/*/; do
+    dir="${dir%/}"
+
+    if [[ -d "$dir/.git" ]]; then
+      printf '%s\n' "$dir"
+    fi
+  done
+}
+
+scope_repos() {
+  local dir
+
+  if [[ -n "$REPO_FILTER" ]]; then
+    dir="$WT_WORKSPACE/$REPO_FILTER"
+    [[ -d "$dir" ]] || die "No such repo under $WT_WORKSPACE: $REPO_FILTER"
+    main_worktree_of "$dir" || die "Not a git repo: $dir"
+    return 0
+  fi
+
+  if ! "$SCOPE_ALL" && [[ -n "$CURRENT_MAIN" ]]; then
+    printf '%s\n' "$CURRENT_MAIN"
+    return 0
+  fi
+
+  workspace_repos
+}
+
+# Sets ORIGIN rather than printing: a command substitution here forks once per
+# worktree, which is measurable across a full workspace scan.
+classify_origin() {
+  local main_path="$1"
+  local path="$2"
+
+  if [[ "$path" == "$main_path" ]]; then
+    ORIGIN=main
+    return 0
+  fi
+
+  case "$path" in
+    */.claude/worktrees/*)
+      ORIGIN=claude
+      ;;
+    */.local/share/opencode/worktree/*)
+      ORIGIN=opencode
+      ;;
+    "$WT_ROOT"/*)
+      ORIGIN=wt
+      ;;
+    *)
+      ORIGIN=other
+      ;;
+  esac
+}
+
+dirty_marker() {
+  local path="$1"
+  local changes
+
+  if [[ ! -d "$path" ]]; then
+    printf '?\n'
+    return 0
+  fi
+
+  changes="$(git -C "$path" status --porcelain --untracked-files=no 2>/dev/null || true)"
+
+  if [[ -n "$changes" ]]; then
+    printf '*\n'
+  else
+    printf ' \n'
+  fi
+}
+
+# Resolving each worktree's HEAD with its own `git log` call costs more than
+# every other part of a scan combined, so ask each repo once for all of them.
+load_commit_meta() {
+  local main_path="$1"
+  shift
+
+  local sha shas meta msha mtime mage
+
+  META_SHAS=()
+  META_TIMES=()
+  META_AGES=()
+  shas=""
+
+  for sha in "$@"; do
+    [[ -n "$sha" ]] || continue
+
+    case " $shas " in
+      *" $sha "*) ;;
+      *) shas="$shas $sha" ;;
+    esac
+  done
+
+  [[ -n "$shas" ]] || return 0
+
+  # shellcheck disable=SC2086 # shas is a deliberately split sha list
+  meta="$(git -C "$main_path" show -s --format='%H%x09%ct%x09%cr' $shas 2>/dev/null || true)"
+
+  while IFS=$'\t' read -r msha mtime mage; do
+    [[ -n "$msha" ]] || continue
+    META_SHAS+=("$msha")
+    META_TIMES+=("$mtime")
+    META_AGES+=("$mage")
+  done < <(printf '%s\n' "$meta")
+}
+
+emit_record() {
+  local main_path="$1"
+  local repo="$2"
+  local path="$3"
+  local head="$4"
+  local branch="$5"
+  local flags="$6"
+  local branch_display dirty rank commit_time age title index
+
+  [[ -n "$path" ]] || return 0
+
+  classify_origin "$main_path" "$path"
+
+  case "$flags" in
+    bare)
+      branch_display="(bare)"
+      ;;
+    *)
+      if [[ -n "$branch" ]]; then
+        branch_display="$branch"
+      else
+        branch_display="detached@${head:0:8}"
+      fi
+      ;;
+  esac
+
+  case "$flags" in
+    locked | prunable)
+      branch_display="$branch_display [$flags]"
+      ;;
+  esac
+
+  commit_time=0
+  age="-"
+
+  if [[ -n "$head" ]]; then
+    for ((index = 0; index < ${#META_SHAS[@]}; index++)); do
+      if [[ "${META_SHAS[$index]}" == "$head" ]]; then
+        commit_time="${META_TIMES[$index]}"
+        age="${META_AGES[$index]}"
+        break
+      fi
+    done
+  fi
+
+  dirty=" "
+
+  if "$SHOW_STATUS"; then
+    dirty="$(dirty_marker "$path")"
+  fi
+
+  if [[ "$ORIGIN" == "main" ]]; then
+    title="$repo"
+  else
+    title="$repo:${path##*/}"
+  fi
+
+  rank=1
+
+  if [[ -n "$CURRENT_MAIN" && "$path" == "$CURRENT_MAIN" ]]; then
+    rank=0
+  fi
+
+  printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+    "$rank" "$commit_time" "$repo" "$ORIGIN" "$branch_display" "$dirty" "$age" "$title" "$path"
+}
+
+parse_repo() {
+  local scan_dir="$1"
+  local main_path repo path head branch flags line count index
+  local paths heads branches flag_list
+
+  paths=()
+  heads=()
+  branches=()
+  flag_list=()
+  path=""
+  head=""
+  branch=""
+  flags=""
+
+  while IFS= read -r line; do
+    case "$line" in
+      "worktree "*)
+        path="${line#worktree }"
+        ;;
+      "HEAD "*)
+        head="${line#HEAD }"
+        ;;
+      "branch "*)
+        branch="${line#branch refs/heads/}"
+        ;;
+      detached)
+        branch=""
+        ;;
+      bare | locked* | prunable*)
+        flags="${line%% *}"
+        ;;
+      "")
+        if [[ -n "$path" ]]; then
+          paths+=("$path")
+          heads+=("$head")
+          branches+=("$branch")
+          flag_list+=("$flags")
+        fi
+
+        path=""
+        head=""
+        branch=""
+        flags=""
+        ;;
+    esac
+  done < <(git -C "$scan_dir" worktree list --porcelain 2>/dev/null)
+
+  if [[ -n "$path" ]]; then
+    paths+=("$path")
+    heads+=("$head")
+    branches+=("$branch")
+    flag_list+=("$flags")
+  fi
+
+  count=${#paths[@]}
+  [[ $count -gt 0 ]] || return 0
+
+  # git lists the main worktree first, already resolved to a physical path.
+  # Every later comparison needs that form, since on macOS the directory we
+  # scanned may still read as /var while git reports /private/var.
+  main_path="${paths[0]}"
+  repo="${main_path##*/}"
+
+  load_commit_meta "$main_path" "${heads[@]}"
+
+  for ((index = 0; index < count; index++)); do
+    emit_record "$main_path" "$repo" "${paths[$index]}" "${heads[$index]}" \
+      "${branches[$index]}" "${flag_list[$index]}"
+  done
+}
+
+build_records() {
+  local main_path
+
+  RECORDS_FILE="$(mktemp)"
+
+  while IFS= read -r main_path; do
+    parse_repo "$main_path"
+  done < <(scope_repos) > "$RECORDS_FILE"
+
+  sort -t $'\t' -k1,1n -k2,2nr -o "$RECORDS_FILE" "$RECORDS_FILE"
+}
+
+# Two passes over the records file: the first measures column widths, the
+# second renders. Fields are rank, commit time, repo, origin, branch, dirty,
+# age, tab title, path.
+render_records() {
+  local with_path="$1"
+
+  awk -v with_path="$with_path" -v show_status="$SHOW_STATUS" '
+    BEGIN { FS = "\t" }
+    NR == FNR {
+      if (length($3) > w_repo) { w_repo = length($3) }
+      if (length($4) > w_origin) { w_origin = length($4) }
+      if (length($5) > w_branch) { w_branch = length($5) }
+      next
+    }
+    {
+      if (show_status == "true") {
+        line = sprintf("%-*s  %-*s  %s %-*s  %s", w_repo, $3, w_origin, $4, $6, w_branch, $5, $7)
+      } else {
+        line = sprintf("%-*s  %-*s  %-*s  %s", w_repo, $3, w_origin, $4, w_branch, $5, $7)
+      }
+
+      if (with_path == "true") {
+        print line "\t" $8 "\t" $9
+      } else {
+        print line
+      }
+    }
+  ' "$RECORDS_FILE" "$RECORDS_FILE"
+}
+
+lookup_title() {
+  local path="$1"
+
+  awk -v target="$path" 'BEGIN { FS = "\t" } $9 == target { print $8; exit }' "$RECORDS_FILE"
+}
+
+pick_record() {
+  local query="${1:-}"
+
+  require_cmd fzf
+
+  if [[ ! -s "$RECORDS_FILE" ]]; then
+    die "No worktrees found"
+  fi
+
+  # FZF_DEFAULT_OPTS enables multi-select globally; +m turns it back off.
+  render_records true | fzf +m \
+    --delimiter=$'\t' \
+    --with-nth=1 \
+    --select-1 \
+    --exit-0 \
+    --query="$query" \
+    --prompt='worktree> ' \
+    --preview='git -C {3} log --oneline -10 2>/dev/null; echo; git -C {3} status -s 2>/dev/null' \
+    --preview-window='right:50%:wrap' || true
+}
+
+resolve_repo_main() {
+  local dir
+
+  if [[ -n "$REPO_FILTER" ]]; then
+    dir="$WT_WORKSPACE/$REPO_FILTER"
+    [[ -d "$dir" ]] || die "No such repo under $WT_WORKSPACE: $REPO_FILTER"
+    main_worktree_of "$dir" || die "Not a git repo: $dir"
+    return 0
+  fi
+
+  [[ -n "$CURRENT_MAIN" ]] || die "Not inside a git repo; pass --repo NAME"
+  printf '%s\n' "$CURRENT_MAIN"
+}
+
+default_base_ref() {
+  local repo_main="$1"
+  local ref candidate
+
+  if ref="$(git -C "$repo_main" symbolic-ref --quiet refs/remotes/origin/HEAD 2>/dev/null)"; then
+    printf '%s\n' "${ref#refs/remotes/}"
+    return 0
+  fi
+
+  for candidate in origin/main origin/master main master; do
+    if git -C "$repo_main" rev-parse --verify --quiet "$candidate" >/dev/null; then
+      printf '%s\n' "$candidate"
+      return 0
+    fi
+  done
+
+  die "Could not determine a base ref in $repo_main; pass --from REF"
+}
+
+slugify() {
+  local value="${1//\//-}"
+
+  value="${value//[!A-Za-z0-9._-]/-}"
+
+  while [[ "$value" == *--* ]]; do
+    value="${value//--/-}"
+  done
+
+  value="${value#-}"
+  value="${value%-}"
+
+  [[ -n "$value" ]] || die "Branch name produced an empty directory name"
+  printf '%s\n' "$value"
+}
+
+focus_or_launch_tab() {
+  local title="$1"
+  local path="$2"
+  local ids id
+
+  require_cmd kitty
+
+  if command -v jq >/dev/null 2>&1; then
+    ids="$(kitty @ ls 2>/dev/null | jq -r --arg t "$title" '.[].tabs[] | select(.title == $t) | .id' 2>/dev/null || true)"
+    id="${ids%%$'\n'*}"
+
+    if [[ -n "$id" ]]; then
+      run kitty @ focus-tab --match "id:$id"
+      return 0
+    fi
+  fi
+
+  run kitty @ launch --type=tab --cwd="$path" --tab-title="$title"
+}
+
+cmd_list() {
+  local query="${1:-}"
+  local filtered
+
+  build_records
+
+  if [[ -n "$query" ]]; then
+    filtered="$RECORDS_FILE.filtered"
+    grep -F -- "$query" "$RECORDS_FILE" >"$filtered" || true
+    mv "$filtered" "$RECORDS_FILE"
+  fi
+
+  case "$FORMAT" in
+    tty)
+      if [[ ! -s "$RECORDS_FILE" ]]; then
+        log "No worktrees found"
+        return 0
+      fi
+      render_records false
+      ;;
+    fzf)
+      render_records true
+      ;;
+    tsv)
+      cut -f3- "$RECORDS_FILE"
+      ;;
+    *)
+      die "Unknown format: $FORMAT"
+      ;;
+  esac
+}
+
+cmd_path() {
+  local selected
+
+  build_records
+  selected="$(pick_record "${1:-}")"
+
+  [[ -n "$selected" ]] || return 1
+  printf '%s\n' "${selected##*$'\t'}"
+}
+
+cmd_tab() {
+  local selected title path
+
+  # Callers that already picked a worktree (Neovim, scripts) can skip the scan.
+  if [[ -n "$TARGET_PATH" && -n "$TAB_TITLE" ]]; then
+    focus_or_launch_tab "$TAB_TITLE" "$TARGET_PATH"
+    return 0
+  fi
+
+  build_records
+
+  if [[ -n "$TARGET_PATH" ]]; then
+    path="$TARGET_PATH"
+    title="$(lookup_title "$path")"
+
+    if [[ -z "$title" ]]; then
+      title="${path##*/}"
+    fi
+  else
+    selected="$(pick_record "${1:-}")"
+    [[ -n "$selected" ]] || return 1
+    path="${selected##*$'\t'}"
+    title="$(printf '%s' "$selected" | cut -f2)"
+  fi
+
+  focus_or_launch_tab "$title" "$path"
+}
+
+cmd_new() {
+  local branch="${1:-}"
+  local repo_main repo slug dest base
+
+  [[ -n "$branch" ]] || die "Usage: wt new BRANCH"
+
+  repo_main="$(resolve_repo_main)"
+  repo="${repo_main##*/}"
+  slug="$(slugify "$branch")"
+  dest="$WT_ROOT/$repo/$slug"
+
+  [[ -e "$dest" ]] && die "Path already exists: $dest"
+
+  run mkdir -p "$WT_ROOT/$repo"
+
+  if git -C "$repo_main" show-ref --verify --quiet "refs/heads/$branch"; then
+    log "Checking out existing branch $branch"
+    run git -C "$repo_main" worktree add "$dest" "$branch" >&2
+  elif git -C "$repo_main" show-ref --verify --quiet "refs/remotes/origin/$branch"; then
+    log "Tracking origin/$branch"
+    run git -C "$repo_main" worktree add --track -b "$branch" "$dest" "origin/$branch" >&2
+  else
+    if [[ -n "$FROM_REF" ]]; then
+      base="$FROM_REF"
+    else
+      if git -C "$repo_main" remote get-url origin >/dev/null 2>&1; then
+        run git -C "$repo_main" fetch --quiet origin
+      fi
+      base="$(default_base_ref "$repo_main")"
+    fi
+
+    log "Creating branch $branch from $base"
+    run git -C "$repo_main" worktree add -b "$branch" "$dest" "$base" >&2
+  fi
+
+  log "Worktree ready: $dest"
+
+  if ! "$DRY_RUN"; then
+    printf '%s\n' "$dest"
+  fi
+}
+
+cmd_rm() {
+  local selected path repo_main branch
+
+  build_records
+
+  if [[ -n "$TARGET_PATH" ]]; then
+    path="$TARGET_PATH"
+  else
+    selected="$(pick_record "${1:-}")"
+    [[ -n "$selected" ]] || return 1
+    path="${selected##*$'\t'}"
+  fi
+
+  repo_main="$(main_worktree_of "$path")" || die "Not a git worktree: $path"
+
+  if [[ "$path" == "$repo_main" ]]; then
+    die "Refusing to remove the main worktree: $path"
+  fi
+
+  if ! "$FORCE" && [[ "$(dirty_marker "$path")" == "*" ]]; then
+    die "Worktree has uncommitted changes: $path (use --force)"
+  fi
+
+  branch="$(git -C "$path" symbolic-ref --quiet --short HEAD 2>/dev/null || true)"
+
+  if "$FORCE"; then
+    run git -C "$repo_main" worktree remove --force "$path"
+  else
+    run git -C "$repo_main" worktree remove "$path"
+  fi
+
+  log "Removed $path"
+
+  if "$DELETE_BRANCH" && [[ -n "$branch" ]]; then
+    run git -C "$repo_main" branch -D "$branch"
+    log "Deleted branch $branch"
+  fi
+}
+
+cmd_prune() {
+  local main_path
+
+  while IFS= read -r main_path; do
+    log "Pruning $main_path"
+    run git -C "$main_path" worktree prune -v
+  done < <(scope_repos)
+}
+
+require_cmd git
+
+COMMAND=""
+ARGS=()
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -a | --all)
+      SCOPE_ALL=true
+      ;;
+    -s | --status)
+      SHOW_STATUS=true
+      ;;
+    --repo)
+      [[ $# -ge 2 ]] || die "Missing value for --repo"
+      REPO_FILTER="$2"
+      shift
+      ;;
+    --repo=*)
+      REPO_FILTER="${1#--repo=}"
+      ;;
+    --path)
+      [[ $# -ge 2 ]] || die "Missing value for --path"
+      TARGET_PATH="$2"
+      shift
+      ;;
+    --path=*)
+      TARGET_PATH="${1#--path=}"
+      ;;
+    --title)
+      [[ $# -ge 2 ]] || die "Missing value for --title"
+      TAB_TITLE="$2"
+      shift
+      ;;
+    --title=*)
+      TAB_TITLE="${1#--title=}"
+      ;;
+    --from)
+      [[ $# -ge 2 ]] || die "Missing value for --from"
+      FROM_REF="$2"
+      shift
+      ;;
+    --from=*)
+      FROM_REF="${1#--from=}"
+      ;;
+    --format)
+      [[ $# -ge 2 ]] || die "Missing value for --format"
+      FORMAT="$2"
+      shift
+      ;;
+    --format=*)
+      FORMAT="${1#--format=}"
+      ;;
+    --force)
+      FORCE=true
+      ;;
+    --delete-branch)
+      DELETE_BRANCH=true
+      ;;
+    --dry-run)
+      DRY_RUN=true
+      ;;
+    -h | --help)
+      usage
+      exit 0
+      ;;
+    -*)
+      die "Unknown option: $1"
+      ;;
+    *)
+      if [[ -z "$COMMAND" ]]; then
+        COMMAND="$1"
+      else
+        ARGS+=("$1")
+      fi
+      ;;
+  esac
+  shift
+done
+
+# Validated here rather than inside scope_repos, which runs in a subshell where
+# a die() would print but not set the exit status.
+if [[ -n "$REPO_FILTER" && ! -d "$WT_WORKSPACE/$REPO_FILTER" ]]; then
+  die "No such repo under $WT_WORKSPACE: $REPO_FILTER"
+fi
+
+WT_ROOT="$(physical_path "$WT_ROOT")"
+WT_WORKSPACE="$(physical_path "$WT_WORKSPACE")"
+CURRENT_MAIN="$(main_worktree_of "$PWD" 2>/dev/null || true)"
+
+case "$COMMAND" in
+  "" | path | p)
+    cmd_path "${ARGS[0]:-}"
+    ;;
+  list | ls | l)
+    cmd_list "${ARGS[0]:-}"
+    ;;
+  new | n | add)
+    cmd_new "${ARGS[0]:-}"
+    ;;
+  rm | remove)
+    cmd_rm "${ARGS[0]:-}"
+    ;;
+  prune)
+    cmd_prune
+    ;;
+  tab | t)
+    cmd_tab "${ARGS[0]:-}"
+    ;;
+  *)
+    die "Unknown command: $COMMAND"
+    ;;
+esac

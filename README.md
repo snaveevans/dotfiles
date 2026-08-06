@@ -11,6 +11,7 @@ This repo keeps tracked config in `home/`, machine bootstrap scripts in `scripts
 ## What This Repo Manages
 
 - shell config: `home/.zshenv`, `home/.zshrc`
+- personal commands: `home/.local/bin`
 - editor config: `home/.config/nvim`
 - terminal config: `home/.config/kitty`
 - Linux desktop config: `home/.config/i3`, `home/.config/polybar`, `home/.config/rofi`
@@ -61,6 +62,23 @@ scripts/refresh-secrets.sh
 - `scripts/install-home-links.sh`: symlinks tracked files from `home/` into `$HOME`
 - `scripts/refresh-secrets.sh`: writes local secret files such as `~/.config/secrets/env` and `~/.npmrc`
 - `scripts/test-refresh-secrets.sh`: fake-Bitwarden verification for the secret refresh flow
+- `scripts/test-wt.sh`: real-git verification for the `wt` worktree command
+
+## Git Worktrees
+
+`wt` lists and switches between git worktrees, including the ones Claude Code and
+opencode create in their own locations. It is linked into `~/.local/bin` by
+`scripts/install-home-links.sh`.
+
+```bash
+wt          # pick a worktree and cd into it
+wt list     # print the worktrees in scope
+wt new BRANCH
+```
+
+Key bindings: `Ctrl-k w` in zsh, `cmd+enter w` in Kitty, `<leader>gw` in Neovim.
+`wt --help` repeats them. See `docs/worktrees.md` for the full flow and
+`docs/keybindings.md` for every custom binding in this repo.
 
 ## Secrets
 
@@ -88,7 +106,10 @@ For Linux-specific setup details, see `UBUNTU_SETUP.md`.
 ## Additional Docs
 
 - `docs/bootstrap.md`: bootstrap, linking, and refresh flow
+- `docs/keybindings.md`: every custom zsh, Kitty, Neovim, and Hammerspoon binding
 - `docs/troubleshooting.md`: common recovery steps, including Neovim parser crash fixes
+- `docs/worktrees.md`: the `wt` worktree command and its Kitty and Neovim pickers
 - `docs/migrations/secret-projection.md`: Bitwarden-backed secret generation
 - `docs/migrations/symlink-first-tracker.md`: migration summary and active surfaces
 - `docs/decisions/ADR-0001-adopt-symlink-first-dotfiles-workflow-with-bitwarden-secret-projection.md`: architecture decision for the current workflow
+- `docs/decisions/ADR-0002-centralize-hand-made-git-worktrees-with-location-agnostic-discovery.md`: architecture decision for the worktree layout
