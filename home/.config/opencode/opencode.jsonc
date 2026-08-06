@@ -1,0 +1,95 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "plugin": [],
+  "default_agent": "build",
+  "model": "synthetic/hf:moonshotai/Kimi-K3",
+  "mcp": {
+    "context7": {
+      "type": "remote",
+      "url": "https://mcp.context7.com/mcp",
+      "headers": {
+        "CONTEXT7_API_KEY": "{env:CONTEXT7_API_KEY}",
+      },
+      "enabled": true,
+    },
+    "chrome-devtools": {
+      "type": "local",
+      "command": ["npx", "-y", "chrome-devtools-mcp@latest"],
+    },
+    "playwright": {
+      "type": "local",
+      "command": ["npx", "@playwright/mcp@latest"],
+      "enabled": true,
+    },
+    "brave-search": {
+      "type": "local",
+      "command": [
+        "npx",
+        "-y",
+        "@brave/brave-search-mcp-server",
+        "--transport",
+        "stdio",
+      ],
+      "environment": {
+        "BRAVE_API_KEY": "{env:BRAVE_API_KEY}",
+      },
+      "enabled": true,
+    },
+    // "workers-bindings": {
+    //   "type": "local",
+    //   "command": ["npx", "-y", "mcp-remote", "https://bindings.mcp.cloudflare.com/mcp"],
+    //   "enabled": true,
+    // },
+    "ios-simulator": {
+      "type": "local",
+      "command": ["npx", "-y", "ios-simulator-mcp"],
+      "enabled": true,
+    },
+    "supabase": {
+      "type": "remote",
+      "url": "https://mcp.supabase.com/mcp?project_ref=xbtocwhviesifsuxhulr",
+      "enabled": true,
+    },
+    "openbrain": {
+      "type": "local",
+      "command": ["npx", "-y", "@snaveevans/openbrain-mcp"],
+      "enabled": true,
+    },
+  },
+  "provider": {
+    "synthetic": {
+      "models": {
+        "hf:MiniMaxAI/MiniMax-M2.5": {
+          "limit": {
+            "context": 191488,
+            "output": 65536,
+          },
+        },
+        "hf:Qwen/Qwen3.5-397B-A17B": {
+          "limit": {
+            "context": 262144,
+            "output": 65536,
+          },
+        },
+        "hf:moonshotai/Kimi-K2.5": {
+          "limit": {
+            "context": 262144,
+            "output": 8000,
+          },
+          "variants": {
+            "thinking": {
+              "temperature": 1.0,
+              "top_p": 0.95,
+              "reasoningEffort": "high",
+            },
+            "instant": {
+              "temperature": 0.6,
+              "top_p": 0.95,
+              "reasoningEffort": "low",
+            },
+          },
+        },
+      },
+    },
+  },
+}

@@ -52,6 +52,9 @@ shfmt -w scripts/*.sh home/.local/bin/wt home/.config/polybar/launch.sh
 # Python syntax-check the Kitty kitten
 python3 -m py_compile home/.config/kitty/kitty_selector.py
 
+# Validate opencode config loads (opencode hard-fails on invalid config)
+opencode debug agent build >/dev/null  # prints ConfigInvalidError if opencode.jsonc is broken
+
 # Safe link-install validation
 scripts/install-home-links.sh --dry-run
 scripts/install-home-links.sh --dry-run --home "$(mktemp -d)"
@@ -82,6 +85,7 @@ Do not run `scripts/bootstrap.sh`, `scripts/bootstrap-darwin.sh`, or `scripts/bo
 
 - Edit `home/...`, not the linked destination in `$HOME`.
 - Edit tracked Kitty config in `home/.config/kitty/` and let `install-home-links.sh` manage runtime links.
+- Edit tracked opencode config in `home/.config/opencode/` (`opencode.jsonc`, `agents/`, `command/`, `skills/`); `~/.config/opencode/` also holds untracked runtime artifacts (`plugins/`, `node_modules/`, lockfiles) — never copy those into `home/`. API keys stay in `~/.local/share/opencode/auth.json` or `{env:...}` interpolation, never in tracked files.
 - Edit docs in `docs/` when changing setup or migration behavior.
 - If you add or change a keybinding, update `docs/keybindings.md` in the same change.
 - Do not commit `.npmrc`, `.config/secrets/`, or real credentials.

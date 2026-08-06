@@ -20,6 +20,10 @@ LINK_PATHS=(
   ".config/i3"
   ".config/rofi"
   ".config/polybar"
+  ".config/opencode/opencode.jsonc"
+  ".config/opencode/agents"
+  ".config/opencode/command"
+  ".config/opencode/skills"
 )
 
 detect_os_name() {
