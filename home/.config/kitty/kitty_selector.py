@@ -210,13 +210,16 @@ def handle_result(
         return
 
     # Worktrees need a repo-qualified title because two checkouts of different
-    # repos can share a basename. The match is anchored for the same reason:
-    # an unanchored "prism-ui" also matches the "prism-ui:some-worktree" tab.
+    # repos can share a basename.
     dir_name = value.get("tab_title") or os.path.basename(selected_directory)
 
     # Check if a tab with this title already exists
     try:
-        existing_tabs = list(boss.match_tabs(f"title:^{re.escape(dir_name)}$"))
+        existing_tabs = [
+            tab
+            for tab in boss.match_tabs(f"title:^{re.escape(dir_name)}$")
+            if tab.effective_title == dir_name
+        ]
         if existing_tabs:
             # Focus the existing tab
             boss.call_remote_control(w, ("focus-tab", f"--match=id:{existing_tabs[0].id}"))

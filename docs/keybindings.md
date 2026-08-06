@@ -67,6 +67,10 @@ specs in `lua/plugins/`. Everything else is LazyVim's.
 | `Ctrl-j` / `Ctrl-k` | half page down / up |
 | `Alt-j` / `Alt-k` | move the line or selection down / up |
 
+The file picker respects `.gitignore` with an allow-list of exceptions, so
+`.env*` files show up even when a repo ignores them. Extend `unignore_globs` in
+`home/.config/nvim/lua/plugins/core.lua` to keep more ignored files findable.
+
 In the worktree picker: `Enter` opens a Kitty tab, `Ctrl-t` opens a Neovim tab
 page scoped to the worktree, `Ctrl-y` yanks the path.
 
