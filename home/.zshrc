@@ -158,7 +158,7 @@ case "$OSTYPE" in
     . "$(brew --prefix)/opt/asdf/libexec/asdf.sh"
     ;;
   *)
-    . "$HOME/.asdf/asdf.sh"
+    [[ -f "$HOME/.asdf/asdf.sh" ]] && . "$HOME/.asdf/asdf.sh"
     ;;
 esac
 
