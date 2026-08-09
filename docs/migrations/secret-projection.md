@@ -24,10 +24,10 @@ This command:
   - currently exports:
     - `BRAVE_API_KEY`
     - `CONTEXT7_API_KEY`
-    - `GITHUB_TOKEN`
+    - `GITHUB_PACKAGES_TOKEN` (not `GITHUB_TOKEN` — that name is reserved by `gh`/GitHub Actions and would override CLI auth)
 - `~/.npmrc`
   - generated replacement for the old `private_dot_npmrc.tmpl`
-  - GitHub Packages `_authToken` references `${GITHUB_TOKEN}` from the env file; npm expands it at runtime
+  - GitHub Packages `_authToken` references `${GITHUB_PACKAGES_TOKEN}` from the env file; npm expands it at runtime
 - `~/.gradle/gradle.properties`
   - provides `centralUsername` and `centralPassword` for Gradle Artifactory authentication
   - uses the same Bitwarden item as the npmrc Artifactory block (`artifactory.octanner.net`)
@@ -50,7 +50,7 @@ Defaults come from the current repo's existing template usage:
   - field: `api_key`
 - Context7 API key
   - item: `context7`
-  - field: `notes`
+  - field: `api_key`
 - GitHub Packages npm token
   - item: `ebac9653-5fbd-4dac-b22d-af9a0116b6bb`
   - field: `access_token`

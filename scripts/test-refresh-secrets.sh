@@ -57,7 +57,7 @@ case "${1:-}" in
         printf '{"name":"api-dashboard.search.brave.com","fields":[{"name":"api_key","value":"brave-token"}]}'
         ;;
       context7)
-        printf '{"name":"context7","notes":"context7-token"}'
+        printf '{"name":"context7","fields":[{"name":"api_key","value":"context7-token"}]}'
         ;;
       ebac9653-5fbd-4dac-b22d-af9a0116b6bb)
         printf '{"id":"ebac9653-5fbd-4dac-b22d-af9a0116b6bb","fields":[{"name":"access_token","value":"github-token"}]}'
