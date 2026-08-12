@@ -7,7 +7,7 @@ consulted: []
 informed: []
 ---
 
-# Surface Claude Code job state in wt's worktree listing
+# Surface Claude Code job state in the Kitty pickers
 
 ## Context and Problem Statement
 
@@ -63,6 +63,11 @@ This decision means:
   session pointed at it, alongside its existing gates
 - `CLAUDE_JOBS_DIR` (default `~/.claude/jobs`) joins `WT_ROOT`/`WT_WORKSPACE`
   as a configurable root
+- the same glyphs also appear in Kitty's `cmd+enter o` (pick an already-open
+  tab) - the picker actually used day to day - matched against each tab's
+  window `cwd` rather than a worktree path. That picker is a Python kitten,
+  not `wt`, so the matching logic is duplicated in `kitty_selector.py` rather
+  than shared
 
 ### Consequences
 
@@ -77,6 +82,10 @@ This decision means:
 - Negative: only sessions backed by a job directory are visible. A bare
   `claude` invocation with no job directory (if one exists outside this
   mechanism) won't show up.
+- Negative: the matching/priority/label logic exists twice - once in bash
+  (`wt`), once in Python (`kitty_selector.py`) - because `cmd+enter o` isn't
+  a `wt` command. A change to the glyphs or precedence rules has to be made
+  in both places.
 
 ## Confirmation
 
@@ -84,3 +93,9 @@ This decision means:
 `$CLAUDE_JOBS_DIR`, and asserts both that `wt list` surfaces the resulting
 glyph (including the multi-session precedence and count) and that `wt clean`
 skips a worktree with a `working` session until that job's state changes.
+
+`scripts/test-kitty-selector.sh` covers the Python side the same way -
+precedence, nested-path matching, no false match on a similarly-named
+sibling, and a missing jobs directory degrading to no jobs rather than an
+error - by importing `kitty_selector.py` with `kitty.boss` stubbed out,
+since that module only exists inside Kitty's own runtime.

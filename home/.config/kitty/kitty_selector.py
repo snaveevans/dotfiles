@@ -220,28 +220,107 @@ def select_directory(directories):
     return result.stdout.strip()
 
 
+_AGENT_STATE_PRIORITY = {"blocked": 0, "failed": 1, "working": 2, "done": 3}
+_AGENT_STATE_LABELS = {
+    "working": "● working",
+    "blocked": "⏸ needs input",
+    "failed": "✗ failed",
+    "done": "✓ done",
+}
+
+
+def load_agent_jobs() -> list[tuple[str, str]]:
+    """Return (cwd, state) for every Claude Code job with both set.
+
+    Same data source and matching rules as `agent_status_for` in `wt`
+    (home/.local/bin/wt) - duplicated here in Python rather than shelling out,
+    since this kitten already needs to parse JSON per tab anyway.
+    """
+    jobs_dir = os.path.expanduser(os.environ.get("CLAUDE_JOBS_DIR", "~/.claude/jobs"))
+    jobs = []
+
+    try:
+        entries = os.listdir(jobs_dir)
+    except OSError:
+        return jobs
+
+    for entry in entries:
+        try:
+            with open(os.path.join(jobs_dir, entry, "state.json")) as f:
+                data = json.load(f)
+        except (OSError, ValueError):
+            continue
+
+        cwd = data.get("cwd")
+        if cwd:
+            jobs.append((cwd, data.get("state") or ""))
+
+    return jobs
+
+
+def agent_status_for(path: str, jobs: list[tuple[str, str]]) -> str | None:
+    """Status label for jobs whose cwd is at or under `path`, or None."""
+    if not path:
+        return None
+
+    prefix = path.rstrip("/") + "/"
+    best = None
+    count = 0
+
+    for cwd, state in jobs:
+        if cwd != path and not cwd.startswith(prefix):
+            continue
+        count += 1
+        if state in _AGENT_STATE_PRIORITY and (
+            best is None or _AGENT_STATE_PRIORITY[state] < _AGENT_STATE_PRIORITY[best]
+        ):
+            best = state
+
+    if best is None:
+        return None
+
+    label = _AGENT_STATE_LABELS[best]
+    return f"{label} ×{count}" if count > 1 else label
+
+
 def select_open_tab():
     result = subprocess.run(["kitty", "@", "ls"], capture_output=True, text=True)
 
     # Parse the JSON output
     data = json.loads(result.stdout)
+    jobs = load_agent_jobs()
 
-    # Extract the list of tabs
-    tabs = []
+    # Extract the list of tabs, annotated with agent status when a job's cwd
+    # falls inside one of the tab's windows. Tabs in this workflow are single
+    # window, so the first matching window is enough.
+    rows = []
     for session in data:
         for tab in session["tabs"]:
-            tabs.append(tab["title"])
+            title = tab["title"]
+            status = None
+            for window in tab.get("windows", []):
+                status = agent_status_for(window.get("cwd"), jobs)
+                if status:
+                    break
+            display = f"{title}  {status}" if status else title
+            rows.append((display, title))
 
     fzf_path = find_fzf()
     if not fzf_path:
         return {"status": "error", "message": "fzf not found in PATH or common locations"}
 
+    # fzf shows only the display column; the title (field 2) is the value.
+    lines = [f"{display}\t{title}" for display, title in rows]
     result = subprocess.run(
-        [fzf_path], input="\n".join(tabs), stdout=subprocess.PIPE, text=True
+        [fzf_path, "--delimiter=\t", "--with-nth=1"],
+        input="\n".join(lines),
+        stdout=subprocess.PIPE,
+        text=True,
     )
-    selected_tab = result.stdout.strip()
-    if not selected_tab:
+    selected = result.stdout.strip()
+    if not selected:
         return {"status": "error", "message": "No open tab selected."}
+    selected_tab = selected.split("\t")[-1]
     return {"status": "success", "selected_directory": selected_tab}
 
 

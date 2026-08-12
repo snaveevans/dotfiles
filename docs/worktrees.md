@@ -78,7 +78,10 @@ slow. Pass `-s` when you want them.
 The trailing column shows Claude Code sessions currently running in a
 worktree, read from `$CLAUDE_JOBS_DIR` (each session writes its own
 `cwd` and `state` there). It's cheap - local JSON reads, no git calls - so
-unlike dirty markers it's always on.
+unlike dirty markers it's always on. The same glyphs appear next to tab
+titles in `cmd+enter o` (see [keybindings.md](keybindings.md)), which is
+implemented separately in `kitty_selector.py` since it's Python, not `wt`
+- same matching rules, kept in sync by hand.
 
 | Glyph | State | Meaning |
 | --- | --- | --- |
