@@ -89,6 +89,33 @@ grep -Fq "${TAB}repo-a:feature${TAB}" "$FZF_FILE" ||
 grep -Fq "${TAB}repo-a${TAB}" "$FZF_FILE" ||
   fail "the primary checkout should get a bare repo tab title"
 
+# Agent status is read from Claude Code's own job state, keyed by cwd, so a
+# worktree with a matching job (or several) should carry a status glyph.
+mkdir -p "$FAKE_HOME/.claude/jobs/fake-working"
+cat >"$FAKE_HOME/.claude/jobs/fake-working/state.json" <<JSON
+{"cwd": "$TEST_WT_ROOT/repo-a/feature", "state": "working"}
+JSON
+
+AGENT_FILE="$TMP_DIR/agent.tsv"
+run_wt list --all --format=tsv >"$AGENT_FILE"
+
+[[ "$(awk -F'\t' '$3 == "feature" { print $8 }' "$AGENT_FILE")" == "● working" ]] ||
+  fail "a worktree with a matching Claude Code job should show its agent status"
+
+# A second job on the same worktree should raise the count without changing
+# which state wins: working outranks done.
+mkdir -p "$FAKE_HOME/.claude/jobs/fake-done"
+cat >"$FAKE_HOME/.claude/jobs/fake-done/state.json" <<JSON
+{"cwd": "$TEST_WT_ROOT/repo-a/feature", "state": "done"}
+JSON
+
+run_wt list --all --format=tsv >"$AGENT_FILE"
+
+[[ "$(awk -F'\t' '$3 == "feature" { print $8 }' "$AGENT_FILE")" == "● working ×2" ]] ||
+  fail "a worktree with two jobs should show the higher-priority state and a count"
+
+rm -rf "$FAKE_HOME/.claude/jobs/fake-working" "$FAKE_HOME/.claude/jobs/fake-done"
+
 LOCAL_FILE="$TMP_DIR/local.tsv"
 (cd "$REPO/.claude/worktrees/agent-x" && run_wt list --format=tsv) >"$LOCAL_FILE"
 
@@ -209,5 +236,33 @@ grep -Fq "still open" "$TAB_ERR" || fail "clean should explain why it skipped an
 (cd "$REPO" && run_wt clean) 2>/dev/null
 
 [[ ! -d "$TAB_PATH" ]] || fail "clean should remove the worktree once its tab is no longer open"
+
+# The "no live agent job" gate mirrors the open-tab gate: a worktree can be
+# merged and clean but still have a Claude Code session working in it.
+AGENT_PATH="$(cd "$REPO" && run_wt new tyler/CCLOUD-6-agent-busy)"
+printf 'agent work\n' >>"$AGENT_PATH/README.md"
+git -C "$AGENT_PATH" add README.md
+git -C "$AGENT_PATH" commit --quiet -m "agent work"
+git -C "$REPO" merge --quiet --no-edit tyler/CCLOUD-6-agent-busy
+
+mkdir -p "$FAKE_HOME/.claude/jobs/fake-busy"
+cat >"$FAKE_HOME/.claude/jobs/fake-busy/state.json" <<JSON
+{"cwd": "$AGENT_PATH", "state": "working"}
+JSON
+
+AGENT_CLEAN_ERR="$TMP_DIR/clean-agent.err"
+(cd "$REPO" && run_wt clean) 2>"$AGENT_CLEAN_ERR"
+
+[[ -d "$AGENT_PATH" ]] || fail "clean should not remove a worktree with a live agent job"
+grep -Fq "agent job is working" "$AGENT_CLEAN_ERR" ||
+  fail "clean should explain why it skipped a worktree with a live agent job"
+
+cat >"$FAKE_HOME/.claude/jobs/fake-busy/state.json" <<JSON
+{"cwd": "$AGENT_PATH", "state": "done"}
+JSON
+
+(cd "$REPO" && run_wt clean) 2>/dev/null
+
+[[ ! -d "$AGENT_PATH" ]] || fail "clean should remove the worktree once its agent job is done"
 
 printf 'wt verification passed\n'

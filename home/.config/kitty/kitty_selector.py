@@ -156,7 +156,7 @@ def prompt_line(message: str, prompt: str = "> ") -> str | None:
 
 
 def create_worktree() -> dict[str, str]:
-    """Prompt for a branch name, create a worktree for it, and hand back its path."""
+    """Prompt for a branch name and base ref, create a worktree for it, and hand back its path."""
     wt_path = find_wt()
     if not wt_path:
         return {"status": "error", "message": "wt not found in PATH or common locations"}
@@ -165,8 +165,16 @@ def create_worktree() -> dict[str, str]:
     if not branch:
         return {"status": "error", "message": "no branch name entered"}
 
+    # Optional: cancelling or leaving this blank falls through to `wt new`'s
+    # own default (origin's HEAD branch), so it's not treated as an abort.
+    base_ref = prompt_line("Base branch (blank for default)", prompt="from> ")
+
+    new_args = [wt_path, "new", branch]
+    if base_ref:
+        new_args += ["--from", base_ref]
+
     created = subprocess.run(
-        [wt_path, "new", branch],
+        new_args,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,

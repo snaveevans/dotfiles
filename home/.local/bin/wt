@@ -7,6 +7,7 @@ set -euo pipefail
 # puts the worktrees you create by hand.
 WT_ROOT="${WT_ROOT:-$HOME/worktrees}"
 WT_WORKSPACE="${WT_WORKSPACE:-$HOME/workspace}"
+CLAUDE_JOBS_DIR="${CLAUDE_JOBS_DIR:-$HOME/.claude/jobs}"
 
 SCOPE_ALL=false
 SHOW_STATUS=false
@@ -24,6 +25,11 @@ ORIGIN=""
 META_SHAS=()
 META_TIMES=()
 META_AGES=()
+AGENT_CWDS=()
+AGENT_STATES=()
+AGENT_LOADED=false
+AGENT_STATE=""
+AGENT_COUNT=0
 
 usage() {
   cat <<'EOF'
@@ -64,6 +70,7 @@ Key bindings:
 Environment:
   WT_ROOT          Where `wt new` creates worktrees (default: ~/worktrees)
   WT_WORKSPACE     Where repos are scanned from (default: ~/workspace)
+  CLAUDE_JOBS_DIR  Where Claude Code job state lives (default: ~/.claude/jobs)
 
 See docs/worktrees.md in the dotfiles repo for the full flow.
 EOF
@@ -178,6 +185,94 @@ is_agent_worktree() {
   esac
 }
 
+# Claude Code writes one state.json per session under $CLAUDE_JOBS_DIR, each
+# with the cwd it's running in and a `state` of working/blocked/done/failed.
+# Loaded once per `wt` process (not once per worktree) and cached in
+# AGENT_LOADED, since load_agent_jobs itself never runs inside a command
+# substitution - a subshell would lose the cache on every call.
+load_agent_jobs() {
+  "$AGENT_LOADED" && return 0
+  AGENT_LOADED=true
+
+  command -v jq >/dev/null 2>&1 || return 0
+  [[ -d "$CLAUDE_JOBS_DIR" ]] || return 0
+
+  local file cwd state
+
+  while IFS=$'\t' read -r cwd state; do
+    [[ -n "$cwd" ]] || continue
+    AGENT_CWDS+=("$cwd")
+    AGENT_STATES+=("$state")
+  done < <(
+    for file in "$CLAUDE_JOBS_DIR"/*/state.json; do
+      [[ -f "$file" ]] || continue
+      jq -r 'select(.cwd != null) | [.cwd, (.state // "")] | @tsv' "$file" 2>/dev/null || true
+    done
+  )
+}
+
+# Sets AGENT_STATE/AGENT_COUNT rather than printing, same reasoning as
+# classify_origin. A worktree "has" a job if the job's cwd is at or under its
+# path, since agents often work a few directories deep rather than at the
+# worktree root. When more than one job matches, the most attention-worthy
+# state wins: blocked (waiting on you) beats failed, which beats working,
+# which beats done.
+agent_status_for() {
+  local path="$1"
+  local cwd state index
+
+  load_agent_jobs
+
+  AGENT_STATE=""
+  AGENT_COUNT=0
+
+  for ((index = 0; index < ${#AGENT_CWDS[@]}; index++)); do
+    cwd="${AGENT_CWDS[$index]}"
+    [[ "$cwd" == "$path" || "$cwd" == "$path"/* ]] || continue
+
+    state="${AGENT_STATES[$index]}"
+    ((AGENT_COUNT++)) || true
+
+    case "$state" in
+      blocked)
+        AGENT_STATE="blocked"
+        ;;
+      failed)
+        [[ "$AGENT_STATE" == "blocked" ]] || AGENT_STATE="failed"
+        ;;
+      working)
+        [[ "$AGENT_STATE" == "blocked" || "$AGENT_STATE" == "failed" ]] || AGENT_STATE="working"
+        ;;
+      done)
+        [[ -n "$AGENT_STATE" ]] || AGENT_STATE="done"
+        ;;
+    esac
+  done
+}
+
+agent_glyph_for() {
+  local state="$1"
+  local count="$2"
+  local label
+
+  case "$state" in
+    working) label="● working" ;;
+    blocked) label="⏸ needs input" ;;
+    failed) label="✗ failed" ;;
+    done) label="✓ done" ;;
+    *)
+      printf '\n'
+      return 0
+      ;;
+  esac
+
+  if [[ "$count" -gt 1 ]]; then
+    label="$label ×$count"
+  fi
+
+  printf '%s\n' "$label"
+}
+
 # Sets ORIGIN rather than printing: a command substitution here forks once per
 # worktree, which is measurable across a full workspace scan.
 classify_origin() {
@@ -259,7 +354,7 @@ emit_record() {
   local head="$4"
   local branch="$5"
   local flags="$6"
-  local branch_display dirty rank commit_time age title index
+  local branch_display dirty rank commit_time age title index agent_glyph
 
   [[ -n "$path" ]] || return 0
 
@@ -315,8 +410,11 @@ emit_record() {
     rank=0
   fi
 
-  printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
-    "$rank" "$commit_time" "$repo" "$ORIGIN" "$branch_display" "$dirty" "$age" "$title" "$path"
+  agent_status_for "$path"
+  agent_glyph="$(agent_glyph_for "$AGENT_STATE" "$AGENT_COUNT")"
+
+  printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+    "$rank" "$commit_time" "$repo" "$ORIGIN" "$branch_display" "$dirty" "$age" "$title" "$path" "$agent_glyph"
 }
 
 parse_repo() {
@@ -421,6 +519,10 @@ render_records() {
         line = sprintf("%-*s  %-*s  %s %-*s  %s", w_repo, $3, w_origin, $4, $6, w_branch, $5, $7)
       } else {
         line = sprintf("%-*s  %-*s  %-*s  %s", w_repo, $3, w_origin, $4, w_branch, $5, $7)
+      }
+
+      if ($10 != "") {
+        line = line "  " $10
       }
 
       if (with_path == "true") {
@@ -810,6 +912,13 @@ cmd_clean() {
 
       if tab_open "$title"; then
         log "Skipping $path: Kitty tab '$title' is still open"
+        ((skipped++)) || true
+        continue
+      fi
+
+      agent_status_for "$path"
+      if [[ "$AGENT_STATE" == "working" || "$AGENT_STATE" == "blocked" ]]; then
+        log "Skipping $path: agent job is $AGENT_STATE there"
         ((skipped++)) || true
         continue
       fi

@@ -53,7 +53,9 @@ Useful options: `-a/--all` to scan every repo instead of just the current one,
 
 ```text
 prism-ui  main   main                                       23 hours ago
-prism-ui  wt     tyler/CCLOUD-10967-badge-token-experiment  7 weeks ago
+prism-ui  wt     tyler/CCLOUD-10967-badge-token-experiment  7 weeks ago  ● working ×2
+prism-ui  wt     tyler/CCLOUD-10932-followup                2 days ago   ⏸ needs input
+dotfiles  wt     worktree-status-glyphs                     1 hour ago   ✓ done
 ```
 
 The second column is the origin, which is derived from where the worktree lives:
@@ -71,6 +73,31 @@ Dirty markers are off by default because `git status` on a large repo costs a
 few hundred milliseconds per worktree, which is enough to make the picker feel
 slow. Pass `-s` when you want them.
 
+## Agent status
+
+The trailing column shows Claude Code sessions currently running in a
+worktree, read from `$CLAUDE_JOBS_DIR` (each session writes its own
+`cwd` and `state` there). It's cheap - local JSON reads, no git calls - so
+unlike dirty markers it's always on.
+
+| Glyph | State | Meaning |
+| --- | --- | --- |
+| `⏸ needs input` | `blocked` | the session is waiting on you |
+| `✗ failed` | `failed` | the session errored out |
+| `● working` | `working` | the session is actively running |
+| `✓ done` | `done` | the session finished |
+
+A worktree "has" a session if that session's cwd is at or under the
+worktree's path - agents often work a few directories deep, not at the root.
+When more than one session matches, the most attention-worthy state wins in
+that order (`needs input` beats `failed` beats `working` beats `done`), and a
+`×N` suffix shows how many matched.
+
+This reads Claude Code's own internal job state, which isn't a documented or
+versioned interface - a future CLI update could change its shape and quietly
+stop populating the column. Nothing breaks if that happens; worktrees just
+stop showing a glyph.
+
 ## Key bindings
 
 | Binding | Where | Action |
@@ -78,7 +105,7 @@ slow. Pass `-s` when you want them.
 | `Ctrl-k w` | zsh | pick a worktree and cd into it |
 | `cmd+enter w` | Kitty | pick a worktree (all repos), open or focus its tab |
 | `cmd+enter r` | Kitty | pick a worktree (this repo), open or focus its tab |
-| `cmd+enter c` | Kitty | prompt for a branch name, create a worktree, open a tab into it |
+| `cmd+enter c` | Kitty | prompt for a branch name and base branch, create a worktree, open a tab into it |
 | `<leader>gw` | Neovim | worktrees in the current repo |
 | `<leader>gW` | Neovim | worktrees across every repo |
 
@@ -109,7 +136,7 @@ drops anything under `<repo>/.claude/worktrees/` or
 
 `wt clean` removes every worktree `wt` can see (`wt` or `other`) that's done
 with, and deletes its branch along with it. A worktree only qualifies if all
-three hold:
+four hold:
 
 - No uncommitted changes (untracked files don't count, same as the dirty
   marker in the listing).
@@ -117,6 +144,9 @@ three hold:
   branch, or `--from REF`) - checked with `merge-base --is-ancestor`, so a
   squash-merged PR won't register as merged even though it's really done.
 - No Kitty tab is currently open for it.
+- No Claude Code session has its cwd at or under the worktree with state
+  `working` or `blocked` - see [Agent status](#agent-status). A `done` or
+  `failed` session doesn't block cleanup.
 
 It refuses to touch the primary checkout and skips anything it can't
 confidently classify (detached HEAD, no determinable base ref). Run
@@ -125,10 +155,11 @@ anything, same as `wt new --dry-run`.
 
 ## Configuration
 
-Both are read from the environment and can be set in `~/.config/zsh/local.env`:
+Read from the environment and can be set in `~/.config/zsh/local.env`:
 
 - `WT_ROOT` — where `wt new` creates worktrees (default `~/worktrees`)
 - `WT_WORKSPACE` — where repos are scanned from (default `~/workspace`)
+- `CLAUDE_JOBS_DIR` — where Claude Code job state lives (default `~/.claude/jobs`)
 
 A workspace scan only descends one level and only into directories with a real
 `.git` directory, which is how a linked worktree sitting in the workspace avoids
