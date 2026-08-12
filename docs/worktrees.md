@@ -85,6 +85,7 @@ slow. Pass `-s` when you want them.
 | `Ctrl-k w` | zsh | pick a worktree and cd into it |
 | `cmd+enter w` | Kitty | pick a worktree (all repos), open or focus its tab |
 | `cmd+enter r` | Kitty | pick a worktree (this repo), open or focus its tab |
+| `cmd+enter c` | Kitty | prompt for a branch name, create a worktree, open a tab into it |
 | `<leader>gw` | Neovim | worktrees in the current repo |
 | `<leader>gW` | Neovim | worktrees across every repo |
 
