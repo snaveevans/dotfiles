@@ -1,5 +1,5 @@
 ---
-status: "accepted"
+status: "superseded by ADR-0003"
 date: 2026-07-21
 decision-makers:
   - "Tyler Evans"

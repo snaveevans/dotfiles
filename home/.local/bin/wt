@@ -29,8 +29,7 @@ usage() {
   cat <<'EOF'
 Usage: wt [command] [options] [query]
 
-List and switch between git worktrees, including those created by Claude Code
-and opencode.
+List and switch between git worktrees created with `wt new`.
 
 Commands:
   path [query]     Pick a worktree and print its path (default)
@@ -164,6 +163,21 @@ scope_repos() {
   workspace_repos
 }
 
+# Claude Code and opencode create worktrees for their own background-job
+# isolation, under these fixed locations regardless of repo. `wt` used to
+# track those too, but everything now goes through `wt new` under $WT_ROOT
+# instead, so worktrees under either path are invisible to every command.
+is_agent_worktree() {
+  case "$1" in
+    */.claude/worktrees/* | */.local/share/opencode/worktree/*)
+      return 0
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
 # Sets ORIGIN rather than printing: a command substitution here forks once per
 # worktree, which is measurable across a full workspace scan.
 classify_origin() {
@@ -176,12 +190,6 @@ classify_origin() {
   fi
 
   case "$path" in
-    */.claude/worktrees/*)
-      ORIGIN=claude
-      ;;
-    */.local/share/opencode/worktree/*)
-      ORIGIN=opencode
-      ;;
     "$WT_ROOT"/*)
       ORIGIN=wt
       ;;
@@ -343,7 +351,7 @@ parse_repo() {
         flags="${line%% *}"
         ;;
       "")
-        if [[ -n "$path" ]]; then
+        if [[ -n "$path" ]] && ! is_agent_worktree "$path"; then
           paths+=("$path")
           heads+=("$head")
           branches+=("$branch")
@@ -358,7 +366,7 @@ parse_repo() {
     esac
   done < <(git -C "$scan_dir" worktree list --porcelain 2>/dev/null)
 
-  if [[ -n "$path" ]]; then
+  if [[ -n "$path" ]] && ! is_agent_worktree "$path"; then
     paths+=("$path")
     heads+=("$head")
     branches+=("$branch")
@@ -776,6 +784,7 @@ cmd_clean() {
 
       [[ "$path" == "$main_path" ]] && continue
       [[ "$flags" == "bare" ]] && continue
+      is_agent_worktree "$path" && continue
       # A missing directory is `wt prune`'s job, not this one's.
       [[ -d "$path" ]] || continue
 

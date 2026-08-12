@@ -47,6 +47,7 @@ git -C "$REPO" commit --quiet -m "initial commit"
 
 git -C "$REPO" worktree add --quiet -b feature "$TEST_WT_ROOT/repo-a/feature"
 git -C "$REPO" worktree add --quiet -b agent-x "$REPO/.claude/worktrees/agent-x"
+git -C "$REPO" worktree add --quiet -b agent-y "$FAKE_HOME/.local/share/opencode/worktree/repo-a-hash/agent-y"
 git -C "$REPO" worktree add --quiet -b sibling "$WORKSPACE/repo-a-sibling"
 git -C "$REPO" worktree add --quiet -b spaced "$SPACED_WORKTREE"
 
@@ -57,15 +58,20 @@ grep -Fq "repo-a${TAB}main${TAB}main${TAB}" "$LIST_FILE" ||
   fail "the primary checkout should be classified as main"
 grep -Fq "repo-a${TAB}wt${TAB}feature${TAB}" "$LIST_FILE" ||
   fail "a worktree under WT_ROOT should be classified as wt"
-grep -Fq "repo-a${TAB}claude${TAB}agent-x${TAB}" "$LIST_FILE" ||
-  fail "a worktree under .claude/worktrees should be classified as claude"
 grep -Fq "repo-a${TAB}other${TAB}sibling${TAB}" "$LIST_FILE" ||
   fail "a worktree outside every known root should be classified as other"
 grep -Fq "$SPACED_WORKTREE" "$LIST_FILE" ||
   fail "a worktree path containing spaces should survive porcelain parsing"
 
-[[ "$(grep -c "^repo-a${TAB}" "$LIST_FILE")" -eq 5 ]] ||
-  fail "expected five worktrees for repo-a"
+if grep -Fq "agent-x" "$LIST_FILE"; then
+  fail "a worktree under .claude/worktrees should be excluded from discovery"
+fi
+if grep -Fq "agent-y" "$LIST_FILE"; then
+  fail "a worktree under .local/share/opencode/worktree should be excluded from discovery"
+fi
+
+[[ "$(grep -c "^repo-a${TAB}" "$LIST_FILE")" -eq 4 ]] ||
+  fail "expected four visible worktrees for repo-a (agent-owned ones are excluded)"
 
 # repo-a-sibling is itself a linked worktree, so scanning the workspace must not
 # report it as a separate repo.
@@ -78,7 +84,7 @@ run_wt list --all --format=fzf >"$FZF_FILE"
 
 awk -F '\t' 'NF != 3 { exit 1 }' "$FZF_FILE" ||
   fail "fzf format should emit display, title, and path fields"
-grep -Fq "${TAB}repo-a:agent-x${TAB}" "$FZF_FILE" ||
+grep -Fq "${TAB}repo-a:feature${TAB}" "$FZF_FILE" ||
   fail "linked worktrees should get a repo-qualified tab title"
 grep -Fq "${TAB}repo-a${TAB}" "$FZF_FILE" ||
   fail "the primary checkout should get a bare repo tab title"
@@ -86,8 +92,8 @@ grep -Fq "${TAB}repo-a${TAB}" "$FZF_FILE" ||
 LOCAL_FILE="$TMP_DIR/local.tsv"
 (cd "$REPO/.claude/worktrees/agent-x" && run_wt list --format=tsv) >"$LOCAL_FILE"
 
-[[ "$(wc -l <"$LOCAL_FILE" | tr -d ' ')" -eq 5 ]] ||
-  fail "repo scope from inside a linked worktree should resolve the whole repo"
+[[ "$(wc -l <"$LOCAL_FILE" | tr -d ' ')" -eq 4 ]] ||
+  fail "repo scope from inside an excluded worktree should still resolve the whole repo"
 
 DRY_OUT="$TMP_DIR/new-dry.out"
 DRY_ERR="$TMP_DIR/new-dry.err"
@@ -164,6 +170,14 @@ grep -Fq "not merged" "$CLEAN_ERR" || fail "clean should explain why it skipped 
 grep -Fq "uncommitted changes" "$CLEAN_ERR" || fail "clean should explain why it skipped a dirty worktree"
 
 [[ -d "$REPO" ]] || fail "clean should never remove the main worktree"
+
+# agent-x and agent-y are both trivially clean and merged (never diverged
+# from main), so if the exclusion in cmd_clean's own scan didn't hold, this
+# run would have swept them.
+[[ -d "$REPO/.claude/worktrees/agent-x" ]] ||
+  fail "clean should never touch a worktree under .claude/worktrees"
+[[ -d "$FAKE_HOME/.local/share/opencode/worktree/repo-a-hash/agent-y" ]] ||
+  fail "clean should never touch a worktree under .local/share/opencode/worktree"
 
 # The "no open Kitty tab" gate is the difference between `wt clean` and just
 # deleting every merged worktree unconditionally, so it gets its own check
