@@ -143,8 +143,12 @@ def prompt_line(message: str, prompt: str = "> ") -> str | None:
     if result.returncode != 0:
         return None
 
+    # `ask` prints the --message text as a plain bold line on stdout before
+    # its (pretty-printed, multi-line) JSON result, so the JSON object is
+    # only ever the tail of stdout starting at its first brace.
     try:
-        response = json.loads(result.stdout.strip()).get("response")
+        json_start = result.stdout.index("{")
+        response = json.loads(result.stdout[json_start:]).get("response")
     except (ValueError, AttributeError):
         return None
 
@@ -273,6 +277,8 @@ def handle_result(
     # return
     if value["status"] == "error":
         # w.paste_text(f"Error: {value['message']}")
+        if len(args) > 1 and args[1] == "worktree-new":
+            boss.show_error("Create worktree", value.get("message", "unknown error"))
         return
     # elif value.get("status") == "success":
     #     w.paste_text(f"Selected directory: {value['selected_directory']}")
