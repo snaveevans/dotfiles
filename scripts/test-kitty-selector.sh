@@ -15,7 +15,4 @@ command -v python3 >/dev/null 2>&1 || {
   exit 1
 }
 
-TMP_DIR="$(mktemp -d)"
-trap 'rm -rf "$TMP_DIR"' EXIT
-
-python3 "$SCRIPT_DIR/test-kitty-selector.py" "$SELECTOR" "$TMP_DIR"
+python3 "$SCRIPT_DIR/test-kitty-selector.py" "$SELECTOR"

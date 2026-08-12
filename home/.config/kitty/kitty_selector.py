@@ -220,40 +220,62 @@ def select_directory(directories):
     return result.stdout.strip()
 
 
-_AGENT_STATE_PRIORITY = {"blocked": 0, "failed": 1, "working": 2, "done": 3}
+_AGENT_STATE_PRIORITY = {"blocked": 0, "failed": 1, "working": 2, "done": 3, "idle": 4}
 _AGENT_STATE_LABELS = {
     "working": "● working",
     "blocked": "⏸ needs input",
     "failed": "✗ failed",
     "done": "✓ done",
+    "idle": "○ idle",
+}
+# `claude agents --json` reports background jobs and live interactive
+# sessions with different vocabularies - a background job's `state` maps
+# straight onto the labels above, but an interactive session only has
+# `status` (busy/waiting/idle/shell), which needs translating.
+_INTERACTIVE_STATUS_TO_STATE = {
+    "busy": "working",
+    "waiting": "blocked",
+    "idle": "idle",
+    "shell": "idle",
 }
 
 
 def load_agent_jobs() -> list[tuple[str, str]]:
-    """Return (cwd, state) for every Claude Code job with both set.
+    """Return (cwd, state) for every active Claude Code session.
 
-    Same data source and matching rules as `agent_status_for` in `wt`
-    (home/.local/bin/wt) - duplicated here in Python rather than shelling out,
-    since this kitten already needs to parse JSON per tab anyway.
+    Uses `claude agents --json`, the CLI's own scriptable session list -
+    documented via `claude agents --help` as "for scripting; does not
+    require a TTY". This covers both background jobs and interactive
+    sessions running live in a terminal; reading ~/.claude/jobs directly (an
+    earlier version of this) missed interactive sessions entirely, since a
+    plain `claude` session sitting in a Kitty tab has no job directory - only
+    background jobs get one.
     """
-    jobs_dir = os.path.expanduser(os.environ.get("CLAUDE_JOBS_DIR", "~/.claude/jobs"))
+    try:
+        result = subprocess.run(
+            ["claude", "agents", "--all", "--json"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        sessions = json.loads(result.stdout)
+    except (OSError, subprocess.TimeoutExpired, ValueError):
+        return []
+
     jobs = []
 
-    try:
-        entries = os.listdir(jobs_dir)
-    except OSError:
-        return jobs
-
-    for entry in entries:
-        try:
-            with open(os.path.join(jobs_dir, entry, "state.json")) as f:
-                data = json.load(f)
-        except (OSError, ValueError):
+    for session in sessions:
+        cwd = session.get("cwd")
+        if not cwd:
             continue
 
-        cwd = data.get("cwd")
-        if cwd:
-            jobs.append((cwd, data.get("state") or ""))
+        if session.get("kind") == "background":
+            state = session.get("state") or ""
+        else:
+            state = _INTERACTIVE_STATUS_TO_STATE.get(session.get("status"), "")
+
+        if state:
+            jobs.append((cwd, state))
 
     return jobs
 

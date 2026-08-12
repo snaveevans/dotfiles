@@ -7,7 +7,6 @@ set -euo pipefail
 # puts the worktrees you create by hand.
 WT_ROOT="${WT_ROOT:-$HOME/worktrees}"
 WT_WORKSPACE="${WT_WORKSPACE:-$HOME/workspace}"
-CLAUDE_JOBS_DIR="${CLAUDE_JOBS_DIR:-$HOME/.claude/jobs}"
 
 SCOPE_ALL=false
 SHOW_STATUS=false
@@ -70,7 +69,6 @@ Key bindings:
 Environment:
   WT_ROOT          Where `wt new` creates worktrees (default: ~/worktrees)
   WT_WORKSPACE     Where repos are scanned from (default: ~/workspace)
-  CLAUDE_JOBS_DIR  Where Claude Code job state lives (default: ~/.claude/jobs)
 
 See docs/worktrees.md in the dotfiles repo for the full flow.
 EOF
@@ -185,29 +183,53 @@ is_agent_worktree() {
   esac
 }
 
-# Claude Code writes one state.json per session under $CLAUDE_JOBS_DIR, each
-# with the cwd it's running in and a `state` of working/blocked/done/failed.
-# Loaded once per `wt` process (not once per worktree) and cached in
-# AGENT_LOADED, since load_agent_jobs itself never runs inside a command
-# substitution - a subshell would lose the cache on every call.
+# `claude agents --json` is Claude Code's own scriptable session list
+# (documented via `claude agents --help` as "for scripting; does not require
+# a TTY"), covering both background jobs and live interactive sessions in
+# one call. Background jobs report a `state` (working/blocked/done/failed);
+# interactive sessions only report a `status` (busy/waiting/idle/shell),
+# which gets translated below - reading ~/.claude/jobs directly (an earlier
+# version of this) missed interactive sessions entirely, since a plain
+# `claude` session sitting in a terminal has no job directory, only
+# background jobs do. Loaded once per `wt` process (not once per worktree)
+# and cached in AGENT_LOADED, since load_agent_jobs itself never runs inside
+# a command substitution - a subshell would lose the cache on every call.
 load_agent_jobs() {
   "$AGENT_LOADED" && return 0
   AGENT_LOADED=true
 
+  command -v claude >/dev/null 2>&1 || return 0
   command -v jq >/dev/null 2>&1 || return 0
-  [[ -d "$CLAUDE_JOBS_DIR" ]] || return 0
 
-  local file cwd state
+  local cwd kind job_state job_status state
 
-  while IFS=$'\t' read -r cwd state; do
+  # Fields are joined with a pipe, not a tab: bash's `read` treats tab (and
+  # space, and newline) as "IFS whitespace" and silently collapses/strips
+  # empty fields even when IFS is set to just a tab, which misaligns columns
+  # here since state/status are routinely empty (a job has one or the
+  # other, never both). A pipe isn't IFS whitespace, so empty fields survive
+  # - and it isn't a character a real cwd would ever contain.
+  while IFS='|' read -r cwd kind job_state job_status; do
     [[ -n "$cwd" ]] || continue
+
+    if [[ "$kind" == "background" ]]; then
+      state="$job_state"
+    else
+      case "$job_status" in
+        busy) state="working" ;;
+        waiting) state="blocked" ;;
+        idle | shell) state="idle" ;;
+        *) state="" ;;
+      esac
+    fi
+
+    [[ -n "$state" ]] || continue
+
     AGENT_CWDS+=("$cwd")
     AGENT_STATES+=("$state")
   done < <(
-    for file in "$CLAUDE_JOBS_DIR"/*/state.json; do
-      [[ -f "$file" ]] || continue
-      jq -r 'select(.cwd != null) | [.cwd, (.state // "")] | @tsv' "$file" 2>/dev/null || true
-    done
+    claude agents --all --json 2>/dev/null |
+      jq -r '.[] | [(.cwd // ""), .kind, (.state // ""), (.status // "")] | join("|")' 2>/dev/null || true
   )
 }
 
@@ -215,16 +237,19 @@ load_agent_jobs() {
 # classify_origin. A worktree "has" a job if the job's cwd is at or under its
 # path, since agents often work a few directories deep rather than at the
 # worktree root. When more than one job matches, the most attention-worthy
-# state wins: blocked (waiting on you) beats failed, which beats working,
-# which beats done.
+# state wins, lowest number first: blocked (waiting on you), failed,
+# working, done, idle (a session is open but nothing is happening). Numeric
+# priority rather than a chain of case-guarded assignments, since the latter
+# only generalizes correctly to two tiers - this needs five.
 agent_status_for() {
   local path="$1"
-  local cwd state index
+  local cwd state index priority best_priority
 
   load_agent_jobs
 
   AGENT_STATE=""
   AGENT_COUNT=0
+  best_priority=99
 
   for ((index = 0; index < ${#AGENT_CWDS[@]}; index++)); do
     cwd="${AGENT_CWDS[$index]}"
@@ -234,19 +259,18 @@ agent_status_for() {
     ((AGENT_COUNT++)) || true
 
     case "$state" in
-      blocked)
-        AGENT_STATE="blocked"
-        ;;
-      failed)
-        [[ "$AGENT_STATE" == "blocked" ]] || AGENT_STATE="failed"
-        ;;
-      working)
-        [[ "$AGENT_STATE" == "blocked" || "$AGENT_STATE" == "failed" ]] || AGENT_STATE="working"
-        ;;
-      done)
-        [[ -n "$AGENT_STATE" ]] || AGENT_STATE="done"
-        ;;
+      blocked) priority=0 ;;
+      failed) priority=1 ;;
+      working) priority=2 ;;
+      done) priority=3 ;;
+      idle) priority=4 ;;
+      *) priority=99 ;;
     esac
+
+    if ((priority < best_priority)); then
+      best_priority=$priority
+      AGENT_STATE="$state"
+    fi
   done
 }
 
@@ -260,6 +284,7 @@ agent_glyph_for() {
     blocked) label="⏸ needs input" ;;
     failed) label="✗ failed" ;;
     done) label="✓ done" ;;
+    idle) label="○ idle" ;;
     *)
       printf '\n'
       return 0
@@ -917,11 +942,13 @@ cmd_clean() {
       fi
 
       agent_status_for "$path"
-      if [[ "$AGENT_STATE" == "working" || "$AGENT_STATE" == "blocked" ]]; then
-        log "Skipping $path: agent job is $AGENT_STATE there"
-        ((skipped++)) || true
-        continue
-      fi
+      case "$AGENT_STATE" in
+        working | blocked | idle)
+          log "Skipping $path: agent job is $AGENT_STATE there"
+          ((skipped++)) || true
+          continue
+          ;;
+      esac
 
       log "Removing $path ($branch, merged into $base)"
       run git -C "$main_path" worktree remove "$path"

@@ -18,18 +18,29 @@ is an agent still working here, is it stuck waiting on input, did it finish,
 did it fail. That's exactly the information needed to prioritize, and it
 already exists - Claude Code writes it to disk for its own use.
 
-Every Claude Code session, background or interactive, is backed by a job
-directory under `~/.claude/jobs/<id>/state.json` containing (among other
-things) the session's `cwd` and a `state` of `working`, `blocked`, `done`, or
-`failed`. A worktree's path can be matched against those `cwd` values to
-answer "is an agent in here, and how urgently does it need me."
+Claude Code exposes its own session list via `claude agents --json`,
+documented (`claude agents --help`) as "for scripting; does not require a
+TTY." It reports every active session - background jobs and live
+interactive ones - with a `cwd` and either a `state` (`working`/`blocked`/
+`done`/`failed`, for background jobs) or a `status` (`busy`/`waiting`/
+`idle`/`shell`, for interactive ones). A worktree's path can be matched
+against those `cwd` values to answer "is an agent in here, and how urgently
+does it need me."
+
+An earlier version of this read `~/.claude/jobs/<id>/state.json` directly
+instead of going through the CLI. That only ever surfaced background jobs:
+a plain `claude` session sitting live in a terminal has no job directory,
+only background jobs get one - so the majority of real usage (an
+interactive session in a Kitty tab, which is what `cmd+enter o` is *for*)
+was invisible. `claude agents --json` covers both in one call.
 
 ## Decision Drivers
 
-- the data already exists on disk, updated by Claude Code itself; no new
-  process, polling, or API integration is needed to get it
-- reading it is cheap (local JSON files, no git calls), unlike the dirty
-  marker, which costs a `git status` per worktree and stays opt-in
+- Claude Code already tracks this and exposes it as a documented CLI
+  surface (`claude agents --json`); no polling, daemon, or API integration
+  of our own is needed to get it
+- reading it is cheap (one local subprocess call, no git calls), unlike the
+  dirty marker, which costs a `git status` per worktree and stays opt-in
 - `wt clean`'s existing gates (merged, no uncommitted changes, no open Kitty
   tab) already exist to avoid deleting a worktree that's still in use; a live
   agent job is the same category of "still in use" the Kitty tab check covers
@@ -52,17 +63,21 @@ Kitty tabs.
 This decision means:
 
 - `wt list` gains a trailing status column: `● working`, `⏸ needs input`,
-  `✗ failed`, or `✓ done`, with a `×N` suffix when more than one session
-  matches
+  `✗ failed`, `✓ done`, or `○ idle`, with a `×N` suffix when more than one
+  session matches. `idle` covers both an interactive session's `idle` and
+  `shell` statuses - there's no interactive equivalent of `done`/`failed`,
+  since the process just isn't there anymore once it exits
 - a worktree "has" a session if that session's `cwd` is at or under the
   worktree's path, not just an exact match, since agents often work a few
   directories deep
 - when multiple sessions match, the most attention-worthy state wins:
-  `blocked` > `failed` > `working` > `done`
-- `wt clean` additionally skips a worktree with a `working` or `blocked`
-  session pointed at it, alongside its existing gates
-- `CLAUDE_JOBS_DIR` (default `~/.claude/jobs`) joins `WT_ROOT`/`WT_WORKSPACE`
-  as a configurable root
+  `blocked` > `failed` > `working` > `done` > `idle`
+- `wt clean` additionally skips a worktree with a `working`, `blocked`, or
+  `idle` session pointed at it, alongside its existing gates. `idle` counts
+  here even though it's lowest-priority to *display* - an idle interactive
+  session is still a live process sitting in the worktree, and deleting it
+  out from under that process would be disruptive regardless of whether
+  there's anything urgent to show about it
 - the same glyphs also appear in Kitty's `cmd+enter o` (pick an already-open
   tab) - the picker actually used day to day - matched against each tab's
   window `cwd` rather than a worktree path. That picker is a Python kitten,
@@ -86,13 +101,16 @@ This decision means:
   back to" without opening each worktree.
 - Positive: `wt clean` can no longer delete a worktree a live Claude Code
   session is still working in or waiting on.
-- Negative: this reads Claude Code's own internal job state, which is not a
-  documented or versioned interface. A future CLI update could change its
+- Positive: interactive sessions are visible at all, not just background
+  jobs - this is what caught the original bug (a job-directory-only version
+  showed nothing for a live session in the "rosetta:doc-regen" tab, since
+  interactive sessions never had a job directory to read).
+- Negative: `claude agents --json` is Claude Code's own CLI surface, not a
+  documented, versioned wire format. A future CLI update could change its
   shape and silently stop populating the column - degrading gracefully to no
-  glyph, not an error, but still a dependency on unstable internals.
-- Negative: only sessions backed by a job directory are visible. A bare
-  `claude` invocation with no job directory (if one exists outside this
-  mechanism) won't show up.
+  glyph, not an error, but still a dependency on unstable internals. This
+  replaced an earlier, even less stable dependency (raw job-directory files),
+  so it's a strict improvement, not a new risk.
 - Negative: the matching/priority/label logic exists twice - once in bash
   (`wt`), once in Python (`kitty_selector.py`) - because `cmd+enter o` isn't
   a `wt` command. A change to the glyphs or precedence rules has to be made
@@ -100,15 +118,33 @@ This decision means:
 
 ## Confirmation
 
-`scripts/test-wt.sh` fabricates job state files under a fake
-`$CLAUDE_JOBS_DIR`, and asserts both that `wt list` surfaces the resulting
-glyph (including the multi-session precedence and count) and that `wt clean`
-skips a worktree with a `working` session until that job's state changes.
+`scripts/test-wt.sh` fakes the `claude` binary on `PATH` (the same
+established pattern the suite already used for `kitty`) so `claude agents
+--json` returns fixture sessions instead of whatever's really running, and
+asserts `wt list` surfaces the resulting glyph (multi-session precedence and
+count, and an interactive session's `status` translating correctly), and
+that `wt clean` skips a worktree with a `working` session, and separately an
+`idle` one, until that session's state changes.
 
-`scripts/test-kitty-selector.sh` covers the Python side the same way -
-precedence, nested-path matching, no false match on a similarly-named
-sibling, `$HOME` exclusion (including a home-anchored pane not leaking into
-a real project window sharing its tab), `$WT_WORKSPACE`/`$WT_ROOT` exact-only
-matching, and a missing jobs directory degrading to no jobs rather than an
-error - by importing `kitty_selector.py` with `kitty.boss` stubbed out,
-since that module only exists inside Kitty's own runtime.
+`scripts/test-kitty-selector.sh` covers the Python side the same way, by
+monkeypatching `subprocess.run` instead of faking a binary on `PATH` (both
+achieve the same thing: a hermetic double for `claude agents --json`) -
+precedence including `idle` as the lowest tier, nested-path matching, no
+false match on a similarly-named sibling, `$HOME` exclusion (including a
+home-anchored pane not leaking into a real project window sharing its tab),
+`$WT_WORKSPACE`/`$WT_ROOT` exact-only matching, and `claude` being missing or
+erroring degrading to no jobs rather than raising - by importing
+`kitty_selector.py` with `kitty.boss` stubbed out, since that module only
+exists inside Kitty's own runtime.
+
+One implementation pitfall worth recording: `wt`'s bash side originally
+joined fields with a tab and split them with `IFS=$'\t' read`, which
+silently misaligned columns whenever `state` or `status` was empty (always
+true for one of them, since a session has one or the other, never both) -
+bash treats tab as "IFS whitespace" and collapses/strips empty fields even
+when IFS is set to just a tab. Switched to a pipe, which isn't IFS
+whitespace and isn't a character a real cwd would contain.
+
+Verified against the real machine both ways: `wt list --all` and the
+`cmd+enter o` picker both picked up a live `idle` interactive session
+(`rosetta:doc-regen`) that a job-directory-only read had missed entirely.

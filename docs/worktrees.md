@@ -76,29 +76,40 @@ slow. Pass `-s` when you want them.
 ## Agent status
 
 The trailing column shows Claude Code sessions currently running in a
-worktree, read from `$CLAUDE_JOBS_DIR` (each session writes its own
-`cwd` and `state` there). It's cheap - local JSON reads, no git calls - so
+worktree, read from `claude agents --json` - the CLI's own scriptable
+session list, covering both background jobs and live interactive sessions
+(a plain `claude` session sitting in a terminal has no job directory, so
+reading `~/.claude/jobs` directly, an earlier version of this, missed those
+entirely). It's cheap enough to run on every `list` - no git calls - so
 unlike dirty markers it's always on. The same glyphs appear next to tab
 titles in `cmd+enter o` (see [keybindings.md](keybindings.md)), which is
 implemented separately in `kitty_selector.py` since it's Python, not `wt`
 - same matching rules, kept in sync by hand.
 
-| Glyph | State | Meaning |
-| --- | --- | --- |
-| `⏸ needs input` | `blocked` | the session is waiting on you |
-| `✗ failed` | `failed` | the session errored out |
-| `● working` | `working` | the session is actively running |
-| `✓ done` | `done` | the session finished |
+| Glyph | Meaning |
+| --- | --- |
+| `⏸ needs input` | a session is waiting on you |
+| `✗ failed` | a background job errored out |
+| `● working` | a session is actively running |
+| `✓ done` | a background job finished |
+| `○ idle` | a session is open but nothing is happening right now |
+
+A background job's own `working`/`blocked`/`done`/`failed` state maps
+straight onto these; a live interactive session only reports `busy` /
+`waiting` / `idle` / `shell`, which translates to `working` / `needs input`
+/ `idle` / `idle` respectively - there's no interactive equivalent of
+`done`/`failed`, since the process just isn't there anymore once it exits.
 
 A worktree "has" a session if that session's cwd is at or under the
 worktree's path - agents often work a few directories deep, not at the root.
 When more than one session matches, the most attention-worthy state wins in
-that order (`needs input` beats `failed` beats `working` beats `done`), and a
-`×N` suffix shows how many matched. A path exactly at `$HOME` is never used
-as a match anchor - a shell sitting bare at home isn't "inside" a project,
-and treating it as one would match nearly every job on the machine, since
-every job's cwd is a descendant of home. This mattered in practice for a
-split-pane `cmd+enter o` tab where one pane happened to be parked at home.
+that order (`needs input` beats `failed` beats `working` beats `done` beats
+`idle`), and a `×N` suffix shows how many matched. A path exactly at `$HOME`
+is never used as a match anchor (in `cmd+enter o`, where a tab can sit at any
+directory) - a shell sitting bare at home isn't "inside" a project, and
+treating it as one would match nearly every job on the machine, since every
+job's cwd is a descendant of home. This mattered in practice for a
+split-pane tab where one pane happened to be parked at home.
 
 `$WT_WORKSPACE` and `$WT_ROOT` themselves get a narrower version of the same
 treatment: they're containers, not projects, so a job several directories
@@ -107,10 +118,9 @@ sitting bare at `~/workspace` only picks up a job whose cwd is exactly
 `~/workspace` (say, a session running there to clone something new) - not
 every job running in every repo underneath it.
 
-This reads Claude Code's own internal job state, which isn't a documented or
-versioned interface - a future CLI update could change its shape and quietly
-stop populating the column. Nothing breaks if that happens; worktrees just
-stop showing a glyph.
+This reads Claude Code's own session list, which isn't a versioned interface
+- a future CLI update could change its shape and quietly stop populating the
+column. Nothing breaks if that happens; worktrees just stop showing a glyph.
 
 ## Key bindings
 
@@ -159,8 +169,12 @@ four hold:
   squash-merged PR won't register as merged even though it's really done.
 - No Kitty tab is currently open for it.
 - No Claude Code session has its cwd at or under the worktree with state
-  `working` or `blocked` - see [Agent status](#agent-status). A `done` or
-  `failed` session doesn't block cleanup.
+  `working`, `blocked`, or `idle` - see [Agent status](#agent-status). `idle`
+  counts here even though it's the lowest-priority state to *display*: an
+  idle interactive session is still a live process sitting in the worktree,
+  and deleting it out from under that process would be disruptive even
+  though there's nothing urgent to show about it. Only a finished background
+  job (`done` or `failed`) doesn't block cleanup.
 
 It refuses to touch the primary checkout and skips anything it can't
 confidently classify (detached HEAD, no determinable base ref). Run
@@ -173,7 +187,6 @@ Read from the environment and can be set in `~/.config/zsh/local.env`:
 
 - `WT_ROOT` — where `wt new` creates worktrees (default `~/worktrees`)
 - `WT_WORKSPACE` — where repos are scanned from (default `~/workspace`)
-- `CLAUDE_JOBS_DIR` — where Claude Code job state lives (default `~/.claude/jobs`)
 
 A workspace scan only descends one level and only into directories with a real
 `.git` directory, which is how a linked worktree sitting in the workspace avoids

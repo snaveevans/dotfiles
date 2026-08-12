@@ -3,7 +3,11 @@
 
 kitty_selector.py imports `kitty.boss`, which only exists inside Kitty's
 bundled Python runtime, so that module is stubbed out here rather than
-running this under Kitty itself.
+running this under Kitty itself. `load_agent_jobs` shells out to
+`claude agents --json`, so `subprocess.run` is monkeypatched rather than
+actually invoking the CLI - this keeps the test hermetic and fast, and
+lets it exercise session shapes (interactive vs. background) without
+depending on what's actually running on the machine.
 """
 import sys
 import os
@@ -17,8 +21,21 @@ def fail(message):
     sys.exit(1)
 
 
+def fake_subprocess_run(sessions):
+    """A stand-in for subprocess.run that returns `sessions` as claude
+    agents --json would, ignoring whatever command was actually passed."""
+
+    class FakeResult:
+        stdout = json.dumps(sessions)
+
+    def run(*args, **kwargs):
+        return FakeResult()
+
+    return run
+
+
 def main():
-    selector_path, tmp_dir = sys.argv[1], sys.argv[2]
+    selector_path = sys.argv[1]
 
     fake_kitty = types.ModuleType("kitty")
     fake_boss = types.ModuleType("kitty.boss")
@@ -30,27 +47,27 @@ def main():
     ks = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(ks)
 
-    jobs_dir = os.path.join(tmp_dir, "jobs")
-    fixtures = {
-        "job1": {"cwd": "/repo-a/feature", "state": "working"},
-        "job2": {"cwd": "/repo-a/feature/sub/dir", "state": "blocked"},
-        "job3": {"cwd": "/dotfiles", "state": "done"},
-    }
-    for name, data in fixtures.items():
-        os.makedirs(os.path.join(jobs_dir, name))
-        with open(os.path.join(jobs_dir, name, "state.json"), "w") as f:
-            json.dump(data, f)
+    sessions = [
+        {"cwd": "/repo-a/feature", "kind": "background", "state": "working"},
+        {"cwd": "/repo-a/feature/sub/dir", "kind": "background", "state": "blocked"},
+        {"cwd": "/dotfiles", "kind": "background", "state": "done"},
+        # An interactive session reports `status`, not `state`, and uses a
+        # different vocabulary (busy/waiting/idle/shell) that has to be
+        # translated - this one should be invisible on its own (idle) but
+        # still count as a job when unioned with the others below.
+        {"cwd": "/repo-a/feature", "kind": "interactive", "status": "idle"},
+    ]
+    ks.subprocess.run = fake_subprocess_run(sessions)
 
-    os.environ["CLAUDE_JOBS_DIR"] = jobs_dir
     jobs = ks.load_agent_jobs()
-    if len(jobs) != 3:
-        fail(f"expected 3 jobs, got {jobs}")
+    if len(jobs) != 4:
+        fail(f"expected 4 jobs (idle interactive sessions still count), got {jobs}")
 
     status = ks.agent_status_for("/repo-a/feature", jobs)
-    if status != "⏸ needs input ×2":
+    if status != "⏸ needs input ×3":
         fail(
-            "a nested job should count toward its ancestor worktree and "
-            f"blocked should outrank working, got: {status!r}"
+            "a nested job should count toward its ancestor worktree, blocked "
+            f"should outrank working and idle, got: {status!r}"
         )
 
     status = ks.agent_status_for("/dotfiles", jobs)
@@ -64,6 +81,15 @@ def main():
     status = ks.agent_status_for("/repo-a/feature-extra", jobs)
     if status is not None:
         fail(f"a worktree whose name is a prefix of another's should not match it, got: {status!r}")
+
+    # An interactive session on its own (nothing higher-priority sharing its
+    # cwd) should surface its idle status rather than disappearing outright -
+    # this is what "there's an agent here, but it's not doing anything right
+    # now" looks like, distinct from no session at all (no status).
+    idle_only = [("/repo-a/idle-tab", "idle")]
+    status = ks.agent_status_for("/repo-a/idle-tab", idle_only)
+    if status != "○ idle":
+        fail(f"a lone idle session should still show a (low-priority) status, got: {status!r}")
 
     # A window sitting bare at $HOME must never be a match anchor: every
     # job's cwd is a descendant of home, so treating it as one would make a
@@ -107,10 +133,14 @@ def main():
     del os.environ["WT_WORKSPACE"]
     del os.environ["WT_ROOT"]
 
-    # A missing jobs directory should degrade to no jobs, not raise.
-    os.environ["CLAUDE_JOBS_DIR"] = os.path.join(tmp_dir, "does-not-exist")
+    # claude not being installed, timing out, or emitting bad JSON should
+    # degrade to no jobs, not raise - this data source is best-effort.
+    def raising_run(*args, **kwargs):
+        raise FileNotFoundError("claude not found")
+
+    ks.subprocess.run = raising_run
     if ks.load_agent_jobs():
-        fail("a missing jobs directory should yield no jobs, not raise")
+        fail("a missing claude binary should yield no jobs, not raise")
 
     print("kitty_selector agent-status assertions passed")
 
