@@ -148,3 +148,15 @@ whitespace and isn't a character a real cwd would contain.
 Verified against the real machine both ways: `wt list --all` and the
 `cmd+enter o` picker both picked up a live `idle` interactive session
 (`rosetta:doc-regen`) that a job-directory-only read had missed entirely.
+
+A second pitfall found via live testing right after: switching to a real
+subprocess call introduced the exact PATH problem `find_wt()`/`find_fzf()`
+already exist to work around - `claude` lives under `~/.local/bin`, which a
+Dock-launched Kitty's kittens (and anything they spawn, `wt` included) don't
+see on PATH, so every session silently vanished from both pickers the
+moment this shipped. Fixed with a `find_claude()` in each implementation,
+same shape as `find_wt()`. Reproduced directly rather than guessed at: with
+`~/.local/bin` stripped from PATH, `shutil.which("claude")` (bash:
+`command -v claude`) returns nothing while `find_claude()` still resolves
+it, and `load_agent_jobs()` goes from 0 sessions to the real count once
+`find_claude()` is used instead of a bare `claude` invocation.

@@ -183,6 +183,25 @@ is_agent_worktree() {
   esac
 }
 
+# `claude`, like `wt` itself from Kitty's side (see kitty_selector.py's
+# find_wt()), typically lives under ~/.local/bin - a location a
+# Dock-launched Kitty's kittens (and anything they spawn, `wt` included)
+# don't see on PATH. Checked before load_agent_jobs's plain `command -v` so
+# the picker isn't silently blind to every session whenever it's invoked
+# from a kitten rather than an interactive shell.
+find_claude() {
+  local candidate
+
+  for candidate in "$HOME/.local/bin/claude" "$HOME/bin/claude" /usr/local/bin/claude /opt/homebrew/bin/claude; do
+    if [[ -x "$candidate" ]]; then
+      printf '%s\n' "$candidate"
+      return 0
+    fi
+  done
+
+  command -v claude 2>/dev/null
+}
+
 # `claude agents --json` is Claude Code's own scriptable session list
 # (documented via `claude agents --help` as "for scripting; does not require
 # a TTY"), covering both background jobs and live interactive sessions in
@@ -198,7 +217,9 @@ load_agent_jobs() {
   "$AGENT_LOADED" && return 0
   AGENT_LOADED=true
 
-  command -v claude >/dev/null 2>&1 || return 0
+  local claude_bin
+  claude_bin="$(find_claude)"
+  [[ -n "$claude_bin" ]] || return 0
   command -v jq >/dev/null 2>&1 || return 0
 
   local cwd kind job_state job_status state
@@ -228,7 +249,7 @@ load_agent_jobs() {
     AGENT_CWDS+=("$cwd")
     AGENT_STATES+=("$state")
   done < <(
-    claude agents --all --json 2>/dev/null |
+    "$claude_bin" agents --all --json 2>/dev/null |
       jq -r '.[] | [(.cwd // ""), .kind, (.state // ""), (.status // "")] | join("|")' 2>/dev/null || true
   )
 }

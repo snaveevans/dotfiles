@@ -80,6 +80,23 @@ def find_wt():
     return shutil.which("wt")
 
 
+def find_claude():
+    """Find the claude executable, same reasoning as find_wt() - it lives
+    under ~/.local/bin, which Dock-launched Kitty's kittens don't see."""
+    common_locations = [
+        os.path.expanduser("~/.local/bin/claude"),
+        os.path.expanduser("~/bin/claude"),
+        "/usr/local/bin/claude",
+        "/opt/homebrew/bin/claude",
+    ]
+
+    for path in common_locations:
+        if os.path.isfile(path) and os.access(path, os.X_OK):
+            return path
+
+    return shutil.which("claude")
+
+
 def select_worktree(scope_current_repo: bool = False) -> dict[str, str]:
     """Pick a git worktree and return its path plus the tab title to use."""
     wt_path = find_wt()
@@ -251,9 +268,13 @@ def load_agent_jobs() -> list[tuple[str, str]]:
     plain `claude` session sitting in a Kitty tab has no job directory - only
     background jobs get one.
     """
+    claude_path = find_claude()
+    if not claude_path:
+        return []
+
     try:
         result = subprocess.run(
-            ["claude", "agents", "--all", "--json"],
+            [claude_path, "agents", "--all", "--json"],
             capture_output=True,
             text=True,
             timeout=5,

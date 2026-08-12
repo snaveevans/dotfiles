@@ -47,6 +47,12 @@ def main():
     ks = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(ks)
 
+    # find_claude() only matters on a real machine with a real filesystem -
+    # stub it so load_agent_jobs() always proceeds to the (also stubbed)
+    # subprocess.run below, regardless of whether this machine happens to
+    # have claude installed at one of find_claude()'s hardcoded locations.
+    ks.find_claude = lambda: "claude"
+
     sessions = [
         {"cwd": "/repo-a/feature", "kind": "background", "state": "working"},
         {"cwd": "/repo-a/feature/sub/dir", "kind": "background", "state": "blocked"},
@@ -141,6 +147,13 @@ def main():
     ks.subprocess.run = raising_run
     if ks.load_agent_jobs():
         fail("a missing claude binary should yield no jobs, not raise")
+
+    # find_claude() returning nothing (claude isn't installed anywhere
+    # find_claude() checks, including plain PATH) should short-circuit to no
+    # jobs without even attempting a subprocess call.
+    ks.find_claude = lambda: None
+    if ks.load_agent_jobs():
+        fail("find_claude() finding nothing should yield no jobs, not raise")
 
     print("kitty_selector agent-status assertions passed")
 
