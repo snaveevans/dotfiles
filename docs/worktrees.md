@@ -83,7 +83,8 @@ slow. Pass `-s` when you want them.
 | Binding | Where | Action |
 | --- | --- | --- |
 | `Ctrl-k w` | zsh | pick a worktree and cd into it |
-| `cmd+enter w` | Kitty | pick a worktree and open or focus its tab |
+| `cmd+enter w` | Kitty | pick a worktree (all repos), open or focus its tab |
+| `cmd+enter r` | Kitty | pick a worktree (this repo), open or focus its tab |
 | `<leader>gw` | Neovim | worktrees in the current repo |
 | `<leader>gW` | Neovim | worktrees across every repo |
 
