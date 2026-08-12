@@ -38,6 +38,7 @@ Commands:
   new BRANCH       Create a worktree under $WT_ROOT and print its path
   rm [query]       Pick a worktree and remove it
   prune            Drop stale worktree registrations
+  clean            Remove worktrees that are merged, clean, and unopened
   tab [query]      Open or focus a Kitty tab for a worktree
 
 Options:
@@ -46,7 +47,7 @@ Options:
       --repo NAME  Act on NAME under $WT_WORKSPACE instead of the current repo
       --path PATH  Act on PATH instead of prompting
       --title NAME Kitty tab title to pair with --path
-      --from REF   Base ref for `wt new` (default: origin's HEAD branch)
+      --from REF   Base ref for `wt new`/`wt clean` (default: origin's HEAD branch)
       --format FMT Output format for `list`: tty, tsv, or fzf
       --force      Remove a worktree even when it has uncommitted changes
       --delete-branch  Also delete the branch when removing a worktree
@@ -679,6 +680,141 @@ cmd_prune() {
   done < <(scope_repos)
 }
 
+# A worktree with an open Kitty tab still has a live session someone may be
+# using; treat "can't tell" (not running under Kitty, no jq, remote control
+# off) as "no tab", same fail-open stance focus_or_launch_tab already takes.
+tab_open() {
+  local title="$1"
+  local ids
+
+  command -v kitty >/dev/null 2>&1 || return 1
+  command -v jq >/dev/null 2>&1 || return 1
+
+  ids="$(kitty @ ls 2>/dev/null | jq -r --arg t "$title" '.[].tabs[] | select(.title == $t) | .id' 2>/dev/null || true)"
+
+  [[ -n "$ids" ]]
+}
+
+cmd_clean() {
+  local main_path repo base path head branch flags line title
+  local count index paths heads branches flag_list
+  local removed=0 skipped=0
+
+  while IFS= read -r main_path; do
+    repo="${main_path##*/}"
+
+    if [[ -n "$FROM_REF" ]]; then
+      base="$FROM_REF"
+    else
+      if git -C "$main_path" remote get-url origin >/dev/null 2>&1; then
+        run git -C "$main_path" fetch --quiet origin ||
+          log "$repo: could not fetch origin, checking against local refs"
+      fi
+      base="$(default_base_ref "$main_path")" || true
+    fi
+
+    if [[ -z "$base" ]]; then
+      log "Skipping $repo: could not determine a base ref (pass --from REF)"
+      continue
+    fi
+
+    paths=()
+    heads=()
+    branches=()
+    flag_list=()
+    path=""
+    head=""
+    branch=""
+    flags=""
+
+    while IFS= read -r line; do
+      case "$line" in
+        "worktree "*)
+          path="${line#worktree }"
+          ;;
+        "HEAD "*)
+          head="${line#HEAD }"
+          ;;
+        "branch "*)
+          branch="${line#branch refs/heads/}"
+          ;;
+        detached)
+          branch=""
+          ;;
+        bare | locked* | prunable*)
+          flags="${line%% *}"
+          ;;
+        "")
+          if [[ -n "$path" ]]; then
+            paths+=("$path")
+            heads+=("$head")
+            branches+=("$branch")
+            flag_list+=("$flags")
+          fi
+
+          path=""
+          head=""
+          branch=""
+          flags=""
+          ;;
+      esac
+    done < <(git -C "$main_path" worktree list --porcelain 2>/dev/null)
+
+    if [[ -n "$path" ]]; then
+      paths+=("$path")
+      heads+=("$head")
+      branches+=("$branch")
+      flag_list+=("$flags")
+    fi
+
+    count=${#paths[@]}
+
+    for ((index = 0; index < count; index++)); do
+      path="${paths[$index]}"
+      branch="${branches[$index]}"
+      flags="${flag_list[$index]}"
+
+      [[ "$path" == "$main_path" ]] && continue
+      [[ "$flags" == "bare" ]] && continue
+      # A missing directory is `wt prune`'s job, not this one's.
+      [[ -d "$path" ]] || continue
+
+      if [[ -z "$branch" ]]; then
+        log "Skipping $path: detached HEAD, nothing to check it's merged into"
+        ((skipped++)) || true
+        continue
+      fi
+
+      if [[ "$(dirty_marker "$path")" == "*" ]]; then
+        log "Skipping $path: uncommitted changes"
+        ((skipped++)) || true
+        continue
+      fi
+
+      if ! git -C "$main_path" merge-base --is-ancestor "$branch" "$base" 2>/dev/null; then
+        log "Skipping $path: $branch is not merged into $base"
+        ((skipped++)) || true
+        continue
+      fi
+
+      title="$repo:${path##*/}"
+
+      if tab_open "$title"; then
+        log "Skipping $path: Kitty tab '$title' is still open"
+        ((skipped++)) || true
+        continue
+      fi
+
+      log "Removing $path ($branch, merged into $base)"
+      run git -C "$main_path" worktree remove "$path"
+      run git -C "$main_path" branch -D "$branch"
+      ((removed++)) || true
+    done
+  done < <(scope_repos)
+
+  log "Removed $removed worktree(s), skipped $skipped"
+}
+
 require_cmd git
 
 COMMAND=""
@@ -784,6 +920,9 @@ case "$COMMAND" in
     ;;
   prune)
     cmd_prune
+    ;;
+  clean)
+    cmd_clean
     ;;
   tab | t)
     cmd_tab "${ARGS[0]:-}"

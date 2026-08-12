@@ -46,6 +46,7 @@ wt list               print the worktrees in scope
 wt new BRANCH         create a worktree under $WT_ROOT and cd into it
 wt rm                 pick a worktree and remove it
 wt prune              drop stale worktree registrations
+wt clean              remove worktrees that are merged, clean, and unopened
 wt tab                open or focus a Kitty tab for a worktree
 ```
 
@@ -110,6 +111,24 @@ remote it is checked out with tracking.
 
 Discovery does not care about any of this. It reads `git worktree list`, so
 agent-created worktrees show up wherever their tools decide to put them.
+
+## Cleaning up
+
+`wt clean` removes every worktree in scope (any repo owner - `wt`, `claude`,
+`opencode`, `other`) that's done with, and deletes its branch along with it.
+A worktree only qualifies if all three hold:
+
+- No uncommitted changes (untracked files don't count, same as the dirty
+  marker in the listing).
+- Its branch is merged into the repo's default base ref (`origin`'s HEAD
+  branch, or `--from REF`) - checked with `merge-base --is-ancestor`, so a
+  squash-merged PR won't register as merged even though it's really done.
+- No Kitty tab is currently open for it.
+
+It refuses to touch the primary checkout and skips anything it can't
+confidently classify (detached HEAD, no determinable base ref). Run
+`wt clean --dry-run` first to see what it would remove without changing
+anything, same as `wt new --dry-run`.
 
 ## Configuration
 

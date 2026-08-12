@@ -129,4 +129,71 @@ if git -C "$REPO" show-ref --verify --quiet "refs/heads/tyler/CCLOUD-1-demo"; th
   fail "--delete-branch should delete the branch"
 fi
 
+MERGED_PATH="$(cd "$REPO" && run_wt new tyler/CCLOUD-2-merged)"
+printf 'merged work\n' >>"$MERGED_PATH/README.md"
+git -C "$MERGED_PATH" add README.md
+git -C "$MERGED_PATH" commit --quiet -m "merged work"
+git -C "$REPO" merge --quiet --no-edit tyler/CCLOUD-2-merged
+
+UNMERGED_PATH="$(cd "$REPO" && run_wt new tyler/CCLOUD-3-unmerged)"
+printf 'unmerged work\n' >>"$UNMERGED_PATH/README.md"
+git -C "$UNMERGED_PATH" add README.md
+git -C "$UNMERGED_PATH" commit --quiet -m "unmerged work"
+
+DIRTY_PATH="$(cd "$REPO" && run_wt new tyler/CCLOUD-4-dirty)"
+printf 'dirty\n' >>"$DIRTY_PATH/README.md"
+
+CLEAN_DRY_ERR="$TMP_DIR/clean-dry.err"
+(cd "$REPO" && run_wt clean --dry-run) 2>"$CLEAN_DRY_ERR"
+
+[[ -d "$MERGED_PATH" ]] || fail "dry-run clean should not remove a merged worktree"
+grep -Fq "DRY-RUN" "$CLEAN_DRY_ERR" || fail "dry-run clean should log planned actions"
+
+CLEAN_ERR="$TMP_DIR/clean.err"
+(cd "$REPO" && run_wt clean) 2>"$CLEAN_ERR"
+
+[[ ! -d "$MERGED_PATH" ]] || fail "clean should remove a merged, clean worktree"
+if git -C "$REPO" show-ref --verify --quiet "refs/heads/tyler/CCLOUD-2-merged"; then
+  fail "clean should delete the branch of a removed worktree"
+fi
+
+[[ -d "$UNMERGED_PATH" ]] || fail "clean should not remove an unmerged worktree"
+grep -Fq "not merged" "$CLEAN_ERR" || fail "clean should explain why it skipped an unmerged worktree"
+
+[[ -d "$DIRTY_PATH" ]] || fail "clean should not remove a worktree with uncommitted changes"
+grep -Fq "uncommitted changes" "$CLEAN_ERR" || fail "clean should explain why it skipped a dirty worktree"
+
+[[ -d "$REPO" ]] || fail "clean should never remove the main worktree"
+
+# The "no open Kitty tab" gate is the difference between `wt clean` and just
+# deleting every merged worktree unconditionally, so it gets its own check
+# with a fake `kitty` shimmed onto PATH ahead of the real one.
+TAB_PATH="$(cd "$REPO" && run_wt new tyler/CCLOUD-5-tabbed)"
+printf 'tabbed work\n' >>"$TAB_PATH/README.md"
+git -C "$TAB_PATH" add README.md
+git -C "$TAB_PATH" commit --quiet -m "tabbed work"
+git -C "$REPO" merge --quiet --no-edit tyler/CCLOUD-5-tabbed
+
+FAKE_BIN="$TMP_DIR/fakebin"
+mkdir -p "$FAKE_BIN"
+cat >"$FAKE_BIN/kitty" <<'EOF'
+#!/usr/bin/env bash
+if [[ "$1" == "@" && "$2" == "ls" ]]; then
+  printf '[{"tabs": [{"id": 1, "title": "repo-a:tyler-CCLOUD-5-tabbed"}]}]\n'
+  exit 0
+fi
+exit 1
+EOF
+chmod +x "$FAKE_BIN/kitty"
+
+TAB_ERR="$TMP_DIR/clean-tab.err"
+(cd "$REPO" && PATH="$FAKE_BIN:$PATH" run_wt clean) 2>"$TAB_ERR"
+
+[[ -d "$TAB_PATH" ]] || fail "clean should not remove a worktree with an open Kitty tab"
+grep -Fq "still open" "$TAB_ERR" || fail "clean should explain why it skipped an open worktree"
+
+(cd "$REPO" && run_wt clean) 2>/dev/null
+
+[[ ! -d "$TAB_PATH" ]] || fail "clean should remove the worktree once its tab is no longer open"
+
 printf 'wt verification passed\n'
