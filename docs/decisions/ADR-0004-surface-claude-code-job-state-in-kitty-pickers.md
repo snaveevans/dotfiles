@@ -68,6 +68,11 @@ This decision means:
   window `cwd` rather than a worktree path. That picker is a Python kitten,
   not `wt`, so the matching logic is duplicated in `kitty_selector.py` rather
   than shared
+- `$HOME` is never used as a match anchor, in either implementation. A shell
+  sitting bare at home isn't "inside" a project, and every job's cwd is a
+  descendant of home, so treating it as an anchor would match nearly every
+  job on the machine - which is exactly what happened to a split-pane
+  `cmd+enter o` tab with one window parked at home
 
 ### Consequences
 
