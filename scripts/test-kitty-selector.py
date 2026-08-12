@@ -84,6 +84,29 @@ def main():
             f"window should not pull in unrelated jobs, got: {status!r}"
         )
 
+    # ~/workspace (and ~/worktrees) are container roots: a job nested inside
+    # one of their repos belongs to that repo, not to the container itself,
+    # so a tab sitting bare at the container should only see a job whose cwd
+    # is exactly that path - not the ones nested under it.
+    os.environ["WT_WORKSPACE"] = "/workspace"
+    os.environ["WT_ROOT"] = "/worktrees"
+    container_jobs = [
+        ("/workspace/prism-ui", "blocked"),
+        ("/workspace/prism-header", "blocked"),
+        ("/workspace", "working"),
+    ]
+
+    status = ks.agent_status_for_paths(["/workspace"], container_jobs)
+    if status != "● working":
+        fail(f"a tab at a container root should only see a job at the root itself, got: {status!r}")
+
+    status = ks.agent_status_for_paths(["/workspace/prism-ui"], container_jobs)
+    if status != "⏸ needs input":
+        fail(f"descendant matching should still work inside a repo under the container, got: {status!r}")
+
+    del os.environ["WT_WORKSPACE"]
+    del os.environ["WT_ROOT"]
+
     # A missing jobs directory should degrade to no jobs, not raise.
     os.environ["CLAUDE_JOBS_DIR"] = os.path.join(tmp_dir, "does-not-exist")
     if ks.load_agent_jobs():

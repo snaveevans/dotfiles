@@ -100,6 +100,13 @@ and treating it as one would match nearly every job on the machine, since
 every job's cwd is a descendant of home. This mattered in practice for a
 split-pane `cmd+enter o` tab where one pane happened to be parked at home.
 
+`$WT_WORKSPACE` and `$WT_ROOT` themselves get a narrower version of the same
+treatment: they're containers, not projects, so a job several directories
+into one of their repos belongs to that repo, not to the container. A tab
+sitting bare at `~/workspace` only picks up a job whose cwd is exactly
+`~/workspace` (say, a session running there to clone something new) - not
+every job running in every repo underneath it.
+
 This reads Claude Code's own internal job state, which isn't a documented or
 versioned interface - a future CLI update could change its shape and quietly
 stop populating the column. Nothing breaks if that happens; worktrees just

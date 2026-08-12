@@ -73,6 +73,12 @@ This decision means:
   descendant of home, so treating it as an anchor would match nearly every
   job on the machine - which is exactly what happened to a split-pane
   `cmd+enter o` tab with one window parked at home
+- `$WT_WORKSPACE` and `$WT_ROOT` get a narrower version of the same rule:
+  they're containers whose children are separate projects, so they only
+  match a job whose cwd is exactly the container path, never a descendant.
+  Unlike `$HOME`, a tab sitting bare at `~/workspace` is a real, intentional
+  workflow (cloning a new repo, running something that isn't scoped to one
+  project), so the fix is narrower matching, not exclusion
 
 ### Consequences
 
@@ -101,6 +107,8 @@ skips a worktree with a `working` session until that job's state changes.
 
 `scripts/test-kitty-selector.sh` covers the Python side the same way -
 precedence, nested-path matching, no false match on a similarly-named
-sibling, and a missing jobs directory degrading to no jobs rather than an
+sibling, `$HOME` exclusion (including a home-anchored pane not leaking into
+a real project window sharing its tab), `$WT_WORKSPACE`/`$WT_ROOT` exact-only
+matching, and a missing jobs directory degrading to no jobs rather than an
 error - by importing `kitty_selector.py` with `kitty.boss` stubbed out,
 since that module only exists inside Kitty's own runtime.

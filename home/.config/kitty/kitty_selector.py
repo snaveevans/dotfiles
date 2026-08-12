@@ -258,6 +258,20 @@ def load_agent_jobs() -> list[tuple[str, str]]:
     return jobs
 
 
+def container_roots() -> set[str]:
+    """Directories whose immediate children are separate projects.
+
+    A job several directories under one of these belongs to whichever
+    project it's actually in, not to the container itself - unlike a
+    worktree or repo checkout, where working several directories deep is
+    still the same project. These are only valid as exact-match anchors.
+    """
+    roots = set()
+    for var, default in (("WT_WORKSPACE", "~/workspace"), ("WT_ROOT", "~/worktrees")):
+        roots.add(os.path.expanduser(os.environ.get(var, default)).rstrip("/"))
+    return roots
+
+
 def agent_status_for_paths(paths: list[str], jobs: list[tuple[str, str]]) -> str | None:
     """Status label for jobs whose cwd is at or under any of `paths`.
 
@@ -266,15 +280,26 @@ def agent_status_for_paths(paths: list[str], jobs: list[tuple[str, str]]) -> str
     match nearly every job on the machine, since every job's cwd is a
     descendant of home. This matters for split-pane tabs - one pane parked at
     home is enough to poison the whole tab's status if it isn't excluded.
+
+    A path that's a container root (see `container_roots`) only matches a
+    job whose cwd is exactly that path, not one somewhere underneath it -
+    otherwise a tab sitting at ~/workspace would pick up every job running
+    in every repo under it, the same failure mode $HOME has, just one level
+    down and only for jobs at the container root itself, not descendants.
     """
     home = os.path.expanduser("~").rstrip("/")
+    containers = container_roots()
     anchors = [p.rstrip("/") for p in paths if p and p.rstrip("/") != home]
 
     best = None
     count = 0
 
     for cwd, state in jobs:
-        if not any(cwd == anchor or cwd.startswith(anchor + "/") for anchor in anchors):
+        matched = any(
+            cwd == anchor or (anchor not in containers and cwd.startswith(anchor + "/"))
+            for anchor in anchors
+        )
+        if not matched:
             continue
         count += 1
         if state in _AGENT_STATE_PRIORITY and (
