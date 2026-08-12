@@ -80,7 +80,32 @@ def find_wt():
     return shutil.which("wt")
 
 
-def select_worktree() -> dict[str, str]:
+def get_focused_window_cwd():
+    """Find the cwd of the kitty window that has keyboard focus.
+
+    The kitten's own process cwd isn't the invoking window's cwd, so scoping
+    to "the current repo" has to go through remote control, same as
+    select_open_tab() does below.
+    """
+    result = subprocess.run(["kitty", "@", "ls"], stdout=subprocess.PIPE, text=True)
+    if result.returncode != 0:
+        return None
+
+    try:
+        data = json.loads(result.stdout)
+    except json.JSONDecodeError:
+        return None
+
+    for os_window in data:
+        for tab in os_window.get("tabs", []):
+            for window in tab.get("windows", []):
+                if window.get("is_focused"):
+                    return window.get("cwd")
+
+    return None
+
+
+def select_worktree(scope_current_repo: bool = False) -> dict[str, str]:
     """Pick a git worktree and return its path plus the tab title to use."""
     wt_path = find_wt()
     if not wt_path:
@@ -90,18 +115,35 @@ def select_worktree() -> dict[str, str]:
     if not fzf_path:
         return {"status": "error", "message": "fzf not found in PATH or common locations"}
 
+    cwd = None
+    list_args = [wt_path, "list"]
+
+    if scope_current_repo:
+        cwd = get_focused_window_cwd()
+        if not cwd:
+            return {"status": "error", "message": "could not determine the focused window's directory"}
+    else:
+        list_args.append("--all")
+
+    list_args.append("--format=fzf")
+
+    # `wt` scopes to the repo containing its own cwd, so run it there.
     listing = subprocess.run(
-        [wt_path, "list", "--all", "--format=fzf"],
+        list_args,
         stdout=subprocess.PIPE,
         text=True,
+        cwd=cwd,
     )
     rows = [row for row in listing.stdout.split("\n") if row.strip()]
     if not rows:
-        return {"status": "error", "message": "No worktrees found."}
+        message = "No worktrees found for this repo." if scope_current_repo else "No worktrees found."
+        return {"status": "error", "message": message}
+
+    prompt = "worktree (repo)> " if scope_current_repo else "worktree> "
 
     # wt emits "display<TAB>tab title<TAB>path"; fzf only shows the first field.
     result = subprocess.run(
-        [fzf_path, "+m", "--delimiter=\t", "--with-nth=1", "--prompt=worktree> "],
+        [fzf_path, "+m", "--delimiter=\t", "--with-nth=1", f"--prompt={prompt}"],
         input="\n".join(rows),
         stdout=subprocess.PIPE,
         text=True,
@@ -171,6 +213,9 @@ def main(args: list[str]) -> dict[str, str]:
 
     if mode == "worktree":
         return select_worktree()
+
+    if mode == "worktree-repo":
+        return select_worktree(scope_current_repo=True)
 
     # Get directories to choose from
     directories = get_directories(dirs)
