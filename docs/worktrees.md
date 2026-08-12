@@ -94,7 +94,11 @@ A worktree "has" a session if that session's cwd is at or under the
 worktree's path - agents often work a few directories deep, not at the root.
 When more than one session matches, the most attention-worthy state wins in
 that order (`needs input` beats `failed` beats `working` beats `done`), and a
-`×N` suffix shows how many matched.
+`×N` suffix shows how many matched. A path exactly at `$HOME` is never used
+as a match anchor - a shell sitting bare at home isn't "inside" a project,
+and treating it as one would match nearly every job on the machine, since
+every job's cwd is a descendant of home. This mattered in practice for a
+split-pane `cmd+enter o` tab where one pane happened to be parked at home.
 
 This reads Claude Code's own internal job state, which isn't a documented or
 versioned interface - a future CLI update could change its shape and quietly

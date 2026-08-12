@@ -258,17 +258,23 @@ def load_agent_jobs() -> list[tuple[str, str]]:
     return jobs
 
 
-def agent_status_for(path: str, jobs: list[tuple[str, str]]) -> str | None:
-    """Status label for jobs whose cwd is at or under `path`, or None."""
-    if not path:
-        return None
+def agent_status_for_paths(paths: list[str], jobs: list[tuple[str, str]]) -> str | None:
+    """Status label for jobs whose cwd is at or under any of `paths`.
 
-    prefix = path.rstrip("/") + "/"
+    A path exactly at $HOME is dropped before matching: a window sitting bare
+    at home isn't "inside" any project, and treating it as an anchor would
+    match nearly every job on the machine, since every job's cwd is a
+    descendant of home. This matters for split-pane tabs - one pane parked at
+    home is enough to poison the whole tab's status if it isn't excluded.
+    """
+    home = os.path.expanduser("~").rstrip("/")
+    anchors = [p.rstrip("/") for p in paths if p and p.rstrip("/") != home]
+
     best = None
     count = 0
 
     for cwd, state in jobs:
-        if cwd != path and not cwd.startswith(prefix):
+        if not any(cwd == anchor or cwd.startswith(anchor + "/") for anchor in anchors):
             continue
         count += 1
         if state in _AGENT_STATE_PRIORITY and (
@@ -283,6 +289,11 @@ def agent_status_for(path: str, jobs: list[tuple[str, str]]) -> str | None:
     return f"{label} ×{count}" if count > 1 else label
 
 
+def agent_status_for(path: str, jobs: list[tuple[str, str]]) -> str | None:
+    """Status label for jobs whose cwd is at or under `path`, or None."""
+    return agent_status_for_paths([path], jobs)
+
+
 def select_open_tab():
     result = subprocess.run(["kitty", "@", "ls"], capture_output=True, text=True)
 
@@ -291,17 +302,16 @@ def select_open_tab():
     jobs = load_agent_jobs()
 
     # Extract the list of tabs, annotated with agent status when a job's cwd
-    # falls inside one of the tab's windows. Tabs in this workflow are single
-    # window, so the first matching window is enough.
+    # falls inside one of the tab's windows. A tab can be a split with several
+    # windows at different cwds, so every window is matched, not just the
+    # first - otherwise whichever window happens to come first decides the
+    # whole tab's status.
     entries = []
     for session in data:
         for tab in session["tabs"]:
             title = tab["title"]
-            status = None
-            for window in tab.get("windows", []):
-                status = agent_status_for(window.get("cwd"), jobs)
-                if status:
-                    break
+            cwds = [window.get("cwd") for window in tab.get("windows", [])]
+            status = agent_status_for_paths(cwds, jobs)
             entries.append((title, status))
 
     # Titles vary a lot in length, so without padding the status column

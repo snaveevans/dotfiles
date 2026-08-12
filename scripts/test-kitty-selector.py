@@ -65,6 +65,25 @@ def main():
     if status is not None:
         fail(f"a worktree whose name is a prefix of another's should not match it, got: {status!r}")
 
+    # A window sitting bare at $HOME must never be a match anchor: every
+    # job's cwd is a descendant of home, so treating it as one would make a
+    # tab parked at home look like it's running every job on the machine.
+    home = os.path.expanduser("~").rstrip("/")
+    status = ks.agent_status_for_paths([home], jobs)
+    if status is not None:
+        fail(f"a window sitting at $HOME should never match any job, got: {status!r}")
+
+    # A split-pane tab with one window at $HOME and another at a real
+    # project directory should report only the real project's jobs - this
+    # reproduces the bug where a stray home-anchored pane made an entire
+    # tab's status look like every job on the machine was running in it.
+    status = ks.agent_status_for_paths([home, "/dotfiles"], jobs)
+    if status != "✓ done":
+        fail(
+            "a home-anchored window sharing a tab with a real project "
+            f"window should not pull in unrelated jobs, got: {status!r}"
+        )
+
     # A missing jobs directory should degrade to no jobs, not raise.
     os.environ["CLAUDE_JOBS_DIR"] = os.path.join(tmp_dir, "does-not-exist")
     if ks.load_agent_jobs():
