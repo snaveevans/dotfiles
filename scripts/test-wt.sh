@@ -47,6 +47,7 @@ git -C "$REPO" commit --quiet -m "initial commit"
 
 git -C "$REPO" worktree add --quiet -b feature "$TEST_WT_ROOT/repo-a/feature"
 git -C "$REPO" worktree add --quiet -b agent-x "$REPO/.claude/worktrees/agent-x"
+git -C "$REPO" worktree add --quiet -b agent-y "$FAKE_HOME/.local/share/opencode/worktree/repo-a-hash/agent-y"
 git -C "$REPO" worktree add --quiet -b sibling "$WORKSPACE/repo-a-sibling"
 git -C "$REPO" worktree add --quiet -b spaced "$SPACED_WORKTREE"
 
@@ -57,15 +58,20 @@ grep -Fq "repo-a${TAB}main${TAB}main${TAB}" "$LIST_FILE" ||
   fail "the primary checkout should be classified as main"
 grep -Fq "repo-a${TAB}wt${TAB}feature${TAB}" "$LIST_FILE" ||
   fail "a worktree under WT_ROOT should be classified as wt"
-grep -Fq "repo-a${TAB}claude${TAB}agent-x${TAB}" "$LIST_FILE" ||
-  fail "a worktree under .claude/worktrees should be classified as claude"
 grep -Fq "repo-a${TAB}other${TAB}sibling${TAB}" "$LIST_FILE" ||
   fail "a worktree outside every known root should be classified as other"
 grep -Fq "$SPACED_WORKTREE" "$LIST_FILE" ||
   fail "a worktree path containing spaces should survive porcelain parsing"
 
-[[ "$(grep -c "^repo-a${TAB}" "$LIST_FILE")" -eq 5 ]] ||
-  fail "expected five worktrees for repo-a"
+if grep -Fq "agent-x" "$LIST_FILE"; then
+  fail "a worktree under .claude/worktrees should be excluded from discovery"
+fi
+if grep -Fq "agent-y" "$LIST_FILE"; then
+  fail "a worktree under .local/share/opencode/worktree should be excluded from discovery"
+fi
+
+[[ "$(grep -c "^repo-a${TAB}" "$LIST_FILE")" -eq 4 ]] ||
+  fail "expected four visible worktrees for repo-a (agent-owned ones are excluded)"
 
 # repo-a-sibling is itself a linked worktree, so scanning the workspace must not
 # report it as a separate repo.
@@ -78,7 +84,7 @@ run_wt list --all --format=fzf >"$FZF_FILE"
 
 awk -F '\t' 'NF != 3 { exit 1 }' "$FZF_FILE" ||
   fail "fzf format should emit display, title, and path fields"
-grep -Fq "${TAB}repo-a:agent-x${TAB}" "$FZF_FILE" ||
+grep -Fq "${TAB}repo-a:feature${TAB}" "$FZF_FILE" ||
   fail "linked worktrees should get a repo-qualified tab title"
 grep -Fq "${TAB}repo-a${TAB}" "$FZF_FILE" ||
   fail "the primary checkout should get a bare repo tab title"
@@ -86,8 +92,8 @@ grep -Fq "${TAB}repo-a${TAB}" "$FZF_FILE" ||
 LOCAL_FILE="$TMP_DIR/local.tsv"
 (cd "$REPO/.claude/worktrees/agent-x" && run_wt list --format=tsv) >"$LOCAL_FILE"
 
-[[ "$(wc -l <"$LOCAL_FILE" | tr -d ' ')" -eq 5 ]] ||
-  fail "repo scope from inside a linked worktree should resolve the whole repo"
+[[ "$(wc -l <"$LOCAL_FILE" | tr -d ' ')" -eq 4 ]] ||
+  fail "repo scope from inside an excluded worktree should still resolve the whole repo"
 
 DRY_OUT="$TMP_DIR/new-dry.out"
 DRY_ERR="$TMP_DIR/new-dry.err"
@@ -128,5 +134,80 @@ grep -Fq "main worktree" "$RM_MAIN_ERR" || fail "rm should explain why it refuse
 if git -C "$REPO" show-ref --verify --quiet "refs/heads/tyler/CCLOUD-1-demo"; then
   fail "--delete-branch should delete the branch"
 fi
+
+MERGED_PATH="$(cd "$REPO" && run_wt new tyler/CCLOUD-2-merged)"
+printf 'merged work\n' >>"$MERGED_PATH/README.md"
+git -C "$MERGED_PATH" add README.md
+git -C "$MERGED_PATH" commit --quiet -m "merged work"
+git -C "$REPO" merge --quiet --no-edit tyler/CCLOUD-2-merged
+
+UNMERGED_PATH="$(cd "$REPO" && run_wt new tyler/CCLOUD-3-unmerged)"
+printf 'unmerged work\n' >>"$UNMERGED_PATH/README.md"
+git -C "$UNMERGED_PATH" add README.md
+git -C "$UNMERGED_PATH" commit --quiet -m "unmerged work"
+
+DIRTY_PATH="$(cd "$REPO" && run_wt new tyler/CCLOUD-4-dirty)"
+printf 'dirty\n' >>"$DIRTY_PATH/README.md"
+
+CLEAN_DRY_ERR="$TMP_DIR/clean-dry.err"
+(cd "$REPO" && run_wt clean --dry-run) 2>"$CLEAN_DRY_ERR"
+
+[[ -d "$MERGED_PATH" ]] || fail "dry-run clean should not remove a merged worktree"
+grep -Fq "DRY-RUN" "$CLEAN_DRY_ERR" || fail "dry-run clean should log planned actions"
+
+CLEAN_ERR="$TMP_DIR/clean.err"
+(cd "$REPO" && run_wt clean) 2>"$CLEAN_ERR"
+
+[[ ! -d "$MERGED_PATH" ]] || fail "clean should remove a merged, clean worktree"
+if git -C "$REPO" show-ref --verify --quiet "refs/heads/tyler/CCLOUD-2-merged"; then
+  fail "clean should delete the branch of a removed worktree"
+fi
+
+[[ -d "$UNMERGED_PATH" ]] || fail "clean should not remove an unmerged worktree"
+grep -Fq "not merged" "$CLEAN_ERR" || fail "clean should explain why it skipped an unmerged worktree"
+
+[[ -d "$DIRTY_PATH" ]] || fail "clean should not remove a worktree with uncommitted changes"
+grep -Fq "uncommitted changes" "$CLEAN_ERR" || fail "clean should explain why it skipped a dirty worktree"
+
+[[ -d "$REPO" ]] || fail "clean should never remove the main worktree"
+
+# agent-x and agent-y are both trivially clean and merged (never diverged
+# from main), so if the exclusion in cmd_clean's own scan didn't hold, this
+# run would have swept them.
+[[ -d "$REPO/.claude/worktrees/agent-x" ]] ||
+  fail "clean should never touch a worktree under .claude/worktrees"
+[[ -d "$FAKE_HOME/.local/share/opencode/worktree/repo-a-hash/agent-y" ]] ||
+  fail "clean should never touch a worktree under .local/share/opencode/worktree"
+
+# The "no open Kitty tab" gate is the difference between `wt clean` and just
+# deleting every merged worktree unconditionally, so it gets its own check
+# with a fake `kitty` shimmed onto PATH ahead of the real one.
+TAB_PATH="$(cd "$REPO" && run_wt new tyler/CCLOUD-5-tabbed)"
+printf 'tabbed work\n' >>"$TAB_PATH/README.md"
+git -C "$TAB_PATH" add README.md
+git -C "$TAB_PATH" commit --quiet -m "tabbed work"
+git -C "$REPO" merge --quiet --no-edit tyler/CCLOUD-5-tabbed
+
+FAKE_BIN="$TMP_DIR/fakebin"
+mkdir -p "$FAKE_BIN"
+cat >"$FAKE_BIN/kitty" <<'EOF'
+#!/usr/bin/env bash
+if [[ "$1" == "@" && "$2" == "ls" ]]; then
+  printf '[{"tabs": [{"id": 1, "title": "repo-a:tyler-CCLOUD-5-tabbed"}]}]\n'
+  exit 0
+fi
+exit 1
+EOF
+chmod +x "$FAKE_BIN/kitty"
+
+TAB_ERR="$TMP_DIR/clean-tab.err"
+(cd "$REPO" && PATH="$FAKE_BIN:$PATH" run_wt clean) 2>"$TAB_ERR"
+
+[[ -d "$TAB_PATH" ]] || fail "clean should not remove a worktree with an open Kitty tab"
+grep -Fq "still open" "$TAB_ERR" || fail "clean should explain why it skipped an open worktree"
+
+(cd "$REPO" && run_wt clean) 2>/dev/null
+
+[[ ! -d "$TAB_PATH" ]] || fail "clean should remove the worktree once its tab is no longer open"
 
 printf 'wt verification passed\n'

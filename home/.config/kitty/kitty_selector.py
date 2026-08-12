@@ -128,6 +128,69 @@ def select_worktree(scope_current_repo: bool = False) -> dict[str, str]:
     return {"status": "success", "selected_directory": fields[2], "tab_title": fields[1]}
 
 
+def prompt_line(message: str, prompt: str = "> ") -> str | None:
+    """Ask for a line of free text using kitty's bundled `ask` kitten.
+
+    Runs as a plain subprocess (same trick as calling fzf from here): the
+    kitten prints its JSON result to stdout instead of going through kitty's
+    map-triggered handle_result dispatch, which we don't need.
+    """
+    result = subprocess.run(
+        ["kitty", "+kitten", "ask", "--type=line", f"--message={message}", f"--prompt={prompt}"],
+        stdout=subprocess.PIPE,
+        text=True,
+    )
+    if result.returncode != 0:
+        return None
+
+    # `ask` prints the --message text as a plain bold line on stdout before
+    # its (pretty-printed, multi-line) JSON result, so the JSON object is
+    # only ever the tail of stdout starting at its first brace.
+    try:
+        json_start = result.stdout.index("{")
+        response = json.loads(result.stdout[json_start:]).get("response")
+    except (ValueError, AttributeError):
+        return None
+
+    return response.strip() if response else None
+
+
+def create_worktree() -> dict[str, str]:
+    """Prompt for a branch name, create a worktree for it, and hand back its path."""
+    wt_path = find_wt()
+    if not wt_path:
+        return {"status": "error", "message": "wt not found in PATH or common locations"}
+
+    branch = prompt_line("New worktree branch name", prompt="branch> ")
+    if not branch:
+        return {"status": "error", "message": "no branch name entered"}
+
+    created = subprocess.run(
+        [wt_path, "new", branch],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    dest = created.stdout.strip()
+    if created.returncode != 0 or not dest:
+        message = created.stderr.strip() or "wt new failed"
+        return {"status": "error", "message": message}
+
+    # Look up the repo-qualified title `wt` assigned this worktree (same
+    # "repo:slug" convention select_worktree() reads) so the new tab and any
+    # later re-pick of it share one title instead of drifting apart.
+    listing = subprocess.run(
+        [wt_path, "list", dest, "--format=fzf"],
+        stdout=subprocess.PIPE,
+        text=True,
+    )
+    row = next((r for r in listing.stdout.split("\n") if r.strip()), "")
+    fields = row.split("\t")
+    tab_title = fields[1] if len(fields) >= 3 else os.path.basename(dest)
+
+    return {"status": "success", "selected_directory": dest, "tab_title": tab_title}
+
+
 def get_directories(args: list[str]):
     """Get the list of directories using the 'find' command."""
     expanded_paths = list(map(os.path.expanduser, args))
@@ -186,6 +249,9 @@ def main(args: list[str]) -> dict[str, str]:
     if mode == "worktree-repo":
         return select_worktree(scope_current_repo=True)
 
+    if mode == "worktree-new":
+        return create_worktree()
+
     # Get directories to choose from
     directories = get_directories(dirs)
 
@@ -211,6 +277,8 @@ def handle_result(
     # return
     if value["status"] == "error":
         # w.paste_text(f"Error: {value['message']}")
+        if len(args) > 1 and args[1] == "worktree-new":
+            boss.show_error("Create worktree", value.get("message", "unknown error"))
         return
     # elif value.get("status") == "success":
     #     w.paste_text(f"Selected directory: {value['selected_directory']}")
