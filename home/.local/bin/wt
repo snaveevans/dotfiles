@@ -24,6 +24,11 @@ ORIGIN=""
 META_SHAS=()
 META_TIMES=()
 META_AGES=()
+AGENT_CWDS=()
+AGENT_STATES=()
+AGENT_LOADED=false
+AGENT_STATE=""
+AGENT_COUNT=0
 
 usage() {
   cat <<'EOF'
@@ -178,6 +183,142 @@ is_agent_worktree() {
   esac
 }
 
+# `claude`, like `wt` itself from Kitty's side (see kitty_selector.py's
+# find_wt()), typically lives under ~/.local/bin - a location a
+# Dock-launched Kitty's kittens (and anything they spawn, `wt` included)
+# don't see on PATH. Checked before load_agent_jobs's plain `command -v` so
+# the picker isn't silently blind to every session whenever it's invoked
+# from a kitten rather than an interactive shell.
+find_claude() {
+  local candidate
+
+  for candidate in "$HOME/.local/bin/claude" "$HOME/bin/claude" /usr/local/bin/claude /opt/homebrew/bin/claude; do
+    if [[ -x "$candidate" ]]; then
+      printf '%s\n' "$candidate"
+      return 0
+    fi
+  done
+
+  command -v claude 2>/dev/null
+}
+
+# `claude agents --json` is Claude Code's own scriptable session list
+# (documented via `claude agents --help` as "for scripting; does not require
+# a TTY"), covering both background jobs and live interactive sessions in
+# one call. Background jobs report a `state` (working/blocked/done/failed);
+# interactive sessions only report a `status` (busy/waiting/idle/shell),
+# which gets translated below - reading ~/.claude/jobs directly (an earlier
+# version of this) missed interactive sessions entirely, since a plain
+# `claude` session sitting in a terminal has no job directory, only
+# background jobs do. Loaded once per `wt` process (not once per worktree)
+# and cached in AGENT_LOADED, since load_agent_jobs itself never runs inside
+# a command substitution - a subshell would lose the cache on every call.
+load_agent_jobs() {
+  "$AGENT_LOADED" && return 0
+  AGENT_LOADED=true
+
+  local claude_bin
+  claude_bin="$(find_claude)"
+  [[ -n "$claude_bin" ]] || return 0
+  command -v jq >/dev/null 2>&1 || return 0
+
+  local cwd kind job_state job_status state
+
+  # Fields are joined with a pipe, not a tab: bash's `read` treats tab (and
+  # space, and newline) as "IFS whitespace" and silently collapses/strips
+  # empty fields even when IFS is set to just a tab, which misaligns columns
+  # here since state/status are routinely empty (a job has one or the
+  # other, never both). A pipe isn't IFS whitespace, so empty fields survive
+  # - and it isn't a character a real cwd would ever contain.
+  while IFS='|' read -r cwd kind job_state job_status; do
+    [[ -n "$cwd" ]] || continue
+
+    if [[ "$kind" == "background" ]]; then
+      state="$job_state"
+    else
+      case "$job_status" in
+        busy) state="working" ;;
+        waiting) state="blocked" ;;
+        idle | shell) state="idle" ;;
+        *) state="" ;;
+      esac
+    fi
+
+    [[ -n "$state" ]] || continue
+
+    AGENT_CWDS+=("$cwd")
+    AGENT_STATES+=("$state")
+  done < <(
+    "$claude_bin" agents --all --json 2>/dev/null |
+      jq -r '.[] | [(.cwd // ""), .kind, (.state // ""), (.status // "")] | join("|")' 2>/dev/null || true
+  )
+}
+
+# Sets AGENT_STATE/AGENT_COUNT rather than printing, same reasoning as
+# classify_origin. A worktree "has" a job if the job's cwd is at or under its
+# path, since agents often work a few directories deep rather than at the
+# worktree root. When more than one job matches, the most attention-worthy
+# state wins, lowest number first: blocked (waiting on you), failed,
+# working, done, idle (a session is open but nothing is happening). Numeric
+# priority rather than a chain of case-guarded assignments, since the latter
+# only generalizes correctly to two tiers - this needs five.
+agent_status_for() {
+  local path="$1"
+  local cwd state index priority best_priority
+
+  load_agent_jobs
+
+  AGENT_STATE=""
+  AGENT_COUNT=0
+  best_priority=99
+
+  for ((index = 0; index < ${#AGENT_CWDS[@]}; index++)); do
+    cwd="${AGENT_CWDS[$index]}"
+    [[ "$cwd" == "$path" || "$cwd" == "$path"/* ]] || continue
+
+    state="${AGENT_STATES[$index]}"
+    ((AGENT_COUNT++)) || true
+
+    case "$state" in
+      blocked) priority=0 ;;
+      failed) priority=1 ;;
+      working) priority=2 ;;
+      done) priority=3 ;;
+      idle) priority=4 ;;
+      *) priority=99 ;;
+    esac
+
+    if ((priority < best_priority)); then
+      best_priority=$priority
+      AGENT_STATE="$state"
+    fi
+  done
+}
+
+agent_glyph_for() {
+  local state="$1"
+  local count="$2"
+  local label
+
+  case "$state" in
+    working) label="● working" ;;
+    blocked) label="⏸ needs input" ;;
+    failed) label="✗ failed" ;;
+    done) label="✓ done" ;;
+    idle) label="○ idle" ;;
+    *)
+      printf '\n'
+      return 0
+      ;;
+  esac
+
+  if [[ "$count" -gt 1 ]]; then
+    label="$label ×$count"
+  fi
+
+  printf '%s\n' "$label"
+}
+
 # Sets ORIGIN rather than printing: a command substitution here forks once per
 # worktree, which is measurable across a full workspace scan.
 classify_origin() {
@@ -259,7 +400,7 @@ emit_record() {
   local head="$4"
   local branch="$5"
   local flags="$6"
-  local branch_display dirty rank commit_time age title index
+  local branch_display dirty rank commit_time age title index agent_glyph
 
   [[ -n "$path" ]] || return 0
 
@@ -315,8 +456,11 @@ emit_record() {
     rank=0
   fi
 
-  printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
-    "$rank" "$commit_time" "$repo" "$ORIGIN" "$branch_display" "$dirty" "$age" "$title" "$path"
+  agent_status_for "$path"
+  agent_glyph="$(agent_glyph_for "$AGENT_STATE" "$AGENT_COUNT")"
+
+  printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+    "$rank" "$commit_time" "$repo" "$ORIGIN" "$branch_display" "$dirty" "$age" "$title" "$path" "$agent_glyph"
 }
 
 parse_repo() {
@@ -421,6 +565,10 @@ render_records() {
         line = sprintf("%-*s  %-*s  %s %-*s  %s", w_repo, $3, w_origin, $4, $6, w_branch, $5, $7)
       } else {
         line = sprintf("%-*s  %-*s  %-*s  %s", w_repo, $3, w_origin, $4, w_branch, $5, $7)
+      }
+
+      if ($10 != "") {
+        line = line "  " $10
       }
 
       if (with_path == "true") {
@@ -813,6 +961,15 @@ cmd_clean() {
         ((skipped++)) || true
         continue
       fi
+
+      agent_status_for "$path"
+      case "$AGENT_STATE" in
+        working | blocked | idle)
+          log "Skipping $path: agent job is $AGENT_STATE there"
+          ((skipped++)) || true
+          continue
+          ;;
+      esac
 
       log "Removing $path ($branch, merged into $base)"
       run git -C "$main_path" worktree remove "$path"
