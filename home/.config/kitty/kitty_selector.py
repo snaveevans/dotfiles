@@ -293,7 +293,7 @@ def select_open_tab():
     # Extract the list of tabs, annotated with agent status when a job's cwd
     # falls inside one of the tab's windows. Tabs in this workflow are single
     # window, so the first matching window is enough.
-    rows = []
+    entries = []
     for session in data:
         for tab in session["tabs"]:
             title = tab["title"]
@@ -302,8 +302,15 @@ def select_open_tab():
                 status = agent_status_for(window.get("cwd"), jobs)
                 if status:
                     break
-            display = f"{title}  {status}" if status else title
-            rows.append((display, title))
+            entries.append((title, status))
+
+    # Titles vary a lot in length, so without padding the status column
+    # lands in a different place on every row and the list reads as noise.
+    width = max((len(title) for title, _ in entries), default=0)
+    rows = [
+        (f"{title:<{width}}  {status}" if status else title, title)
+        for title, status in entries
+    ]
 
     fzf_path = find_fzf()
     if not fzf_path:
