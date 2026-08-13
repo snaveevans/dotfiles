@@ -52,6 +52,42 @@ EOF
 chmod +x "$FAKE_BIN/claude"
 CLAUDE_AGENTS_FILE="$TMP_DIR/claude-agents.json"
 
+# Fake `ps`/`lsof` stand in for OpenCode's process-table detection (it has no
+# `claude agents --json` equivalent, see load_opencode_jobs). FAKE_PS_FILE
+# holds "pid comm" lines - one real (non-opencode) process is always mixed
+# in so the comm-basename filter is exercised, not just the happy path.
+# FAKE_LSOF_CWDS maps pid -> cwd as "pid cwd" lines; a pid with no entry
+# there mimics lsof finding nothing (already exited, no permission).
+cat >"$FAKE_BIN/ps" <<'EOF'
+#!/usr/bin/env bash
+printf '  PID COMM\n'
+printf '1 /sbin/launchd\n'
+if [[ -n "${FAKE_PS_FILE:-}" && -f "$FAKE_PS_FILE" ]]; then
+  cat "$FAKE_PS_FILE"
+fi
+EOF
+chmod +x "$FAKE_BIN/ps"
+cat >"$FAKE_BIN/lsof" <<'EOF'
+#!/usr/bin/env bash
+pid=""
+prev=""
+for arg in "$@"; do
+  if [[ "$prev" == "-p" ]]; then
+    pid="$arg"
+  fi
+  prev="$arg"
+done
+if [[ -n "${FAKE_LSOF_CWDS:-}" && -f "$FAKE_LSOF_CWDS" ]]; then
+  cwd="$(awk -v pid="$pid" '$1 == pid { print $2 }' "$FAKE_LSOF_CWDS")"
+  if [[ -n "$cwd" ]]; then
+    printf 'p%s\nfcwd\nn%s\n' "$pid" "$cwd"
+  fi
+fi
+EOF
+chmod +x "$FAKE_BIN/lsof"
+PS_FILE="$TMP_DIR/ps.txt"
+LSOF_CWDS_FILE="$TMP_DIR/lsof-cwds.txt"
+
 # Worktree semantics are the thing under test, so this drives real git inside a
 # throwaway directory rather than faking git on PATH.
 run_wt() {
@@ -153,6 +189,36 @@ run_wt list --all --format=tsv >"$AGENT_FILE"
   fail "an interactive session's 'waiting' status should translate to needs input"
 
 unset FAKE_CLAUDE_AGENTS_FILE
+
+# OpenCode has no `claude agents --json` equivalent, so its jobs come from
+# the process table instead: a running `opencode` process resolved to its
+# cwd via `lsof`. FAKE_PS_FILE lists the pid+comm, FAKE_LSOF_CWDS maps that
+# pid to a cwd.
+printf '4242 /Users/tyler.evans/.opencode/bin/opencode\n' >"$PS_FILE"
+printf '4242 %s\n' "$TEST_WT_ROOT/repo-a/feature" >"$LSOF_CWDS_FILE"
+export FAKE_PS_FILE="$PS_FILE"
+export FAKE_LSOF_CWDS="$LSOF_CWDS_FILE"
+
+run_wt list --all --format=tsv >"$AGENT_FILE"
+
+[[ "$(awk -F'\t' '$3 == "feature" { print $8 }' "$AGENT_FILE")" == "◆ opencode" ]] ||
+  fail "a running opencode process should show its catch-all agent status"
+
+# Paired with a higher-priority Claude job on the same worktree, the more
+# specific state should win while the count still reflects both.
+cat >"$CLAUDE_AGENTS_FILE" <<JSON
+[{"cwd": "$TEST_WT_ROOT/repo-a/feature", "kind": "background", "state": "working"}]
+JSON
+export FAKE_CLAUDE_AGENTS_FILE="$CLAUDE_AGENTS_FILE"
+
+run_wt list --all --format=tsv >"$AGENT_FILE"
+
+[[ "$(awk -F'\t' '$3 == "feature" { print $8 }' "$AGENT_FILE")" == "● working ×2" ]] ||
+  fail "an opencode session sharing a worktree with a Claude job should add to the count, not outrank it"
+
+unset FAKE_CLAUDE_AGENTS_FILE
+unset FAKE_PS_FILE
+unset FAKE_LSOF_CWDS
 
 LOCAL_FILE="$TMP_DIR/local.tsv"
 (cd "$REPO/.claude/worktrees/agent-x" && run_wt list --format=tsv) >"$LOCAL_FILE"
@@ -346,5 +412,32 @@ unset FAKE_CLAUDE_AGENTS_FILE
 (cd "$REPO" && run_wt clean) 2>/dev/null
 
 [[ ! -d "$IDLE_PATH" ]] || fail "clean should remove the worktree once the interactive session is gone"
+
+# A running OpenCode process is just as live as a Claude session - clean
+# should treat its catch-all "opencode" state the same as working/blocked/idle.
+OPENCODE_PATH="$(cd "$REPO" && run_wt new tyler/CCLOUD-8-agent-opencode)"
+printf 'opencode work\n' >>"$OPENCODE_PATH/README.md"
+git -C "$OPENCODE_PATH" add README.md
+git -C "$OPENCODE_PATH" commit --quiet -m "opencode work"
+git -C "$REPO" merge --quiet --no-edit tyler/CCLOUD-8-agent-opencode
+
+printf '4343 /Users/tyler.evans/.opencode/bin/opencode\n' >"$PS_FILE"
+printf '4343 %s\n' "$OPENCODE_PATH" >"$LSOF_CWDS_FILE"
+export FAKE_PS_FILE="$PS_FILE"
+export FAKE_LSOF_CWDS="$LSOF_CWDS_FILE"
+
+OPENCODE_CLEAN_ERR="$TMP_DIR/clean-opencode.err"
+(cd "$REPO" && run_wt clean) 2>"$OPENCODE_CLEAN_ERR"
+
+[[ -d "$OPENCODE_PATH" ]] || fail "clean should not remove a worktree with a running opencode process"
+grep -Fq "agent job is opencode" "$OPENCODE_CLEAN_ERR" ||
+  fail "clean should explain why it skipped a worktree with a running opencode process"
+
+unset FAKE_PS_FILE
+unset FAKE_LSOF_CWDS
+
+(cd "$REPO" && run_wt clean) 2>/dev/null
+
+[[ ! -d "$OPENCODE_PATH" ]] || fail "clean should remove the worktree once the opencode process is gone"
 
 printf 'wt verification passed\n'

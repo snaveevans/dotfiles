@@ -210,13 +210,8 @@ find_claude() {
 # which gets translated below - reading ~/.claude/jobs directly (an earlier
 # version of this) missed interactive sessions entirely, since a plain
 # `claude` session sitting in a terminal has no job directory, only
-# background jobs do. Loaded once per `wt` process (not once per worktree)
-# and cached in AGENT_LOADED, since load_agent_jobs itself never runs inside
-# a command substitution - a subshell would lose the cache on every call.
-load_agent_jobs() {
-  "$AGENT_LOADED" && return 0
-  AGENT_LOADED=true
-
+# background jobs do.
+load_claude_jobs() {
   local claude_bin
   claude_bin="$(find_claude)"
   [[ -n "$claude_bin" ]] || return 0
@@ -254,6 +249,44 @@ load_agent_jobs() {
   )
 }
 
+# OpenCode has no equivalent of `claude agents --json` - `opencode session
+# list` only ever returns historical session metadata (title, timestamps),
+# never which sessions are currently live or what they're doing. The process
+# table is the only reliable live signal, so this finds running `opencode`
+# processes and resolves each one's cwd via `lsof`. There's no way to tell
+# busy from idle this way, so every match reports the same catch-all
+# "opencode" state rather than claiming a precision we don't have.
+load_opencode_jobs() {
+  command -v ps >/dev/null 2>&1 || return 0
+  command -v lsof >/dev/null 2>&1 || return 0
+
+  local pid comm cwd
+
+  while read -r pid comm; do
+    [[ "$pid" =~ ^[0-9]+$ ]] || continue
+    [[ "$(basename "$comm")" == "opencode" ]] || continue
+
+    cwd="$(lsof -a -p "$pid" -d cwd -Fn 2>/dev/null | sed -n 's/^n//p')"
+    [[ -n "$cwd" ]] || continue
+
+    AGENT_CWDS+=("$cwd")
+    AGENT_STATES+=("opencode")
+  done < <(ps -eo pid,comm 2>/dev/null)
+}
+
+# Loaded once per `wt` process (not once per worktree) and cached in
+# AGENT_LOADED, since load_agent_jobs itself never runs inside a command
+# substitution - a subshell would lose the cache on every call. Claude and
+# OpenCode are loaded independently so one tool being unavailable never
+# hides the other.
+load_agent_jobs() {
+  "$AGENT_LOADED" && return 0
+  AGENT_LOADED=true
+
+  load_claude_jobs
+  load_opencode_jobs
+}
+
 # Sets AGENT_STATE/AGENT_COUNT rather than printing, same reasoning as
 # classify_origin. A worktree "has" a job if the job's cwd is at or under its
 # path, since agents often work a few directories deep rather than at the
@@ -285,6 +318,7 @@ agent_status_for() {
       working) priority=2 ;;
       done) priority=3 ;;
       idle) priority=4 ;;
+      opencode) priority=5 ;;
       *) priority=99 ;;
     esac
 
@@ -306,6 +340,7 @@ agent_glyph_for() {
     failed) label="✗ failed" ;;
     done) label="✓ done" ;;
     idle) label="○ idle" ;;
+    opencode) label="◆ opencode" ;;
     *)
       printf '\n'
       return 0
@@ -964,7 +999,7 @@ cmd_clean() {
 
       agent_status_for "$path"
       case "$AGENT_STATE" in
-        working | blocked | idle)
+        working | blocked | idle | opencode)
           log "Skipping $path: agent job is $AGENT_STATE there"
           ((skipped++)) || true
           continue
