@@ -237,13 +237,14 @@ def select_directory(directories):
     return result.stdout.strip()
 
 
-_AGENT_STATE_PRIORITY = {"blocked": 0, "failed": 1, "working": 2, "done": 3, "idle": 4}
+_AGENT_STATE_PRIORITY = {"blocked": 0, "failed": 1, "working": 2, "done": 3, "idle": 4, "opencode": 5}
 _AGENT_STATE_LABELS = {
     "working": "● working",
     "blocked": "⏸ needs input",
     "failed": "✗ failed",
     "done": "✓ done",
     "idle": "○ idle",
+    "opencode": "◆ opencode",
 }
 # `claude agents --json` reports background jobs and live interactive
 # sessions with different vocabularies - a background job's `state` maps
@@ -298,6 +299,69 @@ def load_agent_jobs() -> list[tuple[str, str]]:
         if state:
             jobs.append((cwd, state))
 
+    return jobs
+
+
+def _running_opencode_pids() -> list[str]:
+    """PIDs of running processes whose executable is named `opencode`."""
+    try:
+        result = subprocess.run(
+            ["ps", "-eo", "pid,comm"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return []
+
+    pids = []
+    for line in result.stdout.splitlines():
+        parts = line.split(None, 1)
+        if len(parts) != 2:
+            continue
+        pid, comm = parts
+        if pid.isdigit() and os.path.basename(comm) == "opencode":
+            pids.append(pid)
+
+    return pids
+
+
+def _cwd_of_pid(pid: str) -> str | None:
+    """The working directory of a running process, via `lsof -d cwd`."""
+    try:
+        result = subprocess.run(
+            ["lsof", "-a", "-p", pid, "-d", "cwd", "-Fn"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+
+    for line in result.stdout.splitlines():
+        if line.startswith("n"):
+            return line[1:]
+
+    return None
+
+
+def load_opencode_jobs() -> list[tuple[str, str]]:
+    """Return (cwd, "opencode") for every running OpenCode process.
+
+    OpenCode has no equivalent of `claude agents --json`: `opencode session
+    list` only ever returns historical session metadata (title, timestamps),
+    never which sessions are currently live or what they're doing. The
+    process table is the only reliable live signal, so this finds running
+    `opencode` processes and resolves each one's cwd via `lsof`. There's no
+    way to tell busy from idle this way, so every match reports the same
+    catch-all "opencode" state rather than claiming a precision we don't
+    have.
+    """
+    jobs = []
+    for pid in _running_opencode_pids():
+        cwd = _cwd_of_pid(pid)
+        if cwd:
+            jobs.append((cwd, "opencode"))
     return jobs
 
 
@@ -367,7 +431,7 @@ def select_open_tab():
 
     # Parse the JSON output
     data = json.loads(result.stdout)
-    jobs = load_agent_jobs()
+    jobs = load_agent_jobs() + load_opencode_jobs()
 
     # Extract the list of tabs, annotated with agent status when a job's cwd
     # falls inside one of the tab's windows. A tab can be a split with several

@@ -48,10 +48,13 @@ The tab bar is hidden, so `cmd+enter o` is how you see what tabs exist. Tabs
 are titled by directory: `<repo>` for a primary checkout, `<repo>:<directory>`
 for a worktree.
 
-Any tab running a Claude Code session gets a status glyph next to its title -
-`● working`, `⏸ needs input`, `✗ failed`, `✓ done` - read from that session's
-own job state. See [Agent status](worktrees.md#agent-status) for how it's
-matched and its one real caveat (undocumented internal state).
+Any tab running a Claude Code session or an OpenCode process gets a status
+glyph next to its title - `● working`, `⏸ needs input`, `✗ failed`,
+`✓ done`, `○ idle` for Claude Code, `◆ opencode` for OpenCode - read from
+that session's own job state (or, for OpenCode, just its presence in the
+process table - there's no way to tell busy from idle there). See
+[Agent status](worktrees.md#agent-status) for how it's matched and its real
+caveats (both sources are undocumented internals, not versioned APIs).
 
 `cmd+t` is deliberately disabled so it does not shadow anything.
 

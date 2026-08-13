@@ -34,6 +34,34 @@ def fake_subprocess_run(sessions):
     return run
 
 
+def fake_opencode_processes(pid_to_cwd):
+    """A stand-in for subprocess.run that answers the `ps` and `lsof` calls
+    load_opencode_jobs() makes, keyed off argv[0] since - unlike the claude
+    fake above - both commands go through the same subprocess.run patch in
+    one test run. `ps -eo pid,comm` lists a real (non-opencode) process
+    alongside each opencode pid, so the comm-basename filter is exercised
+    too, not just the happy path."""
+
+    class FakeResult:
+        def __init__(self, stdout):
+            self.stdout = stdout
+
+    def run(args, **kwargs):
+        if args[0] == "ps":
+            lines = ["  PID COMM", "1 /sbin/launchd"]
+            lines += [f"{pid} /Users/tyler.evans/.opencode/bin/opencode" for pid in pid_to_cwd]
+            return FakeResult("\n".join(lines))
+        if args[0] == "lsof":
+            pid = args[args.index("-p") + 1]
+            cwd = pid_to_cwd.get(pid)
+            if cwd is None:
+                return FakeResult("")
+            return FakeResult(f"p{pid}\nfcwd\nn{cwd}")
+        raise AssertionError(f"unexpected command: {args}")
+
+    return run
+
+
 def main():
     selector_path = sys.argv[1]
 
@@ -154,6 +182,44 @@ def main():
     ks.find_claude = lambda: None
     if ks.load_agent_jobs():
         fail("find_claude() finding nothing should yield no jobs, not raise")
+
+    # OpenCode has no session-status API to shell out to, so
+    # load_opencode_jobs() goes through `ps` + `lsof` instead - a distinct
+    # code path from load_agent_jobs() above, exercised here with its own
+    # fake `subprocess.run`.
+    ks.subprocess.run = fake_opencode_processes({"501": "/repo-a/feature"})
+    opencode_jobs = ks.load_opencode_jobs()
+    if opencode_jobs != [("/repo-a/feature", "opencode")]:
+        fail(
+            "load_opencode_jobs() should resolve a running opencode process's "
+            f"cwd via lsof and report it as the catch-all 'opencode' state, got: {opencode_jobs!r}"
+        )
+
+    # A pid lsof can't resolve a cwd for (already exited, or no permission)
+    # should be dropped rather than reported with an empty/missing cwd.
+    ks.subprocess.run = fake_opencode_processes({"501": None})
+    if ks.load_opencode_jobs():
+        fail("a pid lsof can't resolve a cwd for should yield no job, not an empty-cwd entry")
+
+    # Merged with a Claude job on the same path, the more specific Claude
+    # state should still win - "opencode" is a last-resort catch-all, not a
+    # real activity signal, so it shouldn't outrank a confirmed working job.
+    ks.subprocess.run = fake_opencode_processes({"501": "/repo-a/feature"})
+    opencode_jobs = ks.load_opencode_jobs()
+    merged = jobs + opencode_jobs
+    status = ks.agent_status_for("/repo-a/feature", merged)
+    if status != "⏸ needs input ×4":
+        fail(
+            "an opencode session sharing a path with higher-priority Claude "
+            f"jobs should add to the count without changing the winning state, got: {status!r}"
+        )
+
+    # On its own, with no Claude job at all, the opencode session should
+    # still surface - "there's an agent here" beats no status at all, the
+    # same reasoning as the lone-idle-session case above.
+    status = ks.agent_status_for("/repo-a/feature", opencode_jobs)
+    if status != "◆ opencode":
+        fail(f"a lone opencode session should still show a status, got: {status!r}")
 
     print("kitty_selector agent-status assertions passed")
 
