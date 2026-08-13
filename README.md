@@ -14,6 +14,7 @@ This repo keeps tracked config in `home/`, machine bootstrap scripts in `scripts
 - personal commands: `home/.local/bin`
 - editor config: `home/.config/nvim`
 - terminal config: `home/.config/kitty`
+- opencode config: `home/.config/opencode` (global config, agents, commands, skills)
 - Linux desktop config: `home/.config/i3`, `home/.config/polybar`, `home/.config/rofi`
 - macOS automation: `home/.hammerspoon`
 - bootstrap and install scripts in `scripts/`
@@ -113,3 +114,4 @@ For Linux-specific setup details, see `UBUNTU_SETUP.md`.
 - `docs/migrations/symlink-first-tracker.md`: migration summary and active surfaces
 - `docs/decisions/ADR-0001-adopt-symlink-first-dotfiles-workflow-with-bitwarden-secret-projection.md`: architecture decision for the current workflow
 - `docs/decisions/ADR-0002-centralize-hand-made-git-worktrees-with-location-agnostic-discovery.md`: architecture decision for the worktree layout
+- `docs/decisions/ADR-0003-track-opencode-global-config-in-dotfiles.md`: architecture decision for tracking opencode config
