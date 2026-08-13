@@ -382,6 +382,10 @@ def select_open_tab():
             status = agent_status_for_paths(cwds, jobs)
             entries.append((title, status))
 
+    # Alphabetical (case-insensitive) so the list reads in a predictable
+    # order instead of whatever order `kitty @ ls` happens to return.
+    entries.sort(key=lambda entry: entry[0].lower())
+
     # Titles vary a lot in length, so without padding the status column
     # lands in a different place on every row and the list reads as noise.
     width = max((len(title) for title, _ in entries), default=0)
