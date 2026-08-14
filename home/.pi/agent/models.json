@@ -1,0 +1,35 @@
+{
+  "providers": {
+    "synthetic": {
+      "baseUrl": "https://api.synthetic.new/anthropic",
+      "api": "anthropic-messages",
+      "apiKey": "$SYNTHETIC_API_KEY",
+      "models": [
+        {
+          "id": "syn:large:text",
+          "name": "Synthetic Large (GLM-5.2)",
+          "input": ["text"],
+          "contextWindow": 512000
+        },
+        {
+          "id": "syn:small:text",
+          "name": "Synthetic Small (GLM-4.7-Flash)",
+          "input": ["text"],
+          "contextWindow": 192000
+        },
+        {
+          "id": "syn:large:vision",
+          "name": "Synthetic Large Vision (Kimi-K3)",
+          "input": ["text", "image"],
+          "contextWindow": 512000
+        },
+        {
+          "id": "syn:small:vision",
+          "name": "Synthetic Small Vision (Qwen3.6-27B)",
+          "input": ["text", "image"],
+          "contextWindow": 256000
+        }
+      ]
+    }
+  }
+}
