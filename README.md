@@ -16,6 +16,7 @@ This repo keeps tracked config in `home/`, machine bootstrap scripts in `scripts
 - terminal config: `home/.config/kitty`
 - Linux desktop config: `home/.config/i3`, `home/.config/polybar`, `home/.config/rofi`
 - macOS automation: `home/.hammerspoon`
+- Pi agent config: `home/.pi/agent/models.json` (wires the [Synthetic](https://dev.synthetic.new) provider) and `home/.pi/agent/settings.json` (default model and thinking level)
 - bootstrap and install scripts in `scripts/`
 
 ## Repo Layout

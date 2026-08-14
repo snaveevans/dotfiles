@@ -1,0 +1,10 @@
+{
+  "lastChangelogVersion": "0.84.1",
+  "theme": "dark",
+  "defaultProvider": "synthetic",
+  "defaultModel": "syn:large:text",
+  "defaultThinkingLevel": "high",
+  "packages": [
+    "npm:pi-web-access"
+  ]
+}

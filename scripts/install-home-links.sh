@@ -175,6 +175,12 @@ install_local_bin() {
   link_path ".local/bin/wt"
 }
 
+install_pi() {
+  ensure_real_directory ".pi/agent"
+  link_path ".pi/agent/models.json"
+  link_path ".pi/agent/settings.json"
+}
+
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --dry-run)
@@ -215,6 +221,7 @@ done
 
 install_kitty
 install_local_bin
+install_pi
 
 if [[ -n "$BACKUP_DIR" ]]; then
   log "Backup directory: $BACKUP_DIR"
