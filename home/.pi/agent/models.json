@@ -4,30 +4,73 @@
       "baseUrl": "https://api.synthetic.new/anthropic",
       "api": "anthropic-messages",
       "apiKey": "$SYNTHETIC_API_KEY",
+      "compat": {
+        "forceAdaptiveThinking": true
+      },
       "models": [
         {
           "id": "syn:large:text",
           "name": "Synthetic Large (GLM-5.2)",
           "input": ["text"],
-          "contextWindow": 512000
+          "contextWindow": 512000,
+          "reasoning": true,
+          "thinkingLevelMap": {
+            "off": null,
+            "minimal": null,
+            "low": "low",
+            "medium": "medium",
+            "high": "high",
+            "xhigh": "high",
+            "max": "high"
+          }
         },
         {
           "id": "syn:small:text",
           "name": "Synthetic Small (GLM-4.7-Flash)",
           "input": ["text"],
-          "contextWindow": 192000
+          "contextWindow": 192000,
+          "reasoning": true,
+          "thinkingLevelMap": {
+            "off": null,
+            "minimal": null,
+            "low": "low",
+            "medium": "medium",
+            "high": "high",
+            "xhigh": "high",
+            "max": "high"
+          }
         },
         {
           "id": "syn:large:vision",
           "name": "Synthetic Large Vision (Kimi-K3)",
           "input": ["text", "image"],
-          "contextWindow": 512000
+          "contextWindow": 512000,
+          "reasoning": true,
+          "thinkingLevelMap": {
+            "off": null,
+            "minimal": null,
+            "low": "low",
+            "medium": "medium",
+            "high": "high",
+            "xhigh": "high",
+            "max": "high"
+          }
         },
         {
           "id": "syn:small:vision",
           "name": "Synthetic Small Vision (Qwen3.6-27B)",
           "input": ["text", "image"],
-          "contextWindow": 256000
+          "contextWindow": 256000,
+          "reasoning": true,
+          "thinkingLevelMap": {
+            "off": null,
+            "minimal": null,
+            "low": "low",
+            "medium": "medium",
+            "high": "high",
+            "xhigh": "high",
+            "max": "high"
+          }
         }
       ]
     }
