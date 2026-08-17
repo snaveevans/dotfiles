@@ -21,10 +21,14 @@ This repo now uses an explicit bootstrap + link + refresh flow for setup and day
    ```bash
    bw login
    ```
-5. Generate local secret artifacts:
+5. Generate local secret artifacts, scoped to this machine's role:
    ```bash
-   scripts/refresh-secrets.sh
+   scripts/refresh-secrets.sh --tag work               # work-only machine
+   scripts/refresh-secrets.sh --tag work --tag personal # machine that is both
    ```
+   The selection persists to `~/.config/secrets/tags`, so later refreshes
+   can drop the flags. Omit `--tag` on the first run to project everything.
+   See `docs/migrations/secret-projection.md` for the tag model.
 
 ## What each script does
 
@@ -37,6 +41,7 @@ This repo now uses an explicit bootstrap + link + refresh flow for setup and day
 - `scripts/refresh-secrets.sh`
   - reads Bitwarden once
   - writes only local secret artifacts such as `~/.config/secrets/env` and `~/.npmrc`
+  - scopes the projection with repeatable `--tag work` / `--tag personal` flags (persisted to `~/.config/secrets/tags`)
 
 ## OS-specific scripts
 
