@@ -63,18 +63,23 @@ scripts/install-home-links.sh --dry-run --home "$(mktemp -d)"
 scripts/refresh-secrets.sh --dry-run
 scripts/test-refresh-secrets.sh
 
+# Pi config provisioning validation
+scripts/provision-pi.sh --dry-run
+scripts/test-provision-pi.sh
+
 # Worktree command validation
 scripts/test-wt.sh
 ```
 
 ## Single-Test Guidance
 
-There are currently three explicit automated test scripts: `scripts/test-refresh-secrets.sh`, `scripts/test-wt.sh`, and `scripts/test-kitty-selector.sh`
+There are currently four explicit automated test scripts: `scripts/test-refresh-secrets.sh`, `scripts/test-wt.sh`, `scripts/test-kitty-selector.sh`, and `scripts/test-provision-pi.sh`
 
 Use the narrowest check for the file type you changed:
 - secret refresh logic: `scripts/test-refresh-secrets.sh`
 - worktree command logic: `scripts/test-wt.sh`
 - Kitty picker / agent-status logic: `scripts/test-kitty-selector.sh`
+- Pi config provisioning logic: `scripts/test-provision-pi.sh`
 - link-install behavior: `scripts/install-home-links.sh --dry-run --home "$(mktemp -d)"`
 - one shell file: `bash -n path/to/file.sh`
 - one Lua file: `stylua path/to/file.lua`
@@ -172,6 +177,7 @@ Pick the narrowest relevant checks:
 - run `bash -n` for changed shell scripts
 - run `python3 -m py_compile` for Python edits
 - run `scripts/test-refresh-secrets.sh` for secret refresh changes
+- run `scripts/test-provision-pi.sh` for changes to `scripts/provision-pi.sh` or `home/.pi/agent/settings.*.json` / `models.*.json`
 - run `scripts/test-wt.sh` for changes to `home/.local/bin/wt`
 - run `scripts/test-kitty-selector.sh` for changes to `home/.config/kitty/kitty_selector.py`
 - run `scripts/install-home-links.sh --dry-run` for link-install changes

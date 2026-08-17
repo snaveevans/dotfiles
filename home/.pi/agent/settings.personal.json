@@ -1,0 +1,12 @@
+{
+  "lastChangelogVersion": "0.84.2",
+  "theme": "dark",
+  "defaultProvider": "synthetic",
+  "defaultModel": "syn:large:text",
+  "defaultThinkingLevel": "max",
+  "packages": [
+    "npm:pi-web-access",
+    "../../workspace/pi-plugins"
+  ],
+  "hideThinkingBlock": true
+}

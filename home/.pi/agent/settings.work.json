@@ -1,0 +1,9 @@
+{
+  "theme": "dark",
+  "defaultProvider": "github-copilot",
+  "packages": [
+    "npm:pi-web-access",
+    "../../workspace/pi-plugins"
+  ],
+  "hideThinkingBlock": true
+}

@@ -25,6 +25,12 @@ This repo now uses an explicit bootstrap + link + refresh flow for setup and day
    ```bash
    scripts/refresh-secrets.sh
    ```
+6. Provision the pi agent config for this machine's tags (reads the same
+   `~/.config/secrets/tags` selection; falls back to `personal` when it
+   doesn't exist yet):
+   ```bash
+   scripts/provision-pi.sh
+   ```
 
 ## What each script does
 
@@ -37,6 +43,9 @@ This repo now uses an explicit bootstrap + link + refresh flow for setup and day
 - `scripts/refresh-secrets.sh`
   - reads Bitwarden once
   - writes only local secret artifacts such as `~/.config/secrets/env` and `~/.npmrc`
+- `scripts/provision-pi.sh`
+  - links `~/.pi/agent/settings.json` and `~/.pi/agent/models.json` to the tracked per-tag files (`settings.work.json`, `models.personal.json`, ...)
+  - consumes the tag selection persisted by `refresh-secrets.sh --tag`; re-run it after changing that selection
 
 ## OS-specific scripts
 
