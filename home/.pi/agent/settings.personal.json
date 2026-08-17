@@ -1,0 +1,11 @@
+{
+  "lastChangelogVersion": "0.84.2",
+  "theme": "dark",
+  "defaultProvider": "synthetic",
+  "defaultModel": "syn:large:text",
+  "defaultThinkingLevel": "max",
+  "packages": [
+    "git:git@github.com:snaveevans/pi-plugins"
+  ],
+  "hideThinkingBlock": true
+}

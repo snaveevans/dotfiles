@@ -177,8 +177,9 @@ install_local_bin() {
 
 install_pi() {
   ensure_real_directory ".pi/agent"
-  link_path ".pi/agent/models.json"
-  link_path ".pi/agent/settings.json"
+  # settings.json and models.json are tag-scoped (settings.<tag>.json /
+  # models.<tag>.json) - scripts/provision-pi.sh links the right ones.
+  log "Note: pi settings.json/models.json are provisioned by scripts/provision-pi.sh"
 }
 
 while [[ $# -gt 0 ]]; do
