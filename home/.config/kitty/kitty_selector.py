@@ -15,10 +15,10 @@ def find_fzf():
     # Common locations to check first (especially important on macOS)
     common_locations = [
         "/opt/homebrew/bin/fzf",  # Homebrew on Apple Silicon
-        "/usr/local/bin/fzf",     # Homebrew on Intel
-        "/usr/bin/fzf",           # System package manager
+        "/usr/local/bin/fzf",  # Homebrew on Intel
+        "/usr/bin/fzf",  # System package manager
         os.path.expanduser("~/.local/bin/fzf"),  # Local install
-        "/snap/bin/fzf",          # Snap package (Linux)
+        "/snap/bin/fzf",  # Snap package (Linux)
     ]
 
     # Check common locations first
@@ -47,14 +47,18 @@ def find_fzf():
                 # Source the profile and get PATH
                 result = subprocess.run(
                     ["bash", "-c", f"source {profile} && echo $PATH"],
-                    capture_output=True, text=True, timeout=5
+                    capture_output=True,
+                    text=True,
+                    timeout=5,
                 )
                 if result.returncode == 0:
                     extended_path = result.stdout.strip()
                     # Split PATH and check each directory
                     for path_dir in extended_path.split(":"):
                         fzf_candidate = os.path.join(path_dir, "fzf")
-                        if os.path.isfile(fzf_candidate) and os.access(fzf_candidate, os.X_OK):
+                        if os.path.isfile(fzf_candidate) and os.access(
+                            fzf_candidate, os.X_OK
+                        ):
                             return fzf_candidate
                 break
     except (subprocess.TimeoutExpired, Exception):
@@ -101,11 +105,17 @@ def select_worktree(scope_current_repo: bool = False) -> dict[str, str]:
     """Pick a git worktree and return its path plus the tab title to use."""
     wt_path = find_wt()
     if not wt_path:
-        return {"status": "error", "message": "wt not found in PATH or common locations"}
+        return {
+            "status": "error",
+            "message": "wt not found in PATH or common locations",
+        }
 
     fzf_path = find_fzf()
     if not fzf_path:
-        return {"status": "error", "message": "fzf not found in PATH or common locations"}
+        return {
+            "status": "error",
+            "message": "fzf not found in PATH or common locations",
+        }
 
     # Kitty sets a kitten's cwd to that of the program running in the window
     # that invoked it (see docs/kittens/custom.rst), so `wt`'s own repo
@@ -122,7 +132,11 @@ def select_worktree(scope_current_repo: bool = False) -> dict[str, str]:
     )
     rows = [row for row in listing.stdout.split("\n") if row.strip()]
     if not rows:
-        message = "No worktrees found for this repo." if scope_current_repo else "No worktrees found."
+        message = (
+            "No worktrees found for this repo."
+            if scope_current_repo
+            else "No worktrees found."
+        )
         return {"status": "error", "message": message}
 
     prompt = "worktree (repo)> " if scope_current_repo else "worktree> "
@@ -142,7 +156,11 @@ def select_worktree(scope_current_repo: bool = False) -> dict[str, str]:
     if len(fields) < 3:
         return {"status": "error", "message": "unexpected wt output"}
 
-    return {"status": "success", "selected_directory": fields[2], "tab_title": fields[1]}
+    return {
+        "status": "success",
+        "selected_directory": fields[2],
+        "tab_title": fields[1],
+    }
 
 
 def prompt_line(message: str, prompt: str = "> ") -> str | None:
@@ -153,7 +171,14 @@ def prompt_line(message: str, prompt: str = "> ") -> str | None:
     map-triggered handle_result dispatch, which we don't need.
     """
     result = subprocess.run(
-        ["kitty", "+kitten", "ask", "--type=line", f"--message={message}", f"--prompt={prompt}"],
+        [
+            "kitty",
+            "+kitten",
+            "ask",
+            "--type=line",
+            f"--message={message}",
+            f"--prompt={prompt}",
+        ],
         stdout=subprocess.PIPE,
         text=True,
     )
@@ -176,7 +201,10 @@ def create_worktree() -> dict[str, str]:
     """Prompt for a branch name and base ref, create a worktree for it, and hand back its path."""
     wt_path = find_wt()
     if not wt_path:
-        return {"status": "error", "message": "wt not found in PATH or common locations"}
+        return {
+            "status": "error",
+            "message": "wt not found in PATH or common locations",
+        }
 
     branch = prompt_line("New worktree branch name", prompt="branch> ")
     if not branch:
@@ -237,7 +265,14 @@ def select_directory(directories):
     return result.stdout.strip()
 
 
-_AGENT_STATE_PRIORITY = {"blocked": 0, "failed": 1, "working": 2, "done": 3, "idle": 4, "opencode": 5}
+_AGENT_STATE_PRIORITY = {
+    "blocked": 0,
+    "failed": 1,
+    "working": 2,
+    "done": 3,
+    "idle": 4,
+    "opencode": 5,
+}
 _AGENT_STATE_LABELS = {
     "working": "● working",
     "blocked": "⏸ needs input",
@@ -345,6 +380,74 @@ def _cwd_of_pid(pid: str) -> str | None:
     return None
 
 
+def pi_status_dir() -> str:
+    """Directory where the Pi session-status extension writes live state."""
+    return os.path.join(os.path.expanduser("~"), ".pi", "agent", "status")
+
+
+def _pid_is_alive(pid: int) -> bool:
+    """True if a process with this pid currently exists."""
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        # Exists, but this process is not allowed to signal it.
+        return True
+    except OSError:
+        return False
+    return True
+
+
+def load_pi_jobs() -> list[tuple[str, str]]:
+    """Return (cwd, state) for every live Pi TUI session.
+
+    Pi has no `claude agents --json` equivalent, and a `pi` process is just
+    `node` on the process table, so working-vs-idle has to come from Pi
+    itself. The tracked session-status extension writes one
+    ~/.pi/agent/status/<pid>.json per TUI session; this reads those files
+    and drops any whose pid is no longer alive (also unlinking the stale
+    file so a crash cannot leave a permanent glyph behind).
+    """
+    status_dir = pi_status_dir()
+    if not os.path.isdir(status_dir):
+        return []
+
+    jobs = []
+    try:
+        names = os.listdir(status_dir)
+    except OSError:
+        return []
+
+    for name in names:
+        if not name.endswith(".json"):
+            continue
+
+        path = os.path.join(status_dir, name)
+        try:
+            with open(path, encoding="utf-8") as fh:
+                payload = json.load(fh)
+        except (OSError, ValueError):
+            continue
+
+        pid = payload.get("pid")
+        cwd = payload.get("cwd")
+        state = payload.get("state")
+        if not isinstance(pid, int) or not cwd or state not in {"working", "idle"}:
+            continue
+
+        if not _pid_is_alive(pid):
+            try:
+                os.unlink(path)
+            except OSError:
+                pass
+            continue
+
+        jobs.append((cwd, state))
+
+    return jobs
+
+
 def load_opencode_jobs() -> list[tuple[str, str]]:
     """Return (cwd, "opencode") for every running OpenCode process.
 
@@ -431,7 +534,7 @@ def select_open_tab():
 
     # Parse the JSON output
     data = json.loads(result.stdout)
-    jobs = load_agent_jobs() + load_opencode_jobs()
+    jobs = load_agent_jobs() + load_opencode_jobs() + load_pi_jobs()
 
     # Extract the list of tabs, annotated with agent status when a job's cwd
     # falls inside one of the tab's windows. A tab can be a split with several
@@ -460,7 +563,10 @@ def select_open_tab():
 
     fzf_path = find_fzf()
     if not fzf_path:
-        return {"status": "error", "message": "fzf not found in PATH or common locations"}
+        return {
+            "status": "error",
+            "message": "fzf not found in PATH or common locations",
+        }
 
     # fzf shows only the display column; the title (field 2) is the value.
     lines = [f"{display}\t{title}" for display, title in rows]
@@ -544,7 +650,9 @@ def handle_result(
         ]
         if existing_tabs:
             # Focus the existing tab
-            boss.call_remote_control(w, ("focus-tab", f"--match=id:{existing_tabs[0].id}"))
+            boss.call_remote_control(
+                w, ("focus-tab", f"--match=id:{existing_tabs[0].id}")
+            )
         else:
             # Create a new tab
             boss.call_remote_control(

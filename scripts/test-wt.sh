@@ -220,6 +220,53 @@ unset FAKE_CLAUDE_AGENTS_FILE
 unset FAKE_PS_FILE
 unset FAKE_LSOF_CWDS
 
+# Pi has no session-list CLI, so its jobs come from status files the
+# session-status extension writes under $HOME/.pi/agent/status/. A file
+# whose pid is this test process is live; a file whose pid has already
+# exited is ignored (and removed).
+PI_STATUS_DIR="$FAKE_HOME/.pi/agent/status"
+mkdir -p "$PI_STATUS_DIR"
+
+true &
+DEAD_PI_PID=$!
+wait "$DEAD_PI_PID" || true
+
+printf '{"pid":%s,"cwd":"%s","state":"working","updatedAt":1}\n' "$$" "$TEST_WT_ROOT/repo-a/feature" >"$PI_STATUS_DIR/$$.json"
+printf '{"pid":%s,"cwd":"%s","state":"working","updatedAt":1}\n' "$DEAD_PI_PID" "$TEST_WT_ROOT/repo-a/feature" >"$PI_STATUS_DIR/${DEAD_PI_PID}.json"
+
+run_wt list --all --format=tsv >"$AGENT_FILE"
+
+[[ "$(awk -F'\t' '$3 == "feature" { print $8 }' "$AGENT_FILE")" == "● working" ]] ||
+  fail "a live Pi session should show its working status"
+[[ ! -f "$PI_STATUS_DIR/${DEAD_PI_PID}.json" ]] ||
+  fail "a status file whose pid is dead should be removed rather than shown"
+
+# A live idle Pi session is a real process sitting in the worktree, same
+# as a Claude idle session - it should still surface, just at the lower
+# priority already used for idle.
+printf '{"pid":%s,"cwd":"%s","state":"idle","updatedAt":1}\n' "$$" "$TEST_WT_ROOT/repo-a/feature" >"$PI_STATUS_DIR/$$.json"
+
+run_wt list --all --format=tsv >"$AGENT_FILE"
+
+[[ "$(awk -F'\t' '$3 == "feature" { print $8 }' "$AGENT_FILE")" == "○ idle" ]] ||
+  fail "a live idle Pi session should show the idle status"
+
+# Paired with a higher-priority Claude job on the same worktree, the more
+# specific Claude state should win while the count still reflects both.
+cat >"$CLAUDE_AGENTS_FILE" <<JSON
+[{"cwd": "$TEST_WT_ROOT/repo-a/feature", "kind": "background", "state": "working"}]
+JSON
+export FAKE_CLAUDE_AGENTS_FILE="$CLAUDE_AGENTS_FILE"
+printf '{"pid":%s,"cwd":"%s","state":"idle","updatedAt":1}\n' "$$" "$TEST_WT_ROOT/repo-a/feature" >"$PI_STATUS_DIR/$$.json"
+
+run_wt list --all --format=tsv >"$AGENT_FILE"
+
+[[ "$(awk -F'\t' '$3 == "feature" { print $8 }' "$AGENT_FILE")" == "● working ×2" ]] ||
+  fail "a Pi session sharing a worktree with a Claude job should add to the count, not outrank it"
+
+unset FAKE_CLAUDE_AGENTS_FILE
+rm -f "$PI_STATUS_DIR/$$.json"
+
 LOCAL_FILE="$TMP_DIR/local.tsv"
 (cd "$REPO/.claude/worktrees/agent-x" && run_wt list --format=tsv) >"$LOCAL_FILE"
 
@@ -439,5 +486,28 @@ unset FAKE_LSOF_CWDS
 (cd "$REPO" && run_wt clean) 2>/dev/null
 
 [[ ! -d "$OPENCODE_PATH" ]] || fail "clean should remove the worktree once the opencode process is gone"
+
+# A live Pi session reports working or idle, both of which already block
+# cleanup - same gate as Claude idle / OpenCode, no new state needed.
+PI_PATH="$(cd "$REPO" && run_wt new tyler/CCLOUD-9-agent-pi)"
+printf 'pi work\n' >>"$PI_PATH/README.md"
+git -C "$PI_PATH" add README.md
+git -C "$PI_PATH" commit --quiet -m "pi work"
+git -C "$REPO" merge --quiet --no-edit tyler/CCLOUD-9-agent-pi
+
+printf '{"pid":%s,"cwd":"%s","state":"working","updatedAt":1}\n' "$$" "$PI_PATH" >"$PI_STATUS_DIR/$$.json"
+
+PI_CLEAN_ERR="$TMP_DIR/clean-pi.err"
+(cd "$REPO" && run_wt clean) 2>"$PI_CLEAN_ERR"
+
+[[ -d "$PI_PATH" ]] || fail "clean should not remove a worktree with a live Pi session"
+grep -Fq "agent job is working" "$PI_CLEAN_ERR" ||
+  fail "clean should explain why it skipped a worktree with a live Pi session"
+
+rm -f "$PI_STATUS_DIR/$$.json"
+
+(cd "$REPO" && run_wt clean) 2>/dev/null
+
+[[ ! -d "$PI_PATH" ]] || fail "clean should remove the worktree once the Pi session is gone"
 
 printf 'wt verification passed\n'
