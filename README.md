@@ -52,7 +52,7 @@ Log into Bitwarden if needed, then generate local secret artifacts:
 
 ```bash
 bw login
-scripts/refresh-secrets.sh
+scripts/refresh-secrets.sh --tag work --tag personal  # pick tags matching this machine
 ```
 
 ## Script Overview
@@ -61,7 +61,7 @@ scripts/refresh-secrets.sh
 - `scripts/bootstrap-darwin.sh`: installs macOS packages, shell dependencies, and defaults
 - `scripts/bootstrap-linux.sh`: installs Linux packages, desktop tooling, fonts, and Bitwarden CLI
 - `scripts/install-home-links.sh`: symlinks tracked files from `home/` into `$HOME`
-- `scripts/refresh-secrets.sh`: writes local secret files such as `~/.config/secrets/env` and `~/.npmrc`
+- `scripts/refresh-secrets.sh`: writes local secret files such as `~/.config/secrets/env` and `~/.npmrc`, scoped by `--tag work` / `--tag personal`
 - `scripts/test-refresh-secrets.sh`: fake-Bitwarden verification for the secret refresh flow
 - `scripts/test-wt.sh`: real-git verification for the `wt` worktree command
 
@@ -95,7 +95,7 @@ See `docs/migrations/secret-projection.md` for the current secret flow.
 
 Edit tracked files directly in `home/` and rerun `scripts/install-home-links.sh` when you need to refresh links on a machine.
 
-Re-run `scripts/refresh-secrets.sh` when Bitwarden-backed values change.
+Re-run `scripts/refresh-secrets.sh` when Bitwarden-backed values change (your tag selection from the first tagged run is remembered in `~/.config/secrets/tags`).
 
 ## Platform Notes
 
@@ -114,3 +114,4 @@ For Linux-specific setup details, see `UBUNTU_SETUP.md`.
 - `docs/migrations/symlink-first-tracker.md`: migration summary and active surfaces
 - `docs/decisions/ADR-0001-adopt-symlink-first-dotfiles-workflow-with-bitwarden-secret-projection.md`: architecture decision for the current workflow
 - `docs/decisions/ADR-0002-centralize-hand-made-git-worktrees-with-location-agnostic-discovery.md`: architecture decision for the worktree layout
+- `docs/decisions/ADR-0007-tag-scoped-secret-projection.md`: architecture decision for scoping secrets by work/personal tags

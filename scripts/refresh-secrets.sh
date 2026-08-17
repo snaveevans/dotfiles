@@ -17,13 +17,35 @@ BRAVE_FIELD="${BW_FIELD_BRAVE_API_KEY:-api_key}"
 CONTEXT7_ITEM="${BW_ITEM_CONTEXT7:-context7}"
 CONTEXT7_FIELD="${BW_FIELD_CONTEXT7_API_KEY:-api_key}"
 
+SYNTHETIC_ITEM="${BW_ITEM_SYNTHETIC:-synthetic.new}"
+SYNTHETIC_FIELD="${BW_FIELD_SYNTHETIC_API_KEY:-api_key}"
+
 GITHUB_PACKAGES_ITEM="${BW_ITEM_GITHUB_PACKAGES:-ebac9653-5fbd-4dac-b22d-af9a0116b6bb}"
-GITHUB_PACKAGES_FIELD="${BW_FIELD_GITHUB_PACKAGES_TOKEN:-access_token}"
+GITHUB_PACKAGES_WORK_FIELD="${BW_FIELD_GITHUB_PACKAGES_WORK_TOKEN:-${BW_FIELD_GITHUB_PACKAGES_TOKEN:-work_access_token}}"
+GITHUB_PACKAGES_PERSONAL_FIELD="${BW_FIELD_GITHUB_PACKAGES_PERSONAL_TOKEN:-personal_access_token}"
 
 ARTIFACTORY_ITEM="${BW_ITEM_ARTIFACTORY:-artifactory.octanner.net}"
 ARTIFACTORY_EMAIL_FIELD="${BW_FIELD_ARTIFACTORY_EMAIL:-email}"
 ARTIFACTORY_TOKEN_FIELD="${BW_FIELD_ARTIFACTORY_TOKEN:-access_token}"
 ARTIFACTORY_ENCRYPTED_PASSWORD_FIELD="${BW_FIELD_ARTIFACTORY_ENCRYPTED_PASSWORD:-encrypted_password}"
+
+CLOUDFLARE_ITEM="${BW_ITEM_CLOUDFLARE:-cloudflare.com}"
+CLOUDFLARE_ACCOUNT_ID_FIELD="${BW_FIELD_CLOUDFLARE_ACCOUNT_ID:-account_id}"
+CLOUDFLARE_API_TOKEN_FIELD="${BW_FIELD_CLOUDFLARE_API_TOKEN:-github_actions_token}"
+
+# Which environments each item belongs to. An item is projected when any of
+# its tags is requested via --tag (or the persisted selection); with no tag
+# filter at all, every item is projected.
+KNOWN_TAGS="work personal"
+REQUESTED_TAGS=()
+EXPLICIT_TAGS=false
+
+BRAVE_TAGS="work personal"
+CONTEXT7_TAGS="work personal"
+SYNTHETIC_TAGS="personal"
+GITHUB_PACKAGES_TAGS="work personal"
+ARTIFACTORY_TAGS="work"
+CLOUDFLARE_TAGS="personal"
 
 die() {
   printf 'Error: %s\n' "$*" >&2
@@ -40,13 +62,17 @@ Usage: scripts/refresh-secrets.sh [options]
 
 Refresh local secret artifacts from Bitwarden.
 
-Generated artifacts:
+Generated artifacts (subset depends on the selected tags):
   ~/.config/secrets/env
+  ~/.config/secrets/tags
   ~/.npmrc
   ~/.gradle/gradle.properties
   ~/.m2/settings.xml
 
 Options:
+  --tag TAG   Project only items carrying TAG (repeatable; known tags: work,
+              personal). The selection is persisted to
+              ~/.config/secrets/tags and reused by later tag-less runs.
   --dry-run   Resolve secrets but do not write files
   --home DIR  Generate artifacts under DIR instead of $HOME
   --no-sync   Skip 'bw sync' before reads
@@ -54,8 +80,16 @@ Options:
               Allow writing under a home path located inside the repo root
   --help      Show this help message
 
+Examples:
+  scripts/refresh-secrets.sh --tag work                # work-only machine
+  scripts/refresh-secrets.sh --tag work --tag personal # machine that is both
+
 Bitwarden item/field references can be overridden with environment variables.
 See docs/migrations/secret-projection.md for the expected defaults.
+
+Expects a Bitwarden item named "synthetic.new" with an "api_key" field for
+Pi's Synthetic provider (~/.pi/agent/models.json). Override with
+BW_ITEM_SYNTHETIC / BW_FIELD_SYNTHETIC_API_KEY.
 EOF
 }
 
@@ -234,6 +268,12 @@ while [[ $# -gt 0 ]]; do
       TARGET_HOME="$2"
       shift
       ;;
+    --tag)
+      [[ $# -ge 2 ]] || die "Missing value for --tag"
+      REQUESTED_TAGS+=("$2")
+      EXPLICIT_TAGS=true
+      shift
+      ;;
     --no-sync)
       SYNC_BEFORE_READ=false
       ;;
@@ -251,47 +291,185 @@ while [[ $# -gt 0 ]]; do
   shift
 done
 
-assert_safe_target_home
-
 ENV_OUTPUT_PATH="$TARGET_HOME/.config/secrets/env"
+TAGS_OUTPUT_PATH="$TARGET_HOME/.config/secrets/tags"
 NPMRC_OUTPUT_PATH="$TARGET_HOME/.npmrc"
 GRADLE_PROPERTIES_OUTPUT_PATH="$TARGET_HOME/.gradle/gradle.properties"
 MAVEN_SETTINGS_OUTPUT_PATH="$TARGET_HOME/.m2/settings.xml"
+
+# No explicit --tag: fall back to the selection persisted by an earlier run.
+if ! "$EXPLICIT_TAGS" && [[ -r "$TAGS_OUTPUT_PATH" ]]; then
+  while IFS= read -r persisted_tag || [[ -n "$persisted_tag" ]]; do
+    [[ -n "$persisted_tag" ]] && REQUESTED_TAGS+=("$persisted_tag")
+  done < "$TAGS_OUTPUT_PATH"
+fi
+
+if [[ ${#REQUESTED_TAGS[@]} -gt 0 ]]; then
+  for tag in "${REQUESTED_TAGS[@]}"; do
+    case " $KNOWN_TAGS " in
+      *" $tag "*) ;;
+      *) die "Unknown tag: $tag (known tags: $KNOWN_TAGS)" ;;
+    esac
+  done
+  log "Projecting tags: ${REQUESTED_TAGS[*]}"
+else
+  log "No tag filter; projecting all items"
+fi
+
+item_enabled() {
+  local item_tags="$1"
+  local tag
+
+  [[ ${#REQUESTED_TAGS[@]} -gt 0 ]] || return 0
+
+  for tag in "${REQUESTED_TAGS[@]}"; do
+    case " $item_tags " in
+      *" $tag "*) return 0 ;;
+    esac
+  done
+
+  return 1
+}
+
+tag_requested() {
+  local want="$1"
+  local tag
+
+  [[ ${#REQUESTED_TAGS[@]} -gt 0 ]] || return 0
+
+  for tag in "${REQUESTED_TAGS[@]}"; do
+    [[ "$tag" == "$want" ]] && return 0
+  done
+
+  return 1
+}
+
+BRAVE_ENABLED=false
+item_enabled "$BRAVE_TAGS" && BRAVE_ENABLED=true
+CONTEXT7_ENABLED=false
+item_enabled "$CONTEXT7_TAGS" && CONTEXT7_ENABLED=true
+SYNTHETIC_ENABLED=false
+item_enabled "$SYNTHETIC_TAGS" && SYNTHETIC_ENABLED=true
+ARTIFACTORY_ENABLED=false
+item_enabled "$ARTIFACTORY_TAGS" && ARTIFACTORY_ENABLED=true
+CLOUDFLARE_ENABLED=false
+item_enabled "$CLOUDFLARE_TAGS" && CLOUDFLARE_ENABLED=true
+
+GITHUB_WORK_ENABLED=false
+GITHUB_PERSONAL_ENABLED=false
+if item_enabled "$GITHUB_PACKAGES_TAGS"; then
+  tag_requested work && GITHUB_WORK_ENABLED=true
+  tag_requested personal && GITHUB_PERSONAL_ENABLED=true
+fi
+
+assert_safe_target_home
 
 ensure_bw_session
 sync_vault
 
 log "Reading Bitwarden items..."
 
-brave_item_json="$(bw_get_item_json "$BRAVE_ITEM")"
-context7_item_json="$(bw_get_item_json "$CONTEXT7_ITEM")"
-github_packages_item_json="$(bw_get_item_json "$GITHUB_PACKAGES_ITEM")"
-artifactory_item_json="$(bw_get_item_json "$ARTIFACTORY_ITEM")"
+brave_api_key=""
+if "$BRAVE_ENABLED"; then
+  brave_api_key="$(bw_field_value "$(bw_get_item_json "$BRAVE_ITEM")" "$BRAVE_FIELD" "$BRAVE_ITEM")"
+fi
 
-brave_api_key="$(bw_field_value "$brave_item_json" "$BRAVE_FIELD" "$BRAVE_ITEM")"
-context7_api_key="$(bw_field_value "$context7_item_json" "$CONTEXT7_FIELD" "$CONTEXT7_ITEM")"
-github_packages_token="$(bw_field_value "$github_packages_item_json" "$GITHUB_PACKAGES_FIELD" "$GITHUB_PACKAGES_ITEM")"
-artifactory_email="$(bw_field_value "$artifactory_item_json" "$ARTIFACTORY_EMAIL_FIELD" "$ARTIFACTORY_ITEM")"
-artifactory_token="$(bw_field_value "$artifactory_item_json" "$ARTIFACTORY_TOKEN_FIELD" "$ARTIFACTORY_ITEM")"
-artifactory_encrypted_password="$(bw_field_value "$artifactory_item_json" "$ARTIFACTORY_ENCRYPTED_PASSWORD_FIELD" "$ARTIFACTORY_ITEM")"
-artifactory_username="${artifactory_email%%@*}"
+context7_api_key=""
+if "$CONTEXT7_ENABLED"; then
+  context7_api_key="$(bw_field_value "$(bw_get_item_json "$CONTEXT7_ITEM")" "$CONTEXT7_FIELD" "$CONTEXT7_ITEM")"
+fi
 
-env_content="$(printf '# Generated by scripts/refresh-secrets.sh\nexport BRAVE_API_KEY=%q\nexport CONTEXT7_API_KEY=%q\nexport GITHUB_PACKAGES_TOKEN=%q\n' "$brave_api_key" "$context7_api_key" "$github_packages_token")"
+synthetic_api_key=""
+if "$SYNTHETIC_ENABLED"; then
+  synthetic_api_key="$(bw_field_value "$(bw_get_item_json "$SYNTHETIC_ITEM")" "$SYNTHETIC_FIELD" "$SYNTHETIC_ITEM")"
+fi
 
-npmrc_content="$(cat <<EOF
-@snaveevans:registry=https://npm.pkg.github.com
-@octanner:registry=https://npm.pkg.github.com/
-//npm.pkg.github.com/:_authToken=\${GITHUB_PACKAGES_TOKEN}
+github_packages_work_token=""
+github_packages_personal_token=""
+if "$GITHUB_WORK_ENABLED" || "$GITHUB_PERSONAL_ENABLED"; then
+  github_packages_item_json="$(bw_get_item_json "$GITHUB_PACKAGES_ITEM")"
 
-@octanner-ui:registry=https://artifactory.octanner.net/api/npm/oct-npmjs/
-//artifactory.octanner.net/api/npm/oct-npmjs/:email=$artifactory_email
-//artifactory.octanner.net/api/npm/oct-npmjs/:_auth=$artifactory_token
-EOF
-)"
+  if "$GITHUB_WORK_ENABLED"; then
+    github_packages_work_token="$(bw_field_value "$github_packages_item_json" "$GITHUB_PACKAGES_WORK_FIELD" "$GITHUB_PACKAGES_ITEM")"
+  fi
 
-gradle_properties_content="$(printf '# Generated by scripts/refresh-secrets.sh\ncentralUsername=%s\ncentralPassword=%s\n' "$artifactory_username" "$artifactory_encrypted_password")"
+  if "$GITHUB_PERSONAL_ENABLED"; then
+    github_packages_personal_token="$(bw_field_value "$github_packages_item_json" "$GITHUB_PACKAGES_PERSONAL_FIELD" "$GITHUB_PACKAGES_ITEM")"
+  fi
+fi
 
-maven_settings_content="$(cat <<EOF
+artifactory_email=""
+artifactory_token=""
+artifactory_encrypted_password=""
+artifactory_username=""
+if "$ARTIFACTORY_ENABLED"; then
+  artifactory_item_json="$(bw_get_item_json "$ARTIFACTORY_ITEM")"
+  artifactory_email="$(bw_field_value "$artifactory_item_json" "$ARTIFACTORY_EMAIL_FIELD" "$ARTIFACTORY_ITEM")"
+  artifactory_token="$(bw_field_value "$artifactory_item_json" "$ARTIFACTORY_TOKEN_FIELD" "$ARTIFACTORY_ITEM")"
+  artifactory_encrypted_password="$(bw_field_value "$artifactory_item_json" "$ARTIFACTORY_ENCRYPTED_PASSWORD_FIELD" "$ARTIFACTORY_ITEM")"
+  artifactory_username="${artifactory_email%%@*}"
+fi
+
+cloudflare_account_id=""
+cloudflare_api_token=""
+if "$CLOUDFLARE_ENABLED"; then
+  cloudflare_item_json="$(bw_get_item_json "$CLOUDFLARE_ITEM")"
+  cloudflare_account_id="$(bw_field_value "$cloudflare_item_json" "$CLOUDFLARE_ACCOUNT_ID_FIELD" "$CLOUDFLARE_ITEM")"
+  cloudflare_api_token="$(bw_field_value "$cloudflare_item_json" "$CLOUDFLARE_API_TOKEN_FIELD" "$CLOUDFLARE_ITEM")"
+fi
+
+env_content="$({
+  printf '# Generated by scripts/refresh-secrets.sh\n'
+  if "$BRAVE_ENABLED"; then printf 'export BRAVE_API_KEY=%q\n' "$brave_api_key"; fi
+  if "$CONTEXT7_ENABLED"; then printf 'export CONTEXT7_API_KEY=%q\n' "$context7_api_key"; fi
+  if "$SYNTHETIC_ENABLED"; then printf 'export SYNTHETIC_API_KEY=%q\n' "$synthetic_api_key"; fi
+  if "$GITHUB_WORK_ENABLED"; then printf 'export GITHUB_PACKAGES_TOKEN=%q\n' "$github_packages_work_token"; fi
+  if "$GITHUB_PERSONAL_ENABLED"; then printf 'export GITHUB_PACKAGES_PERSONAL_TOKEN=%q\n' "$github_packages_personal_token"; fi
+  if "$CLOUDFLARE_ENABLED"; then printf 'export CLOUDFLARE_ACCOUNT_ID=%q\n' "$cloudflare_account_id"; fi
+  if "$CLOUDFLARE_ENABLED"; then printf 'export CLOUDFLARE_API_TOKEN=%q\n' "$cloudflare_api_token"; fi
+})"
+
+npmrc_content=""
+if "$GITHUB_WORK_ENABLED" || "$GITHUB_PERSONAL_ENABLED" || "$ARTIFACTORY_ENABLED"; then
+  npmrc_content="$({
+    if "$GITHUB_WORK_ENABLED" || "$GITHUB_PERSONAL_ENABLED"; then
+      printf '@snaveevans:registry=https://npm.pkg.github.com\n'
+
+      if "$GITHUB_WORK_ENABLED"; then
+        printf '@octanner:registry=https://npm.pkg.github.com/\n'
+        printf '//npm.pkg.github.com/:_authToken=${GITHUB_PACKAGES_TOKEN}\n'
+      else
+        printf '//npm.pkg.github.com/:_authToken=${GITHUB_PACKAGES_PERSONAL_TOKEN}\n'
+      fi
+    fi
+
+    if "$ARTIFACTORY_ENABLED"; then
+      printf '\n'
+      printf '@octanner-ui:registry=https://artifactory.octanner.net/api/npm/oct-npmjs/\n'
+      printf '//artifactory.octanner.net/api/npm/oct-npmjs/:email=%s\n' "$artifactory_email"
+      printf '//artifactory.octanner.net/api/npm/oct-npmjs/:_auth=%s\n' "$artifactory_token"
+    fi
+  })"
+fi
+
+write_secret_file "$ENV_OUTPUT_PATH" "$env_content"
+
+if "$EXPLICIT_TAGS"; then
+  tags_content=""
+  for tag in "${REQUESTED_TAGS[@]}"; do
+    tags_content+="$tag"$'\n'
+  done
+  write_secret_file "$TAGS_OUTPUT_PATH" "$tags_content"
+fi
+
+if [[ -n "$npmrc_content" ]]; then
+  write_secret_file "$NPMRC_OUTPUT_PATH" "$npmrc_content"
+fi
+
+if "$ARTIFACTORY_ENABLED"; then
+  gradle_properties_content="$(printf '# Generated by scripts/refresh-secrets.sh\ncentralUsername=%s\ncentralPassword=%s\n' "$artifactory_username" "$artifactory_encrypted_password")"
+
+  maven_settings_content="$(cat <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Generated by scripts/refresh-secrets.sh -->
 <settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
@@ -307,20 +485,30 @@ maven_settings_content="$(cat <<EOF
   </servers>
 </settings>
 EOF
-)"
+  )"
 
-write_secret_file "$ENV_OUTPUT_PATH" "$env_content"
-write_secret_file "$NPMRC_OUTPUT_PATH" "$npmrc_content"
-write_secret_file "$GRADLE_PROPERTIES_OUTPUT_PATH" "$gradle_properties_content"
-write_secret_file "$MAVEN_SETTINGS_OUTPUT_PATH" "$maven_settings_content"
+  write_secret_file "$GRADLE_PROPERTIES_OUTPUT_PATH" "$gradle_properties_content"
+  write_secret_file "$MAVEN_SETTINGS_OUTPUT_PATH" "$maven_settings_content"
+fi
 
 if "$DRY_RUN"; then
   log "Dry run complete."
 else
   log "Secrets refreshed."
   log "Generated: $ENV_OUTPUT_PATH"
-  log "Generated: $NPMRC_OUTPUT_PATH"
-  log "Generated: $GRADLE_PROPERTIES_OUTPUT_PATH"
-  log "Generated: $MAVEN_SETTINGS_OUTPUT_PATH"
+
+  if "$EXPLICIT_TAGS"; then
+    log "Generated: $TAGS_OUTPUT_PATH"
+  fi
+
+  if [[ -n "$npmrc_content" ]]; then
+    log "Generated: $NPMRC_OUTPUT_PATH"
+  fi
+
+  if "$ARTIFACTORY_ENABLED"; then
+    log "Generated: $GRADLE_PROPERTIES_OUTPUT_PATH"
+    log "Generated: $MAVEN_SETTINGS_OUTPUT_PATH"
+  fi
+
   log "Open a new shell or source $ENV_OUTPUT_PATH to pick up updated shell secrets."
 fi
