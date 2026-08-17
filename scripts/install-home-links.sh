@@ -177,8 +177,10 @@ install_local_bin() {
 
 install_pi() {
   ensure_real_directory ".pi/agent"
+  ensure_real_directory ".pi/agent/extensions"
   link_path ".pi/agent/models.json"
   link_path ".pi/agent/settings.json"
+  link_path ".pi/agent/extensions/session-status.ts"
 }
 
 while [[ $# -gt 0 ]]; do

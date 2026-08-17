@@ -221,6 +221,71 @@ def main():
     if status != "◆ opencode":
         fail(f"a lone opencode session should still show a status, got: {status!r}")
 
+    # Pi has no session-list CLI, so load_pi_jobs() reads status files the
+    # session-status extension writes. Point the loader at a temp directory
+    # rather than the real ~/.pi/agent/status so this stays hermetic.
+    pi_dir = os.path.join(os.environ.get("TMPDIR", "/tmp"), f"pi-status-{os.getpid()}")
+    os.makedirs(pi_dir, exist_ok=True)
+    ks.pi_status_dir = lambda: pi_dir
+    live_pid = os.getpid()
+
+    live_path = os.path.join(pi_dir, f"{live_pid}.json")
+    with open(live_path, "w", encoding="utf-8") as fh:
+        json.dump(
+            {"pid": live_pid, "cwd": "/repo-a/feature", "state": "working", "updatedAt": 1},
+            fh,
+        )
+
+    dead_path = os.path.join(pi_dir, "1.json")
+    with open(dead_path, "w", encoding="utf-8") as fh:
+        json.dump(
+            {"pid": 1, "cwd": "/repo-a/feature", "state": "working", "updatedAt": 1},
+            fh,
+        )
+    # pid 1 is almost certainly alive on this machine, so force the liveness
+    # check instead of depending on a real dead pid.
+    original_alive = ks._pid_is_alive
+    ks._pid_is_alive = lambda pid: pid == live_pid
+
+    junk_path = os.path.join(pi_dir, "broken.json")
+    with open(junk_path, "w", encoding="utf-8") as fh:
+        fh.write("{not json")
+
+    pi_jobs = ks.load_pi_jobs()
+    if pi_jobs != [("/repo-a/feature", "working")]:
+        fail(
+            "load_pi_jobs() should keep a live working session and drop a "
+            f"dead-pid file plus malformed JSON, got: {pi_jobs!r}"
+        )
+    if os.path.exists(dead_path):
+        fail("a status file whose pid is dead should be unlinked")
+
+    with open(live_path, "w", encoding="utf-8") as fh:
+        json.dump(
+            {"pid": live_pid, "cwd": "/repo-a/feature", "state": "idle", "updatedAt": 1},
+            fh,
+        )
+    pi_jobs = ks.load_pi_jobs()
+    if pi_jobs != [("/repo-a/feature", "idle")]:
+        fail(f"a live idle Pi session should still surface, got: {pi_jobs!r}")
+
+    status = ks.agent_status_for("/repo-a/feature", jobs + pi_jobs)
+    if status != "⏸ needs input ×4":
+        fail(
+            "a Pi session sharing a path with higher-priority Claude jobs "
+            f"should add to the count without changing the winning state, got: {status!r}"
+        )
+
+    status = ks.agent_status_for("/repo-a/feature", pi_jobs)
+    if status != "○ idle":
+        fail(f"a lone idle Pi session should still show a status, got: {status!r}")
+
+    ks._pid_is_alive = original_alive
+    missing_dir = os.path.join(pi_dir, "missing")
+    ks.pi_status_dir = lambda: missing_dir
+    if ks.load_pi_jobs():
+        fail("a missing Pi status directory should yield no jobs, not raise")
+
     print("kitty_selector agent-status assertions passed")
 
 

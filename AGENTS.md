@@ -52,6 +52,9 @@ shfmt -w scripts/*.sh home/.local/bin/wt home/.config/polybar/launch.sh
 # Python syntax-check the Kitty kitten
 python3 -m py_compile home/.config/kitty/kitty_selector.py
 
+# Kitty picker / agent-status validation
+scripts/test-kitty-selector.sh
+
 # Safe link-install validation
 scripts/install-home-links.sh --dry-run
 scripts/install-home-links.sh --dry-run --home "$(mktemp -d)"
@@ -66,11 +69,12 @@ scripts/test-wt.sh
 
 ## Single-Test Guidance
 
-There are currently two explicit automated test scripts: `scripts/test-refresh-secrets.sh` and `scripts/test-wt.sh`
+There are currently three explicit automated test scripts: `scripts/test-refresh-secrets.sh`, `scripts/test-wt.sh`, and `scripts/test-kitty-selector.sh`
 
 Use the narrowest check for the file type you changed:
 - secret refresh logic: `scripts/test-refresh-secrets.sh`
 - worktree command logic: `scripts/test-wt.sh`
+- Kitty picker / agent-status logic: `scripts/test-kitty-selector.sh`
 - link-install behavior: `scripts/install-home-links.sh --dry-run --home "$(mktemp -d)"`
 - one shell file: `bash -n path/to/file.sh`
 - one Lua file: `stylua path/to/file.lua`
@@ -169,6 +173,7 @@ Pick the narrowest relevant checks:
 - run `python3 -m py_compile` for Python edits
 - run `scripts/test-refresh-secrets.sh` for secret refresh changes
 - run `scripts/test-wt.sh` for changes to `home/.local/bin/wt`
+- run `scripts/test-kitty-selector.sh` for changes to `home/.config/kitty/kitty_selector.py`
 - run `scripts/install-home-links.sh --dry-run` for link-install changes
 
 If you changed user-visible setup behavior, update the README or docs in the same change.
