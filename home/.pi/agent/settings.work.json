@@ -1,0 +1,8 @@
+{
+  "theme": "dark",
+  "defaultProvider": "github-copilot",
+  "packages": [
+    "git:git@github.com:snaveevans/pi-plugins"
+  ],
+  "hideThinkingBlock": true
+}

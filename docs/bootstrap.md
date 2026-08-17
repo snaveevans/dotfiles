@@ -21,14 +21,16 @@ This repo now uses an explicit bootstrap + link + refresh flow for setup and day
    ```bash
    bw login
    ```
-5. Generate local secret artifacts, scoped to this machine's role:
+5. Generate local secret artifacts:
    ```bash
-   scripts/refresh-secrets.sh --tag work               # work-only machine
-   scripts/refresh-secrets.sh --tag work --tag personal # machine that is both
+   scripts/refresh-secrets.sh
    ```
-   The selection persists to `~/.config/secrets/tags`, so later refreshes
-   can drop the flags. Omit `--tag` on the first run to project everything.
-   See `docs/migrations/secret-projection.md` for the tag model.
+6. Provision the pi agent config for this machine's tags (reads the same
+   `~/.config/secrets/tags` selection; falls back to `personal` when it
+   doesn't exist yet):
+   ```bash
+   scripts/provision-pi.sh
+   ```
 
 ## What each script does
 
@@ -41,7 +43,9 @@ This repo now uses an explicit bootstrap + link + refresh flow for setup and day
 - `scripts/refresh-secrets.sh`
   - reads Bitwarden once
   - writes only local secret artifacts such as `~/.config/secrets/env` and `~/.npmrc`
-  - scopes the projection with repeatable `--tag work` / `--tag personal` flags (persisted to `~/.config/secrets/tags`)
+- `scripts/provision-pi.sh`
+  - links `~/.pi/agent/settings.json` and `~/.pi/agent/models.json` to the tracked per-tag files (`settings.work.json`, `models.personal.json`, ...)
+  - consumes the tag selection persisted by `refresh-secrets.sh --tag`; re-run it after changing that selection
 
 ## OS-specific scripts
 

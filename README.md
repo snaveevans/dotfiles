@@ -16,7 +16,7 @@ This repo keeps tracked config in `home/`, machine bootstrap scripts in `scripts
 - terminal config: `home/.config/kitty`
 - Linux desktop config: `home/.config/i3`, `home/.config/polybar`, `home/.config/rofi`
 - macOS automation: `home/.hammerspoon`
-- Pi agent config: `home/.pi/agent/models.json` (wires the [Synthetic](https://dev.synthetic.new) provider) and `home/.pi/agent/settings.json` (default model and thinking level)
+- Pi agent config: tag-scoped `home/.pi/agent/settings.{personal,work}.json` and `models.{personal,work}.json` (providers differ: Synthetic personally, GitHub Copilot at work), linked by `scripts/provision-pi.sh`
 - bootstrap and install scripts in `scripts/`
 
 ## Repo Layout
@@ -53,6 +53,7 @@ Log into Bitwarden if needed, then generate local secret artifacts:
 ```bash
 bw login
 scripts/refresh-secrets.sh --tag work --tag personal  # pick tags matching this machine
+scripts/provision-pi.sh
 ```
 
 ## Script Overview
@@ -63,6 +64,8 @@ scripts/refresh-secrets.sh --tag work --tag personal  # pick tags matching this 
 - `scripts/install-home-links.sh`: symlinks tracked files from `home/` into `$HOME`
 - `scripts/refresh-secrets.sh`: writes local secret files such as `~/.config/secrets/env` and `~/.npmrc`, scoped by `--tag work` / `--tag personal`
 - `scripts/test-refresh-secrets.sh`: fake-Bitwarden verification for the secret refresh flow
+- `scripts/provision-pi.sh`: links `~/.pi/agent/settings.json` and `models.json` to the tracked `settings.<tag>.json` / `models.<tag>.json` for this machine's tag
+- `scripts/test-provision-pi.sh`: verification for the pi config provisioning flow
 - `scripts/test-wt.sh`: real-git verification for the `wt` worktree command
 
 ## Git Worktrees
@@ -115,3 +118,4 @@ For Linux-specific setup details, see `UBUNTU_SETUP.md`.
 - `docs/decisions/ADR-0001-adopt-symlink-first-dotfiles-workflow-with-bitwarden-secret-projection.md`: architecture decision for the current workflow
 - `docs/decisions/ADR-0002-centralize-hand-made-git-worktrees-with-location-agnostic-discovery.md`: architecture decision for the worktree layout
 - `docs/decisions/ADR-0007-tag-scoped-secret-projection.md`: architecture decision for scoping secrets by work/personal tags
+- `docs/decisions/ADR-0008-tag-scoped-pi-agent-config-symlink-swap.md`: architecture decision for splitting pi settings/models by work/personal tag via symlink swap
