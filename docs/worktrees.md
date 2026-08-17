@@ -76,7 +76,7 @@ slow. Pass `-s` when you want them.
 ## Agent status
 
 The trailing column shows agentic coding sessions currently running in a
-worktree - both Claude Code and OpenCode. It's cheap enough to run on every
+worktree - Claude Code, OpenCode, and Pi. It's cheap enough to run on every
 `list` - no git calls - so unlike dirty markers it's always on. The same
 glyphs appear next to tab titles in `cmd+enter o` (see
 [keybindings.md](keybindings.md)), which is implemented separately in
@@ -87,9 +87,9 @@ in sync by hand.
 | --- | --- |
 | `⏸ needs input` | a Claude Code session is waiting on you |
 | `✗ failed` | a Claude Code background job errored out |
-| `● working` | a Claude Code session is actively running |
+| `● working` | a Claude Code or Pi session is actively running |
 | `✓ done` | a Claude Code background job finished |
-| `○ idle` | a Claude Code session is open but nothing is happening right now |
+| `○ idle` | a Claude Code or Pi session is open but nothing is happening right now |
 | `◆ opencode` | an OpenCode process is running - busy vs. idle can't be told apart |
 
 Claude Code state comes from `claude agents --json` - the CLI's own
@@ -111,9 +111,21 @@ process is found via `ps` and its working directory resolved with
 doing, hence one catch-all glyph rather than the graduated states Claude
 Code gets.
 
+Pi also has no session-list CLI, and a `pi` process is just `node` on the
+process table, so process-table detection can't tell a Pi session from any
+other Node program - or working from idle. A tracked extension
+(`home/.pi/agent/extensions/session-status.ts`) writes one
+`~/.pi/agent/status/<pid>.json` per TUI session instead, with `working` or
+`idle`. Those two states reuse Claude Code's glyphs rather than adding a
+catch-all `pi` tier: unlike OpenCode, we actually know working from idle.
+A file whose pid is no longer alive is ignored and removed, so a crash
+can't leave a stale glyph behind. Print and RPC mode write nothing - those
+are not Kitty-tab sessions. Pi has no documented equivalent of Claude
+Code's `blocked` / `done` / `failed`, so those stay Claude-only.
+
 A worktree "has" a session if that session's cwd is at or under the
 worktree's path - agents often work a few directories deep, not at the root.
-When more than one session matches (from either tool, or both), the most
+When more than one session matches (from any of the three tools), the most
 attention-worthy state wins in that order (`needs input` beats `failed`
 beats `working` beats `done` beats `idle` beats `opencode`), and a `×N`
 suffix shows how many matched in total. A path exactly at `$HOME` is never
@@ -130,10 +142,13 @@ sitting bare at `~/workspace` only picks up a job whose cwd is exactly
 `~/workspace` (say, a session running there to clone something new) - not
 every job running in every repo underneath it.
 
-This reads Claude Code's own session list and OpenCode's process table,
-neither of which is a versioned interface - a future update to either tool
-could change its shape and quietly stop populating the column. Nothing
-breaks if that happens; worktrees just stop showing that tool's glyph.
+This reads Claude Code's own session list, OpenCode's process table, and
+Pi's local status files. The first two are unversioned third-party
+interfaces; the third is a contract we own. A future update to either
+external tool, or a shape change we forget to keep in sync across the
+extension / `wt` / `kitty_selector.py`, could quietly stop populating that
+tool's column. Nothing breaks if that happens; worktrees just stop showing
+that tool's glyph.
 
 ## Key bindings
 
@@ -181,15 +196,17 @@ four hold:
   branch, or `--from REF`) - checked with `merge-base --is-ancestor`, so a
   squash-merged PR won't register as merged even though it's really done.
 - No Kitty tab is currently open for it.
-- No Claude Code session or OpenCode process has its cwd at or under the
-  worktree with state `working`, `blocked`, `idle`, or `opencode` - see
-  [Agent status](#agent-status). `idle` counts here even though it's a
-  low-priority state to *display*: an idle interactive session is still a
+- No Claude Code session, OpenCode process, or Pi session has its cwd at or
+  under the worktree with state `working`, `blocked`, `idle`, or `opencode`
+  - see [Agent status](#agent-status). `idle` counts here even though it's
+  a low-priority state to *display*: an idle interactive session is still a
   live process sitting in the worktree, and deleting it out from under that
   process would be disruptive even though there's nothing urgent to show
   about it. Same reasoning for `opencode` - a running process is a running
-  process, whether or not its activity can be told apart. Only a finished
-  Claude Code background job (`done` or `failed`) doesn't block cleanup.
+  process, whether or not its activity can be told apart. A live Pi session
+  reports `working` or `idle`, so it is already covered by this gate. Only
+  a finished Claude Code background job (`done` or `failed`) doesn't block
+  cleanup.
 
 It refuses to touch the primary checkout and skips anything it can't
 confidently classify (detached HEAD, no determinable base ref). Run
