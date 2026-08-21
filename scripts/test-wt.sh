@@ -334,6 +334,12 @@ if [[ "$1" == "@" && "$2" == "ls" ]]; then
   fi
   exit 0
 fi
+if [[ "$1" == "@" && "$2" == "close-tab" ]]; then
+  if [[ -n "${FAKE_KITTY_CLOSE_TAB_LOG:-}" ]]; then
+    printf '%s\n' "$*" >>"$FAKE_KITTY_CLOSE_TAB_LOG"
+  fi
+  exit 0
+fi
 exit 1
 EOF
 chmod +x "$FAKE_BIN/kitty"
@@ -439,5 +445,52 @@ unset FAKE_LSOF_CWDS
 (cd "$REPO" && run_wt clean) 2>/dev/null
 
 [[ ! -d "$OPENCODE_PATH" ]] || fail "clean should remove the worktree once the opencode process is gone"
+
+# `wt kill` operates on $PWD's own worktree (no picker, no --path) and always
+# forces through git worktree remove - dirty or not - since bypassing that
+# check is the entire point of a "kill" command, unlike `rm`/`clean` above.
+# What it does gate on, absent --force, is a typed confirmation.
+KILL_PATH="$(cd "$REPO" && run_wt new tyler/CCLOUD-9-kill)"
+printf 'dirty kill work\n' >>"$KILL_PATH/README.md"
+
+KILL_MAIN_ERR="$TMP_DIR/kill-main.err"
+if (cd "$REPO" && run_wt kill --force) 2>"$KILL_MAIN_ERR"; then
+  fail "kill should refuse the main worktree"
+fi
+grep -Fq "main worktree" "$KILL_MAIN_ERR" || fail "kill should explain why it refused the main worktree"
+
+KILL_ABORT_ERR="$TMP_DIR/kill-abort.err"
+if (cd "$KILL_PATH" && printf 'no\n' | run_wt kill) 2>"$KILL_ABORT_ERR"; then
+  fail "kill should abort unless the confirmation is exactly 'yes'"
+fi
+[[ -d "$KILL_PATH" ]] || fail "an aborted kill should leave the worktree in place"
+grep -Fq "Aborted" "$KILL_ABORT_ERR" || fail "kill should explain that it aborted"
+
+# --force skips the confirmation prompt; KITTY_WINDOW_ID unset here mimics
+# running outside Kitty entirely (SSH, tmux, plain terminal) - kill should
+# still remove the worktree and just skip the tab-closing step, not error.
+(unset KITTY_WINDOW_ID; cd "$KILL_PATH" && run_wt kill --force) 2>/dev/null
+
+[[ ! -d "$KILL_PATH" ]] || fail "forced kill should remove the worktree directory even when dirty"
+git -C "$REPO" show-ref --verify --quiet "refs/heads/tyler/CCLOUD-9-kill" ||
+  fail "kill without --delete-branch should leave the branch in place"
+
+# With a real KITTY_WINDOW_ID present, kill should close exactly that
+# window's tab via remote control, and --delete-branch should remove the
+# branch too.
+KILL2_PATH="$(cd "$REPO" && run_wt new tyler/CCLOUD-10-kill-branch)"
+CLOSE_TAB_LOG="$TMP_DIR/close-tab.log"
+export FAKE_KITTY_CLOSE_TAB_LOG="$CLOSE_TAB_LOG"
+
+(export KITTY_WINDOW_ID=42; cd "$KILL2_PATH" && run_wt kill --force --delete-branch) 2>/dev/null
+
+[[ ! -d "$KILL2_PATH" ]] || fail "forced kill should remove the worktree directory"
+if git -C "$REPO" show-ref --verify --quiet "refs/heads/tyler/CCLOUD-10-kill-branch"; then
+  fail "kill --delete-branch should delete the branch"
+fi
+grep -Fq "close-tab --match window_id:42" "$CLOSE_TAB_LOG" ||
+  fail "kill should close the tab of the KITTY_WINDOW_ID it ran in"
+
+unset FAKE_KITTY_CLOSE_TAB_LOG
 
 printf 'wt verification passed\n'

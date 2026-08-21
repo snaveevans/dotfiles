@@ -36,6 +36,7 @@ Defined in `home/.config/kitty/kitty.conf`. `cmd+enter` is a chord prefix.
 | `cmd+enter p` | pick a project under `~/workspace`, open or focus its tab |
 | `cmd+enter o` | pick an already-open tab |
 | `cmd+enter n` | new window in the current directory |
+| `cmd+enter k` | kill the current worktree (forced) and close this tab, after confirming |
 | `F2` / `F3` | new tab / rename tab |
 | `F1` | show Kitty environment variables |
 | `cmd+shift+h/j/k/l` | focus the neighboring window left/down/up/right |
