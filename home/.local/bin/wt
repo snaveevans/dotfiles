@@ -264,7 +264,13 @@ load_opencode_jobs() {
 
   while read -r pid comm; do
     [[ "$pid" =~ ^[0-9]+$ ]] || continue
-    [[ "$(basename "$comm")" == "opencode" ]] || continue
+    # Plain parameter expansion, not `basename "$comm"`: some real processes
+    # report a comm value starting with "-" (a JVM launched with argv[0] set
+    # to a flag like "-Djdk...", a login shell as "-zsh"), and external
+    # `basename` parses a leading "-" as an option rather than the string to
+    # operate on, failing with "illegal option -- D"/"-- z" instead of ever
+    # comparing it to "opencode".
+    [[ "${comm##*/}" == "opencode" ]] || continue
 
     cwd="$(lsof -a -p "$pid" -d cwd -Fn 2>/dev/null | sed -n 's/^n//p')"
     [[ -n "$cwd" ]] || continue
