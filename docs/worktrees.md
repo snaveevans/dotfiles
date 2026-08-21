@@ -40,6 +40,7 @@ wt                    pick a worktree and cd into it
 wt list               print the worktrees in scope
 wt new BRANCH         create a worktree under $WT_ROOT and cd into it
 wt rm                 pick a worktree and remove it
+wt kill               delete the current worktree (forced) and close this Kitty tab
 wt prune              drop stale worktree registrations
 wt clean              remove worktrees that are merged, clean, and unopened
 wt tab                open or focus a Kitty tab for a worktree
@@ -143,6 +144,7 @@ breaks if that happens; worktrees just stop showing that tool's glyph.
 | `cmd+enter w` | Kitty | pick a worktree (all repos), open or focus its tab |
 | `cmd+enter r` | Kitty | pick a worktree (this repo), open or focus its tab |
 | `cmd+enter c` | Kitty | prompt for a branch name and base branch, create a worktree, open a tab into it |
+| `cmd+enter k` | Kitty | kill the current worktree (forced) and close this tab, after confirming |
 | `<leader>gw` | Neovim | worktrees in the current repo |
 | `<leader>gW` | Neovim | worktrees across every repo |
 
@@ -195,6 +197,36 @@ It refuses to touch the primary checkout and skips anything it can't
 confidently classify (detached HEAD, no determinable base ref). Run
 `wt clean --dry-run` first to see what it would remove without changing
 anything, same as `wt new --dry-run`.
+
+## Killing a worktree
+
+`wt kill`, run from inside the worktree you want gone, is the deliberately
+unsafe counterpart to `wt rm`/`wt clean` above: it never checks whether the
+worktree is merged or clean, it just removes it - uncommitted changes and
+all - then closes the Kitty tab it was run from, panes included. There's no
+picker; it always acts on `$PWD`'s own worktree, resolved via
+`git rev-parse --show-toplevel` so it works from any subdirectory, not just
+the worktree root.
+
+The only thing standing between the keypress and permanent deletion is a
+typed confirmation (`Type 'yes' to continue`), unless `--force` is passed, in
+which case it happens immediately with no prompt. `--force` here only skips
+that prompt - it does not mean "bypass the dirty check" the way it does for
+`wt rm`, because `wt kill` never has one to bypass. `--delete-branch` works
+the same as it does for `wt rm`: opt-in, and off by default, so the branch
+survives even though the worktree and directory don't.
+
+It refuses to touch the primary checkout, same as `wt rm`. Outside Kitty (no
+`$KITTY_WINDOW_ID` - over SSH, in tmux, in a plain terminal) it still removes
+the worktree; there's just no tab to close, so it skips that part rather than
+erroring.
+
+`cmd+enter k` runs it in a Kitty overlay over the current window so the
+confirmation prompt has somewhere to appear regardless of what's already
+typed at the shell prompt underneath it; see
+[keybindings.md](keybindings.md#kitty). See
+[ADR-0006](decisions/ADR-0006-add-wt-kill-command.md) for why this is a
+separate command rather than a flag on `wt rm`.
 
 ## Configuration
 

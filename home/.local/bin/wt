@@ -41,6 +41,7 @@ Commands:
   list [query]     Print worktrees in scope
   new BRANCH       Create a worktree under $WT_ROOT and print its path
   rm [query]       Pick a worktree and remove it
+  kill             Delete the current worktree (forced) and close this Kitty tab
   prune            Drop stale worktree registrations
   clean            Remove worktrees that are merged, clean, and unopened
   tab [query]      Open or focus a Kitty tab for a worktree
@@ -63,6 +64,7 @@ Key bindings:
   cmd+enter w      Kitty: pick a worktree (all repos), open or focus its tab
   cmd+enter r      Kitty: pick a worktree (this repo), open or focus its tab
   cmd+enter c      Kitty: create a worktree, open a tab into it
+  cmd+enter k      Kitty: kill this worktree and close the tab (asks first)
   <leader>gw       Neovim: worktrees in this repo
   <leader>gW       Neovim: worktrees across every repo
 
@@ -862,6 +864,54 @@ cmd_rm() {
   fi
 }
 
+# Unlike cmd_rm, this always operates on $PWD's own worktree (no picker, no
+# --path) and always forces through uncommitted changes - the whole point of
+# a "kill" command is that it doesn't stop to ask whether the worktree is
+# clean. What it does ask, unless --force is passed, is a typed confirmation,
+# since it also closes the Kitty tab it's run from - one fat-fingered
+# keypress would otherwise delete work and kill the session in the same
+# breath with no undo.
+cmd_kill() {
+  local target repo_main branch dirty_note="" confirm=""
+
+  target="$(git -C "$PWD" rev-parse --show-toplevel 2>/dev/null || true)"
+  [[ -n "$target" ]] || die "Not inside a git worktree"
+  target="$(physical_path "$target")"
+
+  repo_main="$(main_worktree_of "$target")" || die "Not a git worktree: $target"
+
+  if [[ "$target" == "$repo_main" ]]; then
+    die "Refusing to kill the main worktree: $target"
+  fi
+
+  branch="$(git -C "$target" symbolic-ref --quiet --short HEAD 2>/dev/null || true)"
+  [[ "$(dirty_marker "$target")" == "*" ]] && dirty_note=" (including uncommitted changes)"
+
+  if ! "$FORCE"; then
+    log "This deletes $target$dirty_note, removes its worktree registration, and closes this Kitty tab and every window in it."
+    if "$DELETE_BRANCH" && [[ -n "$branch" ]]; then
+      log "It also deletes the branch $branch."
+    fi
+
+    read -r -p "Type 'yes' to continue: " confirm
+    [[ "$confirm" == "yes" ]] || die "Aborted"
+  fi
+
+  run git -C "$repo_main" worktree remove --force "$target"
+  log "Removed $target"
+
+  if "$DELETE_BRANCH" && [[ -n "$branch" ]]; then
+    run git -C "$repo_main" branch -D "$branch"
+    log "Deleted branch $branch"
+  fi
+
+  # Not running under Kitty (no remote control, or invoked over SSH/tmux) is
+  # not an error - the worktree is still gone, there's just no tab to close.
+  if [[ -n "${KITTY_WINDOW_ID:-}" ]] && command -v kitty >/dev/null 2>&1; then
+    run kitty @ close-tab --match "window_id:$KITTY_WINDOW_ID" >/dev/null 2>&1 || true
+  fi
+}
+
 cmd_prune() {
   local main_path
 
@@ -1118,6 +1168,9 @@ case "$COMMAND" in
     ;;
   rm | remove)
     cmd_rm "${ARGS[0]:-}"
+    ;;
+  kill)
+    cmd_kill
     ;;
   prune)
     cmd_prune
