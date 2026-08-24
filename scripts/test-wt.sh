@@ -55,13 +55,19 @@ CLAUDE_AGENTS_FILE="$TMP_DIR/claude-agents.json"
 # Fake `ps`/`lsof` stand in for OpenCode's process-table detection (it has no
 # `claude agents --json` equivalent, see load_opencode_jobs). FAKE_PS_FILE
 # holds "pid comm" lines - one real (non-opencode) process is always mixed
-# in so the comm-basename filter is exercised, not just the happy path.
+# in so the comm-basename filter is exercised, not just the happy path. A
+# second process reports a comm starting with "-" (real processes do this -
+# a JVM launched with argv[0] set to a flag like "-Djdk...", a login shell
+# reported as "-zsh") to catch a regression of the bug where `basename`
+# parsed that leading "-" as an option instead of part of the string,
+# aborting with "illegal option -- D" instead of just not matching.
 # FAKE_LSOF_CWDS maps pid -> cwd as "pid cwd" lines; a pid with no entry
 # there mimics lsof finding nothing (already exited, no permission).
 cat >"$FAKE_BIN/ps" <<'EOF'
 #!/usr/bin/env bash
 printf '  PID COMM\n'
 printf '1 /sbin/launchd\n'
+printf '2 -Djdk.xml.maxGeneralEntitySizeLimit=0\n'
 if [[ -n "${FAKE_PS_FILE:-}" && -f "$FAKE_PS_FILE" ]]; then
   cat "$FAKE_PS_FILE"
 fi
