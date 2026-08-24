@@ -152,16 +152,6 @@ case "$OSTYPE" in
     ;;
 esac
 
-# Initialize asdf
-case "$OSTYPE" in
-  darwin*)
-    . "$(brew --prefix)/opt/asdf/libexec/asdf.sh"
-    ;;
-  *)
-    [[ -f "$HOME/.asdf/asdf.sh" ]] && . "$HOME/.asdf/asdf.sh"
-    ;;
-esac
-
 # add JAVA_HOME dynamically to path
 if [[ -f ~/.asdf/plugins/java/set-java-home.zsh ]]; then
   . ~/.asdf/plugins/java/set-java-home.zsh
