@@ -499,4 +499,30 @@ grep -Fq "close-tab --match window_id:42" "$CLOSE_TAB_LOG" ||
 
 unset FAKE_KITTY_CLOSE_TAB_LOG
 
+# `wt branches` lists local branches `wt new BRANCH` would check out as-is
+# rather than create fresh - i.e. not the HEAD of any worktree right now.
+# Killing tyler/CCLOUD-9-kill without --delete-branch above left exactly
+# that: a branch with no worktree. This backs the Kitty worktree-new picker,
+# which offers reusing one of these instead of always prompting for a new
+# branch name.
+BRANCHES_FILE="$TMP_DIR/branches.tsv"
+(cd "$REPO" && run_wt branches) >"$BRANCHES_FILE"
+
+grep -Fq "tyler/CCLOUD-9-kill" "$BRANCHES_FILE" ||
+  fail "branches should list a local branch with no worktree"
+if grep -qE "^main${TAB}" "$BRANCHES_FILE"; then
+  fail "branches should not list the branch checked out in the primary worktree"
+fi
+if grep -qE "^feature${TAB}" "$BRANCHES_FILE"; then
+  fail "branches should not list a branch checked out in another worktree"
+fi
+
+# Reusing a listed branch should behave exactly like `wt new` given that
+# branch name directly: check out as-is, no new branch created.
+REUSE_PATH="$(cd "$REPO" && run_wt new tyler/CCLOUD-9-kill)"
+[[ -d "$REUSE_PATH" ]] ||
+  fail "wt new should recreate a worktree for a branch listed by wt branches"
+[[ "$(git -C "$REUSE_PATH" symbolic-ref --quiet --short HEAD)" == "tyler/CCLOUD-9-kill" ]] ||
+  fail "the recreated worktree should check out the existing branch, not a new one"
+
 printf 'wt verification passed\n'

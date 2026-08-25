@@ -40,6 +40,7 @@ Commands:
   path [query]     Pick a worktree and print its path (default)
   list [query]     Print worktrees in scope
   new BRANCH       Create a worktree under $WT_ROOT and print its path
+  branches         Print local branches not checked out in any worktree
   rm [query]       Pick a worktree and remove it
   kill             Delete the current worktree (forced) and close this Kitty tab
   prune            Drop stale worktree registrations
@@ -831,6 +832,26 @@ cmd_new() {
   fi
 }
 
+# Local branches `wt new BRANCH` would check out as-is rather than create -
+# i.e. not the current HEAD of any worktree of this repo, `wt`-managed or
+# not (an agent's own background worktree counts too: git would refuse to
+# check the branch out a second time regardless of who owns the worktree).
+# Used by the Kitty worktree-new picker to offer reusing an existing branch
+# instead of always prompting for a brand new one.
+cmd_branches() {
+  local repo_main checked_out
+
+  repo_main="$(resolve_repo_main)"
+  checked_out="$(git -C "$repo_main" worktree list --porcelain | sed -n 's|^branch refs/heads/||p')"
+
+  git -C "$repo_main" for-each-ref --sort=-committerdate \
+    --format='%(refname:short)%09%(committerdate:relative)' refs/heads/ |
+    while IFS=$'\t' read -r branch date; do
+      grep -qxF "$branch" <<<"$checked_out" && continue
+      printf '%s\t%s\n' "$branch" "$date"
+    done
+}
+
 cmd_rm() {
   local selected path repo_main branch
 
@@ -1171,6 +1192,9 @@ case "$COMMAND" in
     ;;
   new | n | add)
     cmd_new "${ARGS[0]:-}"
+    ;;
+  branches | br)
+    cmd_branches
     ;;
   rm | remove)
     cmd_rm "${ARGS[0]:-}"
