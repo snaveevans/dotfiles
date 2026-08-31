@@ -173,22 +173,65 @@ def prompt_line(message: str, prompt: str = "> ") -> str | None:
 
 
 def create_worktree() -> dict[str, str]:
-    """Prompt for a branch name and base ref, create a worktree for it, and hand back its path."""
+    """Pick an existing branch to reuse, or type a new one, and create a worktree for it.
+
+    One fzf prompt does both jobs: `wt branches` seeds it with local branches
+    not checked out anywhere (so picking one reuses it as-is, no new branch,
+    no base-ref prompt - `wt new` already skips branch creation for a name
+    that already exists). Typing something that matches none of them and
+    hitting enter leaves nothing selected, which - since fzf still hands back
+    the raw query with --print-query - falls through to today's flow: base
+    branch prompt, then `wt new` creates it fresh.
+    """
     wt_path = find_wt()
     if not wt_path:
         return {"status": "error", "message": "wt not found in PATH or common locations"}
 
-    branch = prompt_line("New worktree branch name", prompt="branch> ")
-    if not branch:
-        return {"status": "error", "message": "no branch name entered"}
+    fzf_path = find_fzf()
+    if not fzf_path:
+        return {"status": "error", "message": "fzf not found in PATH or common locations"}
 
-    # Optional: cancelling or leaving this blank falls through to `wt new`'s
-    # own default (origin's HEAD branch), so it's not treated as an abort.
-    base_ref = prompt_line("Base branch (blank for default)", prompt="from> ")
+    # Failure here (e.g. not inside a git repo) just means an empty picker -
+    # any typed query still falls through to the create-new path below.
+    listing = subprocess.run(
+        [wt_path, "branches"],
+        stdout=subprocess.PIPE,
+        text=True,
+    )
+    rows = []
+    for row in listing.stdout.split("\n"):
+        if not row.strip():
+            continue
+        fields = row.split("\t")
+        branch = fields[0]
+        date = fields[1] if len(fields) > 1 else ""
+        rows.append(f"{branch}  ({date})\t{branch}" if date else f"{branch}\t{branch}")
 
-    new_args = [wt_path, "new", branch]
-    if base_ref:
-        new_args += ["--from", base_ref]
+    result = subprocess.run(
+        [fzf_path, "+m", "--print-query", "--delimiter=\t", "--with-nth=1",
+         "--prompt=branch> ", "--header=pick a branch to reuse, or type a new name"],
+        input="\n".join(rows),
+        stdout=subprocess.PIPE,
+        text=True,
+    )
+    lines = result.stdout.split("\n")
+    query = lines[0].strip() if lines else ""
+    selected = lines[1] if len(lines) > 1 and lines[1].strip() else ""
+
+    if selected:
+        branch = selected.split("\t")[-1]
+        new_args = [wt_path, "new", branch]
+    else:
+        branch = query
+        if not branch:
+            return {"status": "error", "message": "no branch name entered"}
+
+        # Optional: cancelling or leaving this blank falls through to
+        # `wt new`'s own default (origin's HEAD branch), not an abort.
+        base_ref = prompt_line("Base branch (blank for default)", prompt="from> ")
+        new_args = [wt_path, "new", branch]
+        if base_ref:
+            new_args += ["--from", base_ref]
 
     created = subprocess.run(
         new_args,
