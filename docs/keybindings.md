@@ -68,6 +68,7 @@ specs in `lua/plugins/`. Everything else is LazyVim's.
 | --- | --- |
 | `<leader>gw` | worktrees in this repo |
 | `<leader>gW` | worktrees across every repo |
+| `<leader>/` (visual) | grep the repo for the selected text |
 | `<leader><leader>` / `<leader>p` | find files |
 | `<leader>o` | buffers |
 | `<leader>i` | git changed files |
