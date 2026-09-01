@@ -105,6 +105,8 @@ zle -N _worktree
 
 # User configuration
 unsetopt share_history
+# Prefix credential-bearing commands with a space to keep them out of history.
+setopt HIST_IGNORE_SPACE
 
 # vi mode
 bindkey -v
