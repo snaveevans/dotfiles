@@ -48,6 +48,18 @@ Link tracked config into your home directory:
 scripts/install-home-links.sh
 ```
 
+Install Pi under the Node.js version pinned in `.tool-versions`:
+
+```bash
+PI_NODE_VERSION="$(awk '$1 == "nodejs" { print $2; exit }' .tool-versions)"
+asdf install nodejs "$PI_NODE_VERSION"
+ASDF_NODEJS_VERSION="$PI_NODE_VERSION" asdf exec npm install --global @earendil-works/pi-coding-agent
+```
+
+The repo-managed `~/.local/bin/pi` launcher invokes that exact asdf
+installation, so Pi remains available even when the current project selects a
+different Node.js version.
+
 Log into Bitwarden if needed, then generate local secret artifacts:
 
 ```bash
@@ -62,6 +74,7 @@ scripts/provision-pi.sh
 - `scripts/bootstrap-darwin.sh`: installs macOS packages, shell dependencies, and defaults
 - `scripts/bootstrap-linux.sh`: installs Linux packages, desktop tooling, fonts, and Bitwarden CLI
 - `scripts/install-home-links.sh`: symlinks tracked files from `home/` into `$HOME`
+- `home/.local/bin/pi`: runs Pi with the repo-pinned asdf Node.js runtime, independent of the current project
 - `scripts/refresh-secrets.sh`: writes local secret files such as `~/.config/secrets/env` and `~/.npmrc`, scoped by `--tag work` / `--tag personal`
 - `scripts/test-refresh-secrets.sh`: fake-Bitwarden verification for the secret refresh flow
 - `scripts/provision-pi.sh`: links `~/.pi/agent/settings.json` and `models.json` to the tracked `settings.<tag>.json` / `models.<tag>.json` for this machine's tag
