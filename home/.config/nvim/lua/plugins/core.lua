@@ -50,7 +50,6 @@ end
 return {
   {
     "mason-org/mason.nvim",
-    enabled = not vim.g.vscode, -- Disable in VSCode
     opts = {
       ensure_installed = {
         "stylua",
@@ -65,7 +64,6 @@ return {
   },
   {
     "ibhagwan/fzf-lua",
-    enabled = not vim.g.vscode, -- Disable in VSCode
     opts = {
       fzf_opts = {
         ["--layout"] = "default",

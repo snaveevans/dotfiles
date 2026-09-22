@@ -469,6 +469,70 @@ def agent_status_for(path: str, jobs: list[tuple[str, str]]) -> str | None:
     return agent_status_for_paths([path], jobs)
 
 
+def _current_tab_and_history(data) -> tuple[int | None, list[int]]:
+    """The focused tab's id, and its OS window's tab-switch history,
+    most-recently-switched-away-from first.
+
+    `kitty @ ls` already reports `active_tab_history` on each OS window: a
+    plain list of tab ids kitty itself grows by one on every tab switch
+    (oldest to newest, capped at 64 entries) and trims on tab close - see
+    `add_active_id_to_history` in kitty's own tabs.py. That's kitty's real
+    cross-session record of what you've actually switched between today,
+    not just the last swap. An earlier version of this read `recent:N` via
+    `--match-tab` instead, one subprocess call per N - but kitty's own
+    `nth_active_tab()` clamps any N past the real history depth to repeat
+    the oldest entry rather than stopping, which made that approach look
+    like it was only tracking one tab back. Reading `active_tab_history`
+    directly (already present in the one `kitty @ ls` call this function's
+    caller already makes) sidesteps that clamping entirely.
+    """
+    for session in data:
+        for tab in session["tabs"]:
+            if tab.get("is_focused"):
+                return tab["id"], list(reversed(session.get("active_tab_history", ())))
+    return None, []
+
+
+def _order_tabs_by_recency(
+    by_id: dict[int, tuple[str, str | None]],
+    current_id: int | None,
+    history: list[int],
+) -> list[tuple[str, str | None]]:
+    """Order tab entries by actual usage, most-recently-used first, current
+    tab last.
+
+    `history` (see `_current_tab_and_history`) is kitty's own tab-switch
+    record for the current OS window - everything you've actually switched
+    between, not just the last swap. The current tab moves to the end: it's
+    where you already are, so it's the least useful "switch to" target even
+    though it's the most recently focused by definition. A tab can appear in
+    `history` from an earlier visit even while it's also the current tab -
+    kitty only records history on switch-*away*, so a tab you left once and
+    came back to still carries its old history entry - the `seen` set below
+    drops that duplicate rather than listing a tab twice. Anything `history`
+    doesn't cover (never switched to via a tab-focus event, e.g. opened but
+    not yet visited, or a tab in a second OS window) falls back to
+    alphabetical (case-insensitive) order, appended after everything history
+    does cover - the same ordering this function replaces, so empty history
+    reproduces the old behavior exactly.
+    """
+    seen = set()
+    ordered_ids = []
+    for tab_id in history:
+        if tab_id in by_id and tab_id != current_id and tab_id not in seen:
+            seen.add(tab_id)
+            ordered_ids.append(tab_id)
+    if current_id in by_id:
+        ordered_ids.append(current_id)
+        seen.add(current_id)
+    leftover_ids = sorted(
+        (tab_id for tab_id in by_id if tab_id not in seen),
+        key=lambda tab_id: by_id[tab_id][0].lower(),
+    )
+    ordered_ids += leftover_ids
+    return [by_id[tab_id] for tab_id in ordered_ids]
+
+
 def select_open_tab():
     result = subprocess.run(["kitty", "@", "ls"], capture_output=True, text=True)
 
@@ -476,22 +540,19 @@ def select_open_tab():
     data = json.loads(result.stdout)
     jobs = load_agent_jobs() + load_opencode_jobs()
 
-    # Extract the list of tabs, annotated with agent status when a job's cwd
-    # falls inside one of the tab's windows. A tab can be a split with several
-    # windows at different cwds, so every window is matched, not just the
+    # Collect every tab's title and agent status, keyed by id so it can be
+    # reordered by recency below. A tab can be a split with several windows
+    # at different cwds, so every window is matched for status, not just the
     # first - otherwise whichever window happens to come first decides the
     # whole tab's status.
-    entries = []
+    by_id = {}
     for session in data:
         for tab in session["tabs"]:
-            title = tab["title"]
             cwds = [window.get("cwd") for window in tab.get("windows", [])]
-            status = agent_status_for_paths(cwds, jobs)
-            entries.append((title, status))
+            by_id[tab["id"]] = (tab["title"], agent_status_for_paths(cwds, jobs))
 
-    # Alphabetical (case-insensitive) so the list reads in a predictable
-    # order instead of whatever order `kitty @ ls` happens to return.
-    entries.sort(key=lambda entry: entry[0].lower())
+    current_id, history = _current_tab_and_history(data)
+    entries = _order_tabs_by_recency(by_id, current_id, history)
 
     # Titles vary a lot in length, so without padding the status column
     # lands in a different place on every row and the list reads as noise.

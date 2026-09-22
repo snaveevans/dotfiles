@@ -65,7 +65,7 @@ Key bindings:
   cmd+enter w      Kitty: pick a worktree (all repos), open or focus its tab
   cmd+enter r      Kitty: pick a worktree (this repo), open or focus its tab
   cmd+enter c      Kitty: create a worktree, open a tab into it
-  cmd+enter k      Kitty: kill this worktree and close the tab (asks first)
+  cmd+enter k      Kitty: kill this worktree and its branch, close the tab (asks first)
   <leader>gw       Neovim: worktrees in this repo
   <leader>gW       Neovim: worktrees across every repo
 

@@ -1,7 +1,6 @@
 return {
   {
     "ibhagwan/fzf-lua",
-    enabled = not vim.g.vscode,
     keys = {
       {
         "<leader>gw",

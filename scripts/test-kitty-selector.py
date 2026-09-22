@@ -221,6 +221,66 @@ def main():
     if status != "◆ opencode":
         fail(f"a lone opencode session should still show a status, got: {status!r}")
 
+    # `cmd+enter o`'s ordering reads `active_tab_history` straight off the
+    # `kitty @ ls` payload the caller already fetched - no extra subprocess
+    # calls. Build a fake payload shaped like that JSON: one OS window, the
+    # focused tab flagged, and a history tuple in kitty's own oldest-to-
+    # newest insertion order.
+    ls_data = [
+        {
+            "is_focused": True,
+            "active_tab_history": (10, 40, 20),
+            "tabs": [
+                {"id": 10, "is_focused": False},
+                {"id": 20, "is_focused": False},
+                {"id": 30, "is_focused": True},
+                {"id": 40, "is_focused": False},
+            ],
+        }
+    ]
+    current_id, history = ks._current_tab_and_history(ls_data)
+    if current_id != 30 or history != [20, 40, 10]:
+        fail(
+            "expected the focused tab (30) and its history reversed to "
+            f"newest-switched-away-from first, got current={current_id!r} history={history!r}"
+        )
+
+    # No tab flagged is_focused (shouldn't happen in practice, but the
+    # picker must still degrade to plain alphabetical rather than raise).
+    current_id, history = ks._current_tab_and_history([{"is_focused": True, "tabs": []}])
+    if current_id is not None or history:
+        fail(f"expected no current tab / history when nothing is focused, got {current_id!r} {history!r}")
+
+    by_id = {
+        10: ("alpha", None),
+        20: ("beta", "working"),
+        30: ("gamma", None),
+        40: ("delta", None),  # not covered by history - e.g. a second OS window
+    }
+
+    ordered = ks._order_tabs_by_recency(by_id, current_id=30, history=[20, 10])
+    expected = [("beta", "working"), ("alpha", None), ("gamma", None), ("delta", None)]
+    if ordered != expected:
+        fail(
+            "expected most-recently-used first (20, then 10), current tab "
+            f"(30) last, then the uncovered leftover (40) alphabetically, got: {ordered!r}"
+        )
+
+    # kitty only records history on switch-*away*, so a tab you left once
+    # and later returned to can still carry a stale entry in `history` even
+    # while it's also the current tab - that must not produce a duplicate
+    # row for the same tab.
+    ordered = ks._order_tabs_by_recency(by_id, current_id=30, history=[20, 30, 10])
+    if ordered != expected:
+        fail(f"expected the current tab's stale history entry to be deduped, not repeated, got: {ordered!r}")
+
+    # No history at all (e.g. a freshly started Kitty, nothing switched yet)
+    # should reproduce the old plain-alphabetical ordering exactly.
+    ordered = ks._order_tabs_by_recency(by_id, current_id=None, history=[])
+    expected = [("alpha", None), ("beta", "working"), ("delta", None), ("gamma", None)]
+    if ordered != expected:
+        fail(f"expected alphabetical fallback with no history, got: {ordered!r}")
+
     print("kitty_selector agent-status assertions passed")
 
 

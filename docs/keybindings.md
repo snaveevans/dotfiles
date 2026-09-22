@@ -32,12 +32,13 @@ Defined in `home/.config/kitty/kitty.conf`. `cmd+enter` is a chord prefix.
 
 | Binding | Action |
 | --- | --- |
-| `cmd+enter w` | pick a git worktree, open or focus its tab |
+| `cmd+enter w` | pick a git worktree (all repos), open or focus its tab |
+| `cmd+enter r` | pick a git worktree (this repo), open or focus its tab |
 | `cmd+enter p` | pick a project under `~/workspace`, open or focus its tab |
-| `cmd+enter o` | pick an already-open tab |
+| `cmd+enter o` | pick an already-open tab, most-recently-used first |
 | `cmd+enter c` | pick a branch to reuse (or type a new one), create a worktree, open a tab into it |
 | `cmd+enter n` | new window in the current directory |
-| `cmd+enter k` | kill the current worktree (forced) and close this tab, after confirming |
+| `cmd+enter k` | kill the current worktree and its branch (forced) and close this tab, after confirming |
 | `F2` / `F3` | new tab / rename tab |
 | `F1` | show Kitty environment variables |
 | `cmd+shift+h/j/k/l` | focus the neighboring window left/down/up/right |
@@ -49,6 +50,18 @@ Defined in `home/.config/kitty/kitty.conf`. `cmd+enter` is a chord prefix.
 The tab bar is hidden, so `cmd+enter o` is how you see what tabs exist. Tabs
 are titled by directory: `<repo>` for a primary checkout, `<repo>:<directory>`
 for a worktree.
+
+The list is ordered by actual use, not alphabetically: Kitty tracks every
+tab switch in the current window (`active_tab_history`, up to the last 64),
+and this picker reads that whole history, most-recently-used first - not
+just the last swap. Since fzf's default layout builds the list up from the
+bottom, that puts your most recently used tabs on the rows closest to the
+prompt, right where you're typing, with the least recently touched ones
+scrolled up out of the way. The tab you're currently in sorts to the very
+end - you're already there, so it's the least useful "switch to" target.
+Any tab that history doesn't cover (never switched to via a tab-focus
+event, or a tab in a second OS window) falls back to alphabetical order,
+same as the old default for the whole list.
 
 Any tab running a Claude Code session or an OpenCode process gets a status
 glyph next to its title - `● working`, `⏸ needs input`, `✗ failed`,
@@ -85,8 +98,8 @@ The file picker respects `.gitignore` with an allow-list of exceptions, so
 In the worktree picker: `Enter` opens a Kitty tab, `Ctrl-t` opens a Neovim tab
 page scoped to the worktree, `Ctrl-y` yanks the path.
 
-Custom commands: `:Gstash` stashes the current file, `:Gread` picks a tracked
-file and discards its changes.
+Custom commands: `:Gstash` stashes the current file, `:Gread` discards
+uncommitted changes to the current file (checked out fresh from git).
 
 ## Hammerspoon (macOS)
 

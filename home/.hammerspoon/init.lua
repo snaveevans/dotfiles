@@ -13,7 +13,7 @@ local appModalBindings = {
   { "o", "Visual Studio Code.app" },
   { "m", "Microsoft Outlook.app" },
   { "y", "Messages.app" },
-  { "\\", "Zoom.us.app" },
+  { "\\", "Microsoft Teams.app" },
 }
 
 hs.hotkey.bind({ "cmd", "shift" }, "/", function()

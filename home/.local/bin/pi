@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+
+# Run Pi with the Node.js version pinned by this dotfiles repo.  A plain asdf
+# shim follows the current directory's .tool-versions, so it can stop finding
+# Pi when a project selects a different Node.js version.
+
+set -euo pipefail
+
+resolve_source_path() {
+  local source_path="$1"
+
+  while [[ -L "$source_path" ]]; do
+    local source_dir target
+
+    source_dir="$(cd -P "$(dirname "$source_path")" && pwd)"
+    target="$(readlink "$source_path")"
+    if [[ "$target" != /* ]]; then
+      target="$source_dir/$target"
+    fi
+    source_path="$target"
+  done
+
+  printf '%s\n' "$source_path"
+}
+
+die() {
+  printf 'pi: %s\n' "$*" >&2
+  exit 1
+}
+
+SOURCE_PATH="$(resolve_source_path "${BASH_SOURCE[0]}")"
+DOTFILES_ROOT="${PI_DOTFILES_ROOT:-$(cd "$(dirname "$SOURCE_PATH")/../../.." && pwd)}"
+TOOL_VERSIONS="$DOTFILES_ROOT/.tool-versions"
+ASDF_DATA_DIR="${ASDF_DATA_DIR:-$HOME/.asdf}"
+
+[[ -r "$TOOL_VERSIONS" ]] || die "could not find $TOOL_VERSIONS"
+
+PI_NODE_VERSION="${PI_NODE_VERSION:-$(awk '$1 == "nodejs" { print $2; exit }' "$TOOL_VERSIONS")}"
+[[ -n "$PI_NODE_VERSION" ]] || die "no nodejs version is declared in $TOOL_VERSIONS"
+
+NODE_BIN="$ASDF_DATA_DIR/installs/nodejs/$PI_NODE_VERSION/bin/node"
+PI_BIN="$ASDF_DATA_DIR/installs/nodejs/$PI_NODE_VERSION/bin/pi"
+
+[[ -x "$NODE_BIN" ]] || die "Node.js $PI_NODE_VERSION is not installed under asdf; run: asdf install nodejs $PI_NODE_VERSION"
+[[ -x "$PI_BIN" ]] || die "Pi is not installed for Node.js $PI_NODE_VERSION; run: ASDF_NODEJS_VERSION=$PI_NODE_VERSION asdf exec npm install --global @earendil-works/pi-coding-agent"
+
+exec "$NODE_BIN" "$PI_BIN" "$@"

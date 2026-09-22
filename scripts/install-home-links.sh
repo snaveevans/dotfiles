@@ -172,6 +172,7 @@ install_kitty() {
 
 install_local_bin() {
   ensure_real_directory ".local/bin"
+  link_path ".local/bin/pi"
   link_path ".local/bin/wt"
 }
 

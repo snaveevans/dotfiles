@@ -17,15 +17,23 @@ This repo now uses an explicit bootstrap + link + refresh flow for setup and day
    ```bash
    scripts/install-home-links.sh
    ```
-4. Log into Bitwarden if needed:
+4. Install Pi under the Node.js version pinned in `.tool-versions`:
+   ```bash
+   PI_NODE_VERSION="$(awk '$1 == "nodejs" { print $2; exit }' .tool-versions)"
+   asdf install nodejs "$PI_NODE_VERSION"
+   ASDF_NODEJS_VERSION="$PI_NODE_VERSION" asdf exec npm install --global @earendil-works/pi-coding-agent
+   ```
+   The linked `~/.local/bin/pi` launcher invokes this exact asdf installation,
+   so project-specific Node.js versions do not hide the `pi` command.
+5. Log into Bitwarden if needed:
    ```bash
    bw login
    ```
-5. Generate local secret artifacts:
+6. Generate local secret artifacts:
    ```bash
    scripts/refresh-secrets.sh
    ```
-6. Provision the pi agent config for this machine's tags (reads the same
+7. Provision the pi agent config for this machine's tags (reads the same
    `~/.config/secrets/tags` selection; falls back to `personal` when it
    doesn't exist yet):
    ```bash

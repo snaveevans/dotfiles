@@ -41,21 +41,8 @@ local options = {
   background = "dark",
   grepprg = "rg --vimgrep --smart-case --follow",    -- default command for :grep
   laststatus = 1,
+  list = true,                                       -- enable listchars
 }
-
--- VSCode-specific options
-if vim.g.vscode then
-  -- Disable features that conflict with VSCode
-  options.list = false       -- disable listchars in VSCode
-  options.cursorline = false -- VSCode handles cursor line highlighting
-  options.number = false     -- VSCode handles line numbers
-  options.signcolumn = "no"  -- VSCode handles sign column
-  options.foldcolumn = "0"   -- VSCode handles folding
-  options.laststatus = 0     -- Hide status line in VSCode
-  options.cmdheight = 0      -- Hide command line in VSCode
-else
-  options.list = true        -- enable listchars in regular neovim
-end
 
 for k, v in pairs(options) do
   vim.opt[k] = v
@@ -66,18 +53,15 @@ vim.opt.iskeyword:append("-")                         -- hyphenated words recogn
 vim.opt.formatoptions:remove({ "c", "r", "o" })       -- don't insert the current comment leader automatically for auto-wrapping comments using 'textwidth', hitting <Enter> in insert mode, or hitting 'o' or 'O' in normal mode.
 vim.opt.runtimepath:remove("/usr/share/vim/vimfiles") -- separate vim plugins from neovim in case vim still in use
 
--- Only set listchars if not in VSCode
-if not vim.g.vscode then
-  vim.opt.listchars = {
-    space = "·",
-    nbsp = "_",
-    trail = "•",
-    eol = "↲",
-    extends = "«",
-    precedes = "»",
-  }
-  vim.opt.listchars["tab"] = "|"
-end
+vim.opt.listchars = {
+  space = "·",
+  nbsp = "_",
+  trail = "•",
+  eol = "↲",
+  extends = "«",
+  precedes = "»",
+}
+vim.opt.listchars["tab"] = "|"
 
 vim.opt.diffopt:append({ "vertical" })
 
