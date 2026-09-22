@@ -145,7 +145,7 @@ breaks if that happens; worktrees just stop showing that tool's glyph.
 | `cmd+enter w` | Kitty | pick a worktree (all repos), open or focus its tab |
 | `cmd+enter r` | Kitty | pick a worktree (this repo), open or focus its tab |
 | `cmd+enter c` | Kitty | pick an existing branch to reuse, or type a new one (then a base branch), create a worktree, open a tab into it |
-| `cmd+enter k` | Kitty | kill the current worktree (forced) and close this tab, after confirming |
+| `cmd+enter k` | Kitty | kill the current worktree and its branch (forced) and close this tab, after confirming |
 | `<leader>gw` | Neovim | worktrees in the current repo |
 | `<leader>gW` | Neovim | worktrees across every repo |
 
@@ -228,8 +228,9 @@ typed confirmation (`Type 'yes' to continue`), unless `--force` is passed, in
 which case it happens immediately with no prompt. `--force` here only skips
 that prompt - it does not mean "bypass the dirty check" the way it does for
 `wt rm`, because `wt kill` never has one to bypass. `--delete-branch` works
-the same as it does for `wt rm`: opt-in, and off by default, so the branch
-survives even though the worktree and directory don't.
+the same as it does for `wt rm`: opt-in, and off by default when you type
+`wt kill` yourself, so the branch survives even though the worktree and
+directory don't.
 
 It refuses to touch the primary checkout, same as `wt rm`. Outside Kitty (no
 `$KITTY_WINDOW_ID` - over SSH, in tmux, in a plain terminal) it still removes
@@ -239,7 +240,11 @@ erroring.
 `cmd+enter k` runs it in a Kitty overlay over the current window so the
 confirmation prompt has somewhere to appear regardless of what's already
 typed at the shell prompt underneath it; see
-[keybindings.md](keybindings.md#kitty). See
+[keybindings.md](keybindings.md#kitty). This binding passes `--delete-branch`,
+so the confirmation prompt names the branch it's about to delete alongside
+the worktree - a keypress-driven kill is meant to leave nothing behind,
+where the bare command defaults to keeping the branch since it's more often
+run mid-task, before you know whether you'll want it again. See
 [ADR-0006](decisions/ADR-0006-add-wt-kill-command.md) for why this is a
 separate command rather than a flag on `wt rm`.
 
