@@ -5,7 +5,7 @@
   "defaultModel": "gpt-5.6-terra",
   "defaultThinkingLevel": "high",
   "packages": [
-    "git:git@github.com:snaveevans/pi-plugins"
+    "https://github.com/snaveevans/pi-goal-x"
   ],
   "hideThinkingBlock": true
 }

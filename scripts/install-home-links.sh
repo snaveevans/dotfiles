@@ -177,10 +177,27 @@ install_local_bin() {
 }
 
 install_pi() {
+  local extension
+  local relative_path
+  local provision_args=(--home "$TARGET_HOME")
+
   ensure_real_directory ".pi/agent"
-  # settings.json and models.json are tag-scoped (settings.<tag>.json /
-  # models.<tag>.json) - scripts/provision-pi.sh links the right ones.
-  log "Note: pi settings.json/models.json are provisioned by scripts/provision-pi.sh"
+  link_path ".pi/agent/keybindings.json"
+
+  # Link tracked extension files individually so other user-installed
+  # extensions in ~/.pi/agent/extensions remain untouched.
+  for extension in "$SOURCE_ROOT/.pi/agent/extensions/"*.ts "$SOURCE_ROOT/.pi/agent/extensions/"*.js; do
+    [[ -f "$extension" ]] || continue
+    relative_path="${extension#"$SOURCE_ROOT"/}"
+    link_path "$relative_path"
+  done
+
+  # Settings and models are tag-scoped. Keep one selection source and carry
+  # the installer's dry-run mode through to the provisioning step.
+  if "$DRY_RUN"; then
+    provision_args+=(--dry-run)
+  fi
+  bash "$SCRIPT_DIR/provision-pi.sh" "${provision_args[@]}"
 }
 
 while [[ $# -gt 0 ]]; do

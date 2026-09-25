@@ -17,6 +17,8 @@ This repo now uses an explicit bootstrap + link + refresh flow for setup and day
    ```bash
    scripts/install-home-links.sh
    ```
+   This also links Pi's shared keybindings and extensions and provisions its
+   settings/models using the saved tag selection, or `personal` if none exists yet.
 4. Install Pi under the Node.js version pinned in `.tool-versions`:
    ```bash
    PI_NODE_VERSION="$(awk '$1 == "nodejs" { print $2; exit }' .tool-versions)"
@@ -33,9 +35,8 @@ This repo now uses an explicit bootstrap + link + refresh flow for setup and day
    ```bash
    scripts/refresh-secrets.sh
    ```
-7. Provision the pi agent config for this machine's tags (reads the same
-   `~/.config/secrets/tags` selection; falls back to `personal` when it
-   doesn't exist yet):
+7. After refreshing secrets, re-provision Pi if the saved tag selection
+   changed since step 3:
    ```bash
    scripts/provision-pi.sh
    ```
@@ -48,12 +49,13 @@ This repo now uses an explicit bootstrap + link + refresh flow for setup and day
 - `scripts/install-home-links.sh`
   - creates parent directories as needed
   - symlinks tracked config from `home/` into `$HOME`
+  - links shared Pi keybindings/extensions and invokes `scripts/provision-pi.sh` for the current tag
 - `scripts/refresh-secrets.sh`
   - reads Bitwarden once
   - writes only local secret artifacts such as `~/.config/secrets/env` and `~/.npmrc`
 - `scripts/provision-pi.sh`
   - links `~/.pi/agent/settings.json` and `~/.pi/agent/models.json` to the tracked per-tag files (`settings.work.json`, `models.personal.json`, ...)
-  - consumes the tag selection persisted by `refresh-secrets.sh --tag`; re-run it after changing that selection
+  - consumes the tag selection persisted by `refresh-secrets.sh --tag`; run it again after changing that selection
 
 ## OS-specific scripts
 

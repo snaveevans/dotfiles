@@ -1,8 +1,11 @@
 {
+  "lastChangelogVersion": "0.87.1",
   "theme": "dark",
   "defaultProvider": "github-copilot",
+  "defaultModel": "gpt-6-luna",
+  "defaultThinkingLevel": "xhigh",
+  "hideThinkingBlock": true,
   "packages": [
-    "git:git@github.com:snaveevans/pi-plugins"
-  ],
-  "hideThinkingBlock": true
+    "https://github.com/snaveevans/pi-goal-x"
+  ]
 }
