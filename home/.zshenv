@@ -8,6 +8,7 @@ PATH="${ASDF_DATA_DIR:-$HOME/.asdf}/shims:$PATH"
 # Keep repo-managed launchers, including the pinned Pi wrapper, ahead of
 # asdf's project-sensitive shims.
 PATH="$HOME/.local/bin:$PATH"
+PATH="$HOME/.opencode/bin:$PATH"
 export PATH
 
 export APOLLO_GRAPH_REF="Culture-Cloud-Gateway-4r4qva@qa" # cc-web-config supergraph, for rover CLI

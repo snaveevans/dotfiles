@@ -60,20 +60,17 @@ drift, and `git status` immediately shows any change pi itself made.
 This decision means:
 
 - `home/.pi/agent/settings.personal.json` (Synthetic), `settings.work.json`
-  (GitHub Copilot with the selected default model), plus matching
-  `models.personal.json` / `models.work.json`. The work models file starts
-  as an empty `{"providers": {}}` placeholder; an empty `providers` map
-  makes pi fall back to built-ins.
+  (GitHub Copilot: `defaultProvider: github-copilot`, model pinned later),
+  plus matching `models.personal.json` / `models.work.json`. The work
+  models file starts as an empty `{"providers": {}}` placeholder; an empty
+  `providers` map makes pi fall back to built-ins.
 - `scripts/provision-pi.sh` resolves the machine tag (explicit `--tag`,
   else the `~/.config/secrets/tags` selection persisted by
   `refresh-secrets.sh`, else `personal` as the historical default; `work`
   wins on overlap) and points the two symlinks accordingly. It refuses to
   overwrite a real non-symlink file, since that would be pi-managed state.
-- `scripts/install-home-links.sh` links shared `keybindings.json` and
-  tracked extension files individually, preserving other user-installed
-  extensions, then invokes `scripts/provision-pi.sh` to link the selected
-  tag's `settings.json` and `models.json`. The standalone provisioning
-  command remains available when the tag selection changes.
+- `scripts/install-home-links.sh` no longer links `settings.json` or
+  `models.json`; it continues linking the tracked extension.
 - Shared content duplicated between the two settings files (theme,
   packages, `hideThinkingBlock`) is an accepted tradeoff: two files is not
   a scale problem, and both stay reviewable in one diff.
@@ -94,6 +91,5 @@ This decision means:
 - `scripts/test-provision-pi.sh` covers tag selection order, both-tags-wins
   for work, idempotent re-runs, re-pointing, refusal on real files, unknown
   tags, and dry-run.
-- `scripts/test-provision-pi.sh` also verifies that the home-link installer
-  provisions tag-scoped files and links shared Pi resources, including in
-  dry-run mode.
+- `scripts/install-home-links.sh --dry-run` confirms only the extension is
+  still linked by the linker.

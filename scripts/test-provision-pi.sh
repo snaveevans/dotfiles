@@ -89,26 +89,21 @@ grep -Fq 'DRY-RUN:' "$TMP_DIR/out-g" || fail "a dry run should narrate its actio
 [[ ! -e "$HOME_G/.pi/agent/settings.json" ]] || fail "a dry run should not link settings.json"
 [[ ! -e "$HOME_G/.pi/agent/models.json" ]] || fail "a dry run should not link models.json"
 
-# 8. The normal home-link installer wires all Pi config in one pass.
+# 8. Home linking installs shared keybindings, not duplicate package extensions
+# or tag-scoped settings (which remain an explicit provisioning step).
 HOME_H="$TMP_DIR/home-install"
-mkdir -p "$HOME_H/.config/secrets"
-printf 'work\n' >"$HOME_H/.config/secrets/tags"
+mkdir -p "$HOME_H/.pi/agent/extensions"
+printf 'local extension\n' >"$HOME_H/.pi/agent/extensions/local.ts"
 bash "$REPO_ROOT/scripts/install-home-links.sh" --home "$HOME_H" >"$TMP_DIR/out-h"
-grep -Fq 'Provisioning pi config for tag: work' "$TMP_DIR/out-h" || fail "home-link install should use the saved Pi tag"
-expect_link "$HOME_H/.pi/agent/settings.json" "$REPO_ROOT/home/.pi/agent/settings.work.json"
-expect_link "$HOME_H/.pi/agent/models.json" "$REPO_ROOT/home/.pi/agent/models.work.json"
 expect_link "$HOME_H/.pi/agent/keybindings.json" "$REPO_ROOT/home/.pi/agent/keybindings.json"
-for extension in "$REPO_ROOT/home/.pi/agent/extensions/"*.ts "$REPO_ROOT/home/.pi/agent/extensions/"*.js; do
-  [[ -f "$extension" ]] || continue
-  relative_path="${extension#"$REPO_ROOT/home"/}"
-  expect_link "$HOME_H/$relative_path" "$extension"
-done
+[[ ! -e "$HOME_H/.pi/agent/settings.json" ]] || fail "home linking should not provision settings.json"
+[[ -f "$HOME_H/.pi/agent/extensions/local.ts" ]] || fail "home linking should preserve user extensions"
+[[ ! -e "$HOME_H/.pi/agent/extensions/draft-stash.ts" ]] || fail "package extensions should not be linked twice"
 
-# 9. Pi resources are included in the installer's dry run without filesystem changes.
+# 9. Dry-run reports keybindings without changing the target home.
 HOME_I="$TMP_DIR/home-install-dry-run"
 bash "$REPO_ROOT/scripts/install-home-links.sh" --home "$HOME_I" --dry-run >"$TMP_DIR/out-i"
 grep -Fq "DRY-RUN: ln -s $REPO_ROOT/home/.pi/agent/keybindings.json $HOME_I/.pi/agent/keybindings.json" "$TMP_DIR/out-i" || fail "home-link dry run should include Pi keybindings"
 [[ ! -e "$HOME_I/.pi/agent/keybindings.json" ]] || fail "home-link dry run should not link keybindings.json"
-[[ ! -e "$HOME_I/.pi/agent/settings.json" ]] || fail "home-link dry run should not link settings.json"
 
 printf 'provision-pi verification passed\n'

@@ -75,7 +75,7 @@ There are currently three explicit automated test scripts: `scripts/test-refresh
 Use the narrowest check for the file type you changed:
 - secret refresh logic: `scripts/test-refresh-secrets.sh`
 - worktree command logic: `scripts/test-wt.sh`
-- Pi config provisioning and install integration: `scripts/test-provision-pi.sh`
+- Pi config provisioning logic: `scripts/test-provision-pi.sh`
 - link-install behavior: `scripts/install-home-links.sh --dry-run --home "$(mktemp -d)"`
 - one shell file: `bash -n path/to/file.sh`
 - one Lua file: `stylua path/to/file.lua`
@@ -173,7 +173,7 @@ Pick the narrowest relevant checks:
 - run `bash -n` for changed shell scripts
 - run `python3 -m py_compile` for Python edits
 - run `scripts/test-refresh-secrets.sh` for secret refresh changes
-- run `scripts/test-provision-pi.sh` for changes to Pi provisioning, `home/.pi/agent/settings.*.json` / `models.*.json`, keybindings, or extensions
+- run `scripts/test-provision-pi.sh` for changes to `scripts/provision-pi.sh` or `home/.pi/agent/settings.*.json` / `models.*.json`
 - run `scripts/test-wt.sh` for changes to `home/.local/bin/wt`
 - run `scripts/install-home-links.sh --dry-run` for link-install changes
 

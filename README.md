@@ -16,7 +16,7 @@ This repo keeps tracked config in `home/`, machine bootstrap scripts in `scripts
 - terminal config: `home/.config/kitty`
 - Linux desktop config: `home/.config/i3`, `home/.config/polybar`, `home/.config/rofi`
 - macOS automation: `home/.hammerspoon`
-- Pi agent config: tag-scoped settings/models plus shared keybindings and custom extensions under `home/.pi/agent/`, wired by `scripts/install-home-links.sh` and `scripts/provision-pi.sh` (Synthetic personally, GitHub Copilot at work)
+- Pi agent config: tag-scoped `home/.pi/agent/settings.{personal,work}.json` and `models.{personal,work}.json`, linked by `scripts/provision-pi.sh`; shared keybindings linked by `scripts/install-home-links.sh`. Personal settings load custom extensions from `pi-plugins` and the separate `pi-goal-x` package.
 - bootstrap and install scripts in `scripts/`
 
 ## Repo Layout
@@ -42,7 +42,7 @@ Bootstrap the machine:
 scripts/bootstrap.sh
 ```
 
-Link tracked config into your home directory, including the selected Pi settings/models, keybindings, and custom extensions:
+Link tracked config into your home directory:
 
 ```bash
 scripts/install-home-links.sh
@@ -73,11 +73,11 @@ scripts/provision-pi.sh
 - `scripts/bootstrap.sh`: dispatches to the current OS bootstrap flow
 - `scripts/bootstrap-darwin.sh`: installs macOS packages, shell dependencies, and defaults
 - `scripts/bootstrap-linux.sh`: installs Linux packages, desktop tooling, fonts, and Bitwarden CLI
-- `scripts/install-home-links.sh`: symlinks tracked files from `home/` into `$HOME`, including Pi keybindings/extensions, and invokes Pi provisioning for the current tag
+- `scripts/install-home-links.sh`: symlinks tracked files from `home/` into `$HOME`, including Pi keybindings
 - `home/.local/bin/pi`: runs Pi with the repo-pinned asdf Node.js runtime, independent of the current project
 - `scripts/refresh-secrets.sh`: writes local secret files such as `~/.config/secrets/env` and `~/.npmrc`, scoped by `--tag work` / `--tag personal`
 - `scripts/test-refresh-secrets.sh`: fake-Bitwarden verification for the secret refresh flow
-- `scripts/provision-pi.sh`: links `~/.pi/agent/settings.json` and `models.json` to the tracked `settings.<tag>.json` / `models.<tag>.json` for this machine's tag; run it again after changing the saved tag selection
+- `scripts/provision-pi.sh`: links `~/.pi/agent/settings.json` and `models.json` to the tracked `settings.<tag>.json` / `models.<tag>.json` for this machine's tag
 - `scripts/test-provision-pi.sh`: verification for the pi config provisioning flow
 - `scripts/test-wt.sh`: real-git verification for the `wt` worktree command
 
