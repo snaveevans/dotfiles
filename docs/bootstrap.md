@@ -17,6 +17,9 @@ This repo now uses an explicit bootstrap + link + refresh flow for setup and day
    ```bash
    scripts/install-home-links.sh
    ```
+   This also links the shared Pi keybindings. The `draft-stash`, `minimal-mode`,
+   and `/openai-context` extensions are supplied by the `pi-plugins` package
+   in the personal Pi settings; they are not installed as local copies.
 4. Install Pi under the Node.js version pinned in `.tool-versions`:
    ```bash
    PI_NODE_VERSION="$(awk '$1 == "nodejs" { print $2; exit }' .tool-versions)"
@@ -47,7 +50,7 @@ This repo now uses an explicit bootstrap + link + refresh flow for setup and day
   - installs packages and bootstrap dependencies only
 - `scripts/install-home-links.sh`
   - creates parent directories as needed
-  - symlinks tracked config from `home/` into `$HOME`
+  - symlinks tracked config from `home/` into `$HOME`, including Pi's `~/.pi/agent/keybindings.json`
 - `scripts/refresh-secrets.sh`
   - reads Bitwarden once
   - writes only local secret artifacts such as `~/.config/secrets/env` and `~/.npmrc`

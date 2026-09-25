@@ -127,6 +127,27 @@ After `cmd+shift+space`, press one key to launch or focus:
 
 In the VS Code window chooser, `cmd+n` and `cmd+p` move between rows.
 
+## Pi
+
+Defined in `home/.pi/agent/keybindings.json` (linked by
+`scripts/install-home-links.sh`) and the `draft-stash` extension in the
+`pi-plugins` package. `minimal-mode` and `/openai-context` also come from
+that package; no local copies of those extensions are needed.
+
+| Binding | Action |
+| --- | --- |
+| `Ctrl+n` / `Ctrl+p` | Move down / up in Pi selection lists |
+| `Ctrl+t` | Cycle thinking level |
+| `Ctrl+x m` | Open the model selector |
+| `Ctrl+x l` | Resume a session |
+| `Ctrl+x n` | Start a new session |
+| `Ctrl+s` | Stash the current prompt and clear the editor |
+| `Ctrl+r` | Restore the stashed prompt |
+
+`Ctrl+x` starts a short-lived chord; the following `m`, `l`, or `n` runs the
+action. Pi's default bindings for these actions are disabled to avoid overlap.
+Run `/reload` after updating the keybindings link or Pi package.
+
 ## Where these live
 
 | Surface | File |
@@ -135,6 +156,7 @@ In the VS Code window chooser, `cmd+n` and `cmd+p` move between rows.
 | Kitty | `home/.config/kitty/kitty.conf` |
 | Neovim | `home/.config/nvim/lua/config/keymaps.lua`, `lua/plugins/*.lua` |
 | Hammerspoon | `home/.hammerspoon/init.lua` |
+| Pi | `home/.pi/agent/keybindings.json`, `pi-plugins/packages/custom/extensions/` |
 
 zsh and Hammerspoon reload without an install step: `re` for the shell,
 `cmd+alt+ctrl+R` for Hammerspoon. Kitty needs a config reload, and Neovim

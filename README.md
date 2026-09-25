@@ -16,7 +16,7 @@ This repo keeps tracked config in `home/`, machine bootstrap scripts in `scripts
 - terminal config: `home/.config/kitty`
 - Linux desktop config: `home/.config/i3`, `home/.config/polybar`, `home/.config/rofi`
 - macOS automation: `home/.hammerspoon`
-- Pi agent config: tag-scoped `home/.pi/agent/settings.{personal,work}.json` and `models.{personal,work}.json` (providers differ: Synthetic personally, GitHub Copilot at work), linked by `scripts/provision-pi.sh`
+- Pi agent config: tag-scoped `home/.pi/agent/settings.{personal,work}.json` and `models.{personal,work}.json`, linked by `scripts/provision-pi.sh`; shared keybindings linked by `scripts/install-home-links.sh`. Personal settings load custom extensions from `pi-plugins` and the separate `pi-goal-x` package.
 - bootstrap and install scripts in `scripts/`
 
 ## Repo Layout
@@ -73,7 +73,7 @@ scripts/provision-pi.sh
 - `scripts/bootstrap.sh`: dispatches to the current OS bootstrap flow
 - `scripts/bootstrap-darwin.sh`: installs macOS packages, shell dependencies, and defaults
 - `scripts/bootstrap-linux.sh`: installs Linux packages, desktop tooling, fonts, and Bitwarden CLI
-- `scripts/install-home-links.sh`: symlinks tracked files from `home/` into `$HOME`
+- `scripts/install-home-links.sh`: symlinks tracked files from `home/` into `$HOME`, including Pi keybindings
 - `home/.local/bin/pi`: runs Pi with the repo-pinned asdf Node.js runtime, independent of the current project
 - `scripts/refresh-secrets.sh`: writes local secret files such as `~/.config/secrets/env` and `~/.npmrc`, scoped by `--tag work` / `--tag personal`
 - `scripts/test-refresh-secrets.sh`: fake-Bitwarden verification for the secret refresh flow
