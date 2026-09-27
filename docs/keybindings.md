@@ -138,6 +138,7 @@ that package; no local copies of those extensions are needed.
 | --- | --- |
 | `Ctrl+n` / `Ctrl+p` | Move down / up in Pi selection lists |
 | `Ctrl+t` | Cycle thinking level |
+| `Shift+Tab` | Toggle eligible OpenAI/Codex context between 272k and 1m (`pi-plugins` extension) |
 | `Ctrl+x m` | Open the model selector |
 | `Ctrl+x l` | Resume a session |
 | `Ctrl+x n` | Start a new session |
@@ -146,7 +147,10 @@ that package; no local copies of those extensions are needed.
 
 `Ctrl+x` starts a short-lived chord; the following `m`, `l`, or `n` runs the
 action. Pi's default bindings for these actions are disabled to avoid overlap.
-Run `/reload` after updating the keybindings link or Pi package.
+`Shift+Tab` is registered by `pi-plugins`; `Ctrl+t` replaces Pi's default
+`Shift+Tab` thinking shortcut. The context toggle has no effect on models
+without a 272k catalog window. Run `/reload` after updating the keybindings
+link or Pi package.
 
 ## Where these live
 
