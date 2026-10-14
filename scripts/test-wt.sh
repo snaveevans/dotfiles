@@ -153,6 +153,31 @@ grep -Fq "${TAB}repo-a:feature${TAB}" "$FZF_FILE" ||
 grep -Fq "${TAB}repo-a${TAB}" "$FZF_FILE" ||
   fail "the primary checkout should get a bare repo tab title"
 
+# A missing optional Claude CLI must not make `wt list` exit under `set -e`.
+# Use a minimal PATH so the fake Claude binary above and any host installation
+# are not visible; skip only when `find_claude`'s fixed locations have one.
+NO_CLAUDE_BIN="$TMP_DIR/no-claude-bin"
+mkdir -p "$NO_CLAUDE_BIN"
+for command_name in bash git mktemp sort awk cut rm; do
+  command_path="$(command -v "$command_name")" ||
+    fail "required command not found for no-Claude test: $command_name"
+  ln -s "$command_path" "$NO_CLAUDE_BIN/$command_name"
+done
+if [[ ! -x "$FAKE_HOME/.local/bin/claude" &&
+      ! -x "$FAKE_HOME/bin/claude" &&
+      ! -x /usr/local/bin/claude &&
+      ! -x /opt/homebrew/bin/claude ]]; then
+  NO_CLAUDE_FILE="$TMP_DIR/no-claude.tsv"
+  (
+    cd "$REPO"
+    HOME="$FAKE_HOME" WT_WORKSPACE="$WORKSPACE" WT_ROOT="$TEST_WT_ROOT" \
+      PATH="$NO_CLAUDE_BIN" "$WT_BIN" list --format=tsv
+  ) >"$NO_CLAUDE_FILE" ||
+    fail "wt list should succeed when the optional Claude CLI is unavailable"
+  grep -Fq "repo-a${TAB}main${TAB}main${TAB}" "$NO_CLAUDE_FILE" ||
+    fail "wt list should still include the current repo when Claude is unavailable"
+fi
+
 # Agent status comes from `claude agents --json` (faked above), keyed by
 # cwd, so a worktree with a matching session (or several) should carry a
 # status glyph. wt's own field for this is field 8 once `cut -f3-` (tsv

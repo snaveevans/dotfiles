@@ -1,0 +1,30 @@
+{
+  "renderMarkdown": true,
+  "theme": "default",
+  "showReasoning": false,
+  "model": "gpt-6-luna",
+  "effortLevel": "max",
+  "keepAlive": "on",
+  "defaultPermissionMode": "allow-all",
+  "footer": {
+    "showModelEffort": true,
+    "showDirectory": true,
+    "showBranch": true,
+    "showContextWindow": true,
+    "showQuota": true,
+    "showAiUsed": true,
+    "showAgent": true,
+    "showCodeChanges": false,
+    "showUsername": false,
+    "showSandbox": true,
+    "showYolo": false,
+    "showCiStatus": false,
+    "showSchedules": true,
+    "showPullRequest": true,
+    "showCustom": true
+  },
+  "disabledMcpServers": [
+    "figma",
+    "launchdarkly"
+  ]
+}
