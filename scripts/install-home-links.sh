@@ -14,6 +14,7 @@ LINK_PATHS=(
   ".zshrc"
   ".gitconfig"
   ".rgignore"
+  ".copilot/settings.json"
   ".hammerspoon"
   ".config/nvim"
   ".config/starship.toml"

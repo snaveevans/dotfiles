@@ -202,7 +202,7 @@ find_claude() {
     fi
   done
 
-  command -v claude 2>/dev/null
+  command -v claude 2>/dev/null || true
 }
 
 # `claude agents --json` is Claude Code's own scriptable session list
