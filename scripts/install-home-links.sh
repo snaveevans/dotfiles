@@ -14,6 +14,7 @@ LINK_PATHS=(
   ".zshrc"
   ".gitconfig"
   ".rgignore"
+  ".copilot/settings.json"
   ".hammerspoon"
   ".config/nvim"
   ".config/starship.toml"
@@ -176,7 +177,16 @@ install_kitty() {
 
 install_local_bin() {
   ensure_real_directory ".local/bin"
+  link_path ".local/bin/pi"
   link_path ".local/bin/wt"
+}
+
+install_pi() {
+  ensure_real_directory ".pi/agent"
+  link_path ".pi/agent/keybindings.json"
+  # settings.json and models.json are tag-scoped (settings.<tag>.json /
+  # models.<tag>.json) - scripts/provision-pi.sh links the right ones.
+  log "Note: pi settings.json/models.json are provisioned by scripts/provision-pi.sh"
 }
 
 while [[ $# -gt 0 ]]; do
@@ -219,6 +229,7 @@ done
 
 install_kitty
 install_local_bin
+install_pi
 
 if [[ -n "$BACKUP_DIR" ]]; then
   log "Backup directory: $BACKUP_DIR"

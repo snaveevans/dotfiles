@@ -32,10 +32,13 @@ Defined in `home/.config/kitty/kitty.conf`. `cmd+enter` is a chord prefix.
 
 | Binding | Action |
 | --- | --- |
-| `cmd+enter w` | pick a git worktree, open or focus its tab |
+| `cmd+enter w` | pick a git worktree (all repos), open or focus its tab |
+| `cmd+enter r` | pick a git worktree (this repo), open or focus its tab |
 | `cmd+enter p` | pick a project under `~/workspace`, open or focus its tab |
-| `cmd+enter o` | pick an already-open tab |
+| `cmd+enter o` | pick an already-open tab, most-recently-used first |
+| `cmd+enter c` | pick a branch to reuse (or type a new one), create a worktree, open a tab into it |
 | `cmd+enter n` | new window in the current directory |
+| `cmd+enter k` | kill the current worktree and its branch (forced) and close this tab, after confirming |
 | `F2` / `F3` | new tab / rename tab |
 | `F1` | show Kitty environment variables |
 | `cmd+shift+h/j/k/l` | focus the neighboring window left/down/up/right |
@@ -48,6 +51,26 @@ The tab bar is hidden, so `cmd+enter o` is how you see what tabs exist. Tabs
 are titled by directory: `<repo>` for a primary checkout, `<repo>:<directory>`
 for a worktree.
 
+The list is ordered by actual use, not alphabetically: Kitty tracks every
+tab switch in the current window (`active_tab_history`, up to the last 64),
+and this picker reads that whole history, most-recently-used first - not
+just the last swap. Since fzf's default layout builds the list up from the
+bottom, that puts your most recently used tabs on the rows closest to the
+prompt, right where you're typing, with the least recently touched ones
+scrolled up out of the way. The tab you're currently in sorts to the very
+end - you're already there, so it's the least useful "switch to" target.
+Any tab that history doesn't cover (never switched to via a tab-focus
+event, or a tab in a second OS window) falls back to alphabetical order,
+same as the old default for the whole list.
+
+Any tab running a Claude Code session or an OpenCode process gets a status
+glyph next to its title - `● working`, `⏸ needs input`, `✗ failed`,
+`✓ done`, `○ idle` for Claude Code, `◆ opencode` for OpenCode - read from
+that session's own job state (or, for OpenCode, just its presence in the
+process table - there's no way to tell busy from idle there). See
+[Agent status](worktrees.md#agent-status) for how it's matched and its real
+caveats (both sources are undocumented internals, not versioned APIs).
+
 `cmd+t` is deliberately disabled so it does not shadow anything.
 
 ## Neovim
@@ -59,6 +82,7 @@ specs in `lua/plugins/`. Everything else is LazyVim's.
 | --- | --- |
 | `<leader>gw` | worktrees in this repo |
 | `<leader>gW` | worktrees across every repo |
+| `<leader>/` (visual) | grep the repo for the selected text |
 | `<leader><leader>` / `<leader>p` | find files |
 | `<leader>o` | buffers |
 | `<leader>i` | git changed files |
@@ -74,8 +98,8 @@ The file picker respects `.gitignore` with an allow-list of exceptions, so
 In the worktree picker: `Enter` opens a Kitty tab, `Ctrl-t` opens a Neovim tab
 page scoped to the worktree, `Ctrl-y` yanks the path.
 
-Custom commands: `:Gstash` stashes the current file, `:Gread` picks a tracked
-file and discards its changes.
+Custom commands: `:Gstash` stashes the current file, `:Gread` discards
+uncommitted changes to the current file (checked out fresh from git).
 
 ## Hammerspoon (macOS)
 
@@ -103,6 +127,31 @@ After `cmd+shift+space`, press one key to launch or focus:
 
 In the VS Code window chooser, `cmd+n` and `cmd+p` move between rows.
 
+## Pi
+
+Defined in `home/.pi/agent/keybindings.json` (linked by
+`scripts/install-home-links.sh`) and the `draft-stash` extension in the
+`pi-plugins` package. `minimal-mode` and `/openai-context` also come from
+that package; no local copies of those extensions are needed.
+
+| Binding | Action |
+| --- | --- |
+| `Ctrl+n` / `Ctrl+p` | Move down / up in Pi selection lists |
+| `Ctrl+t` | Cycle thinking level |
+| `Shift+Tab` | Toggle eligible OpenAI/Codex context between 272k and 1m (`pi-plugins` extension) |
+| `Ctrl+x m` | Open the model selector |
+| `Ctrl+x l` | Resume a session |
+| `Ctrl+x n` | Start a new session |
+| `Ctrl+s` | Stash the current prompt and clear the editor |
+| `Ctrl+r` | Restore the stashed prompt |
+
+`Ctrl+x` starts a short-lived chord; the following `m`, `l`, or `n` runs the
+action. Pi's default bindings for these actions are disabled to avoid overlap.
+`Shift+Tab` is registered by `pi-plugins`; `Ctrl+t` replaces Pi's default
+`Shift+Tab` thinking shortcut. The context toggle has no effect on models
+without a 272k catalog window. Run `/reload` after updating the keybindings
+link or Pi package.
+
 ## Where these live
 
 | Surface | File |
@@ -111,6 +160,7 @@ In the VS Code window chooser, `cmd+n` and `cmd+p` move between rows.
 | Kitty | `home/.config/kitty/kitty.conf` |
 | Neovim | `home/.config/nvim/lua/config/keymaps.lua`, `lua/plugins/*.lua` |
 | Hammerspoon | `home/.hammerspoon/init.lua` |
+| Pi | `home/.pi/agent/keybindings.json`, `pi-plugins/packages/custom/extensions/` |
 
 zsh and Hammerspoon reload without an install step: `re` for the shell,
 `cmd+alt+ctrl+R` for Hammerspoon. Kitty needs a config reload, and Neovim

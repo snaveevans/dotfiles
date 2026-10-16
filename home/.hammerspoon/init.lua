@@ -6,14 +6,14 @@ local appModalBindings = {
   { "u", "Slack.app" },
   { "l", "Microsoft Teams.app" },
   { "t", "Reminders.app" },
-  { "'", "Claude.app" },
+  { "'", "ChatGPT.app" },
   { "p", "OpenCode" },
   { "return", "Brave Browser.app" },
   { "i", "IntellJ IDEA.app" },
   { "o", "Visual Studio Code.app" },
   { "m", "Microsoft Outlook.app" },
   { "y", "Messages.app" },
-  { "\\", "Zoom.us.app" },
+  { "\\", "Microsoft Teams.app" },
 }
 
 hs.hotkey.bind({ "cmd", "shift" }, "/", function()

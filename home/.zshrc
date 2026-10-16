@@ -105,6 +105,8 @@ zle -N _worktree
 
 # User configuration
 unsetopt share_history
+# Prefix credential-bearing commands with a space to keep them out of history.
+setopt HIST_IGNORE_SPACE
 
 # vi mode
 bindkey -v
@@ -149,16 +151,6 @@ esac
 case "$OSTYPE" in
   darwin*)
     # alias jsc='/System/Library/Frameworks/JavaScriptCore.framework/Versions/Current/Helpers/jsc'
-    ;;
-esac
-
-# Initialize asdf
-case "$OSTYPE" in
-  darwin*)
-    . "$(brew --prefix)/opt/asdf/libexec/asdf.sh"
-    ;;
-  *)
-    . "$HOME/.asdf/asdf.sh"
     ;;
 esac
 

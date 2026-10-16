@@ -50,7 +50,6 @@ end
 return {
   {
     "mason-org/mason.nvim",
-    enabled = not vim.g.vscode, -- Disable in VSCode
     opts = {
       ensure_installed = {
         "stylua",
@@ -65,13 +64,22 @@ return {
   },
   {
     "ibhagwan/fzf-lua",
-    enabled = not vim.g.vscode, -- Disable in VSCode
     opts = {
       fzf_opts = {
         ["--layout"] = "default",
       },
       files = {
         cmd = files_cmd(),
+      },
+      -- rg skips dotfiles by default, and this repo's real content lives under
+      -- home/.config/* - without --hidden, grep (and the visual-selection grep
+      -- below) silently finds nothing there. .git/.jj are excluded since
+      -- --hidden makes rg walk into those too.
+      grep = {
+        rg_opts = "--column --line-number --no-heading --color=always --smart-case "
+          .. "--max-columns=4096 --hidden "
+          .. glob_args(exclude_globs, true)
+          .. " -e",
       },
     },
     keys = {
@@ -95,6 +103,12 @@ return {
           require("fzf-lua").buffers()
         end,
         desc = "FzF Buffers",
+      },
+      {
+        "<leader>/",
+        LazyVim.pick("grep_visual"),
+        mode = "x",
+        desc = "Grep Selection (Root Dir)",
       },
     },
   },

@@ -80,7 +80,24 @@ def find_wt():
     return shutil.which("wt")
 
 
-def select_worktree() -> dict[str, str]:
+def find_claude():
+    """Find the claude executable, same reasoning as find_wt() - it lives
+    under ~/.local/bin, which Dock-launched Kitty's kittens don't see."""
+    common_locations = [
+        os.path.expanduser("~/.local/bin/claude"),
+        os.path.expanduser("~/bin/claude"),
+        "/usr/local/bin/claude",
+        "/opt/homebrew/bin/claude",
+    ]
+
+    for path in common_locations:
+        if os.path.isfile(path) and os.access(path, os.X_OK):
+            return path
+
+    return shutil.which("claude")
+
+
+def select_worktree(scope_current_repo: bool = False) -> dict[str, str]:
     """Pick a git worktree and return its path plus the tab title to use."""
     wt_path = find_wt()
     if not wt_path:
@@ -90,18 +107,29 @@ def select_worktree() -> dict[str, str]:
     if not fzf_path:
         return {"status": "error", "message": "fzf not found in PATH or common locations"}
 
+    # Kitty sets a kitten's cwd to that of the program running in the window
+    # that invoked it (see docs/kittens/custom.rst), so `wt`'s own repo
+    # scoping - based on its cwd - already lands on the right repo here.
+    list_args = [wt_path, "list"]
+    if not scope_current_repo:
+        list_args.append("--all")
+    list_args.append("--format=fzf")
+
     listing = subprocess.run(
-        [wt_path, "list", "--all", "--format=fzf"],
+        list_args,
         stdout=subprocess.PIPE,
         text=True,
     )
     rows = [row for row in listing.stdout.split("\n") if row.strip()]
     if not rows:
-        return {"status": "error", "message": "No worktrees found."}
+        message = "No worktrees found for this repo." if scope_current_repo else "No worktrees found."
+        return {"status": "error", "message": message}
+
+    prompt = "worktree (repo)> " if scope_current_repo else "worktree> "
 
     # wt emits "display<TAB>tab title<TAB>path"; fzf only shows the first field.
     result = subprocess.run(
-        [fzf_path, "+m", "--delimiter=\t", "--with-nth=1", "--prompt=worktree> "],
+        [fzf_path, "+m", "--delimiter=\t", "--with-nth=1", f"--prompt={prompt}"],
         input="\n".join(rows),
         stdout=subprocess.PIPE,
         text=True,
@@ -115,6 +143,120 @@ def select_worktree() -> dict[str, str]:
         return {"status": "error", "message": "unexpected wt output"}
 
     return {"status": "success", "selected_directory": fields[2], "tab_title": fields[1]}
+
+
+def prompt_line(message: str, prompt: str = "> ") -> str | None:
+    """Ask for a line of free text using kitty's bundled `ask` kitten.
+
+    Runs as a plain subprocess (same trick as calling fzf from here): the
+    kitten prints its JSON result to stdout instead of going through kitty's
+    map-triggered handle_result dispatch, which we don't need.
+    """
+    result = subprocess.run(
+        ["kitty", "+kitten", "ask", "--type=line", f"--message={message}", f"--prompt={prompt}"],
+        stdout=subprocess.PIPE,
+        text=True,
+    )
+    if result.returncode != 0:
+        return None
+
+    # `ask` prints the --message text as a plain bold line on stdout before
+    # its (pretty-printed, multi-line) JSON result, so the JSON object is
+    # only ever the tail of stdout starting at its first brace.
+    try:
+        json_start = result.stdout.index("{")
+        response = json.loads(result.stdout[json_start:]).get("response")
+    except (ValueError, AttributeError):
+        return None
+
+    return response.strip() if response else None
+
+
+def create_worktree() -> dict[str, str]:
+    """Pick an existing branch to reuse, or type a new one, and create a worktree for it.
+
+    One fzf prompt does both jobs: `wt branches` seeds it with local branches
+    not checked out anywhere (so picking one reuses it as-is, no new branch,
+    no base-ref prompt - `wt new` already skips branch creation for a name
+    that already exists). Typing something that matches none of them and
+    hitting enter leaves nothing selected, which - since fzf still hands back
+    the raw query with --print-query - falls through to today's flow: base
+    branch prompt, then `wt new` creates it fresh.
+    """
+    wt_path = find_wt()
+    if not wt_path:
+        return {"status": "error", "message": "wt not found in PATH or common locations"}
+
+    fzf_path = find_fzf()
+    if not fzf_path:
+        return {"status": "error", "message": "fzf not found in PATH or common locations"}
+
+    # Failure here (e.g. not inside a git repo) just means an empty picker -
+    # any typed query still falls through to the create-new path below.
+    listing = subprocess.run(
+        [wt_path, "branches"],
+        stdout=subprocess.PIPE,
+        text=True,
+    )
+    rows = []
+    for row in listing.stdout.split("\n"):
+        if not row.strip():
+            continue
+        fields = row.split("\t")
+        branch = fields[0]
+        date = fields[1] if len(fields) > 1 else ""
+        rows.append(f"{branch}  ({date})\t{branch}" if date else f"{branch}\t{branch}")
+
+    result = subprocess.run(
+        [fzf_path, "+m", "--print-query", "--delimiter=\t", "--with-nth=1",
+         "--prompt=branch> ", "--header=pick a branch to reuse, or type a new name"],
+        input="\n".join(rows),
+        stdout=subprocess.PIPE,
+        text=True,
+    )
+    lines = result.stdout.split("\n")
+    query = lines[0].strip() if lines else ""
+    selected = lines[1] if len(lines) > 1 and lines[1].strip() else ""
+
+    if selected:
+        branch = selected.split("\t")[-1]
+        new_args = [wt_path, "new", branch]
+    else:
+        branch = query
+        if not branch:
+            return {"status": "error", "message": "no branch name entered"}
+
+        # Optional: cancelling or leaving this blank falls through to
+        # `wt new`'s own default (origin's HEAD branch), not an abort.
+        base_ref = prompt_line("Base branch (blank for default)", prompt="from> ")
+        new_args = [wt_path, "new", branch]
+        if base_ref:
+            new_args += ["--from", base_ref]
+
+    created = subprocess.run(
+        new_args,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    dest = created.stdout.strip()
+    if created.returncode != 0 or not dest:
+        message = created.stderr.strip() or "wt new failed"
+        return {"status": "error", "message": message}
+
+    # Look up the repo-qualified title `wt` assigned this worktree (same
+    # "repo:slug" convention select_worktree() reads) so the new tab and any
+    # later re-pick of it share one title instead of drifting apart.
+    listing = subprocess.run(
+        [wt_path, "list", dest, "--format=fzf"],
+        stdout=subprocess.PIPE,
+        text=True,
+    )
+    row = next((r for r in listing.stdout.split("\n") if r.strip()), "")
+    fields = row.split("\t")
+    tab_title = fields[1] if len(fields) >= 3 else os.path.basename(dest)
+
+    return {"status": "success", "selected_directory": dest, "tab_title": tab_title}
 
 
 def get_directories(args: list[str]):
@@ -138,28 +280,304 @@ def select_directory(directories):
     return result.stdout.strip()
 
 
+_AGENT_STATE_PRIORITY = {"blocked": 0, "failed": 1, "working": 2, "done": 3, "idle": 4, "opencode": 5}
+_AGENT_STATE_LABELS = {
+    "working": "● working",
+    "blocked": "⏸ needs input",
+    "failed": "✗ failed",
+    "done": "✓ done",
+    "idle": "○ idle",
+    "opencode": "◆ opencode",
+}
+# `claude agents --json` reports background jobs and live interactive
+# sessions with different vocabularies - a background job's `state` maps
+# straight onto the labels above, but an interactive session only has
+# `status` (busy/waiting/idle/shell), which needs translating.
+_INTERACTIVE_STATUS_TO_STATE = {
+    "busy": "working",
+    "waiting": "blocked",
+    "idle": "idle",
+    "shell": "idle",
+}
+
+
+def load_agent_jobs() -> list[tuple[str, str]]:
+    """Return (cwd, state) for every active Claude Code session.
+
+    Uses `claude agents --json`, the CLI's own scriptable session list -
+    documented via `claude agents --help` as "for scripting; does not
+    require a TTY". This covers both background jobs and interactive
+    sessions running live in a terminal; reading ~/.claude/jobs directly (an
+    earlier version of this) missed interactive sessions entirely, since a
+    plain `claude` session sitting in a Kitty tab has no job directory - only
+    background jobs get one.
+    """
+    claude_path = find_claude()
+    if not claude_path:
+        return []
+
+    try:
+        result = subprocess.run(
+            [claude_path, "agents", "--all", "--json"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        sessions = json.loads(result.stdout)
+    except (OSError, subprocess.TimeoutExpired, ValueError):
+        return []
+
+    jobs = []
+
+    for session in sessions:
+        cwd = session.get("cwd")
+        if not cwd:
+            continue
+
+        if session.get("kind") == "background":
+            state = session.get("state") or ""
+        else:
+            state = _INTERACTIVE_STATUS_TO_STATE.get(session.get("status"), "")
+
+        if state:
+            jobs.append((cwd, state))
+
+    return jobs
+
+
+def _running_opencode_pids() -> list[str]:
+    """PIDs of running processes whose executable is named `opencode`."""
+    try:
+        result = subprocess.run(
+            ["ps", "-eo", "pid,comm"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return []
+
+    pids = []
+    for line in result.stdout.splitlines():
+        parts = line.split(None, 1)
+        if len(parts) != 2:
+            continue
+        pid, comm = parts
+        if pid.isdigit() and os.path.basename(comm) == "opencode":
+            pids.append(pid)
+
+    return pids
+
+
+def _cwd_of_pid(pid: str) -> str | None:
+    """The working directory of a running process, via `lsof -d cwd`."""
+    try:
+        result = subprocess.run(
+            ["lsof", "-a", "-p", pid, "-d", "cwd", "-Fn"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+
+    for line in result.stdout.splitlines():
+        if line.startswith("n"):
+            return line[1:]
+
+    return None
+
+
+def load_opencode_jobs() -> list[tuple[str, str]]:
+    """Return (cwd, "opencode") for every running OpenCode process.
+
+    OpenCode has no equivalent of `claude agents --json`: `opencode session
+    list` only ever returns historical session metadata (title, timestamps),
+    never which sessions are currently live or what they're doing. The
+    process table is the only reliable live signal, so this finds running
+    `opencode` processes and resolves each one's cwd via `lsof`. There's no
+    way to tell busy from idle this way, so every match reports the same
+    catch-all "opencode" state rather than claiming a precision we don't
+    have.
+    """
+    jobs = []
+    for pid in _running_opencode_pids():
+        cwd = _cwd_of_pid(pid)
+        if cwd:
+            jobs.append((cwd, "opencode"))
+    return jobs
+
+
+def container_roots() -> set[str]:
+    """Directories whose immediate children are separate projects.
+
+    A job several directories under one of these belongs to whichever
+    project it's actually in, not to the container itself - unlike a
+    worktree or repo checkout, where working several directories deep is
+    still the same project. These are only valid as exact-match anchors.
+    """
+    roots = set()
+    for var, default in (("WT_WORKSPACE", "~/workspace"), ("WT_ROOT", "~/worktrees")):
+        roots.add(os.path.expanduser(os.environ.get(var, default)).rstrip("/"))
+    return roots
+
+
+def agent_status_for_paths(paths: list[str], jobs: list[tuple[str, str]]) -> str | None:
+    """Status label for jobs whose cwd is at or under any of `paths`.
+
+    A path exactly at $HOME is dropped before matching: a window sitting bare
+    at home isn't "inside" any project, and treating it as an anchor would
+    match nearly every job on the machine, since every job's cwd is a
+    descendant of home. This matters for split-pane tabs - one pane parked at
+    home is enough to poison the whole tab's status if it isn't excluded.
+
+    A path that's a container root (see `container_roots`) only matches a
+    job whose cwd is exactly that path, not one somewhere underneath it -
+    otherwise a tab sitting at ~/workspace would pick up every job running
+    in every repo under it, the same failure mode $HOME has, just one level
+    down and only for jobs at the container root itself, not descendants.
+    """
+    home = os.path.expanduser("~").rstrip("/")
+    containers = container_roots()
+    anchors = [p.rstrip("/") for p in paths if p and p.rstrip("/") != home]
+
+    best = None
+    count = 0
+
+    for cwd, state in jobs:
+        matched = any(
+            cwd == anchor or (anchor not in containers and cwd.startswith(anchor + "/"))
+            for anchor in anchors
+        )
+        if not matched:
+            continue
+        count += 1
+        if state in _AGENT_STATE_PRIORITY and (
+            best is None or _AGENT_STATE_PRIORITY[state] < _AGENT_STATE_PRIORITY[best]
+        ):
+            best = state
+
+    if best is None:
+        return None
+
+    label = _AGENT_STATE_LABELS[best]
+    return f"{label} ×{count}" if count > 1 else label
+
+
+def agent_status_for(path: str, jobs: list[tuple[str, str]]) -> str | None:
+    """Status label for jobs whose cwd is at or under `path`, or None."""
+    return agent_status_for_paths([path], jobs)
+
+
+def _current_tab_and_history(data) -> tuple[int | None, list[int]]:
+    """The focused tab's id, and its OS window's tab-switch history,
+    most-recently-switched-away-from first.
+
+    `kitty @ ls` already reports `active_tab_history` on each OS window: a
+    plain list of tab ids kitty itself grows by one on every tab switch
+    (oldest to newest, capped at 64 entries) and trims on tab close - see
+    `add_active_id_to_history` in kitty's own tabs.py. That's kitty's real
+    cross-session record of what you've actually switched between today,
+    not just the last swap. An earlier version of this read `recent:N` via
+    `--match-tab` instead, one subprocess call per N - but kitty's own
+    `nth_active_tab()` clamps any N past the real history depth to repeat
+    the oldest entry rather than stopping, which made that approach look
+    like it was only tracking one tab back. Reading `active_tab_history`
+    directly (already present in the one `kitty @ ls` call this function's
+    caller already makes) sidesteps that clamping entirely.
+    """
+    for session in data:
+        for tab in session["tabs"]:
+            if tab.get("is_focused"):
+                return tab["id"], list(reversed(session.get("active_tab_history", ())))
+    return None, []
+
+
+def _order_tabs_by_recency(
+    by_id: dict[int, tuple[str, str | None]],
+    current_id: int | None,
+    history: list[int],
+) -> list[tuple[str, str | None]]:
+    """Order tab entries by actual usage, most-recently-used first, current
+    tab last.
+
+    `history` (see `_current_tab_and_history`) is kitty's own tab-switch
+    record for the current OS window - everything you've actually switched
+    between, not just the last swap. The current tab moves to the end: it's
+    where you already are, so it's the least useful "switch to" target even
+    though it's the most recently focused by definition. A tab can appear in
+    `history` from an earlier visit even while it's also the current tab -
+    kitty only records history on switch-*away*, so a tab you left once and
+    came back to still carries its old history entry - the `seen` set below
+    drops that duplicate rather than listing a tab twice. Anything `history`
+    doesn't cover (never switched to via a tab-focus event, e.g. opened but
+    not yet visited, or a tab in a second OS window) falls back to
+    alphabetical (case-insensitive) order, appended after everything history
+    does cover - the same ordering this function replaces, so empty history
+    reproduces the old behavior exactly.
+    """
+    seen = set()
+    ordered_ids = []
+    for tab_id in history:
+        if tab_id in by_id and tab_id != current_id and tab_id not in seen:
+            seen.add(tab_id)
+            ordered_ids.append(tab_id)
+    if current_id in by_id:
+        ordered_ids.append(current_id)
+        seen.add(current_id)
+    leftover_ids = sorted(
+        (tab_id for tab_id in by_id if tab_id not in seen),
+        key=lambda tab_id: by_id[tab_id][0].lower(),
+    )
+    ordered_ids += leftover_ids
+    return [by_id[tab_id] for tab_id in ordered_ids]
+
+
 def select_open_tab():
     result = subprocess.run(["kitty", "@", "ls"], capture_output=True, text=True)
 
     # Parse the JSON output
     data = json.loads(result.stdout)
+    jobs = load_agent_jobs() + load_opencode_jobs()
 
-    # Extract the list of tabs
-    tabs = []
+    # Collect every tab's title and agent status, keyed by id so it can be
+    # reordered by recency below. A tab can be a split with several windows
+    # at different cwds, so every window is matched for status, not just the
+    # first - otherwise whichever window happens to come first decides the
+    # whole tab's status.
+    by_id = {}
     for session in data:
         for tab in session["tabs"]:
-            tabs.append(tab["title"])
+            cwds = [window.get("cwd") for window in tab.get("windows", [])]
+            by_id[tab["id"]] = (tab["title"], agent_status_for_paths(cwds, jobs))
+
+    current_id, history = _current_tab_and_history(data)
+    entries = _order_tabs_by_recency(by_id, current_id, history)
+
+    # Titles vary a lot in length, so without padding the status column
+    # lands in a different place on every row and the list reads as noise.
+    width = max((len(title) for title, _ in entries), default=0)
+    rows = [
+        (f"{title:<{width}}  {status}" if status else title, title)
+        for title, status in entries
+    ]
 
     fzf_path = find_fzf()
     if not fzf_path:
         return {"status": "error", "message": "fzf not found in PATH or common locations"}
 
+    # fzf shows only the display column; the title (field 2) is the value.
+    lines = [f"{display}\t{title}" for display, title in rows]
     result = subprocess.run(
-        [fzf_path], input="\n".join(tabs), stdout=subprocess.PIPE, text=True
+        [fzf_path, "--delimiter=\t", "--with-nth=1"],
+        input="\n".join(lines),
+        stdout=subprocess.PIPE,
+        text=True,
     )
-    selected_tab = result.stdout.strip()
-    if not selected_tab:
+    selected = result.stdout.strip()
+    if not selected:
         return {"status": "error", "message": "No open tab selected."}
+    selected_tab = selected.split("\t")[-1]
     return {"status": "success", "selected_directory": selected_tab}
 
 
@@ -171,6 +589,12 @@ def main(args: list[str]) -> dict[str, str]:
 
     if mode == "worktree":
         return select_worktree()
+
+    if mode == "worktree-repo":
+        return select_worktree(scope_current_repo=True)
+
+    if mode == "worktree-new":
+        return create_worktree()
 
     # Get directories to choose from
     directories = get_directories(dirs)
@@ -197,6 +621,8 @@ def handle_result(
     # return
     if value["status"] == "error":
         # w.paste_text(f"Error: {value['message']}")
+        if len(args) > 1 and args[1] == "worktree-new":
+            boss.show_error("Create worktree", value.get("message", "unknown error"))
         return
     # elif value.get("status") == "success":
     #     w.paste_text(f"Selected directory: {value['selected_directory']}")

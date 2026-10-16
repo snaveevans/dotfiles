@@ -39,7 +39,7 @@ truncation_symbol = '…/'
 
 # Git
 [git_branch]
-symbol = ' '"
+symbol = ' '
 style = 'fg:#c477dc bold'
 format = '[$symbol$branch(:$remote_branch)]($style) '
 

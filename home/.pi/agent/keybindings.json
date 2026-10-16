@@ -1,0 +1,13 @@
+{
+  "tui.select.down": ["down", "ctrl+n"],
+  "tui.select.up": ["up", "ctrl+p"],
+  "app.thinking.cycle": "ctrl+t",
+  "app.thinking.toggle": [],
+  "app.thinking.save": [],
+  "app.session.toggleSort": [],
+  "app.models.save": [],
+  "app.session.rename": [],
+  "app.model.select": [],
+  "app.session.resume": [],
+  "app.session.new": []
+}

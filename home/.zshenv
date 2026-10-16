@@ -2,10 +2,12 @@ export ASDF_DATA_DIR="$HOME/.asdf"
 
 PATH="$PATH:$HOME/bin"
 PATH="$PATH:/usr/local/bin"
-PATH="$PATH:$HOME/.local/bin"
 PATH="$PATH:$HOME/.cargo/bin"
 PATH="$PATH:$HOME/.rover/bin"
 PATH="${ASDF_DATA_DIR:-$HOME/.asdf}/shims:$PATH"
+# Keep repo-managed launchers, including the pinned Pi wrapper, ahead of
+# asdf's project-sensitive shims.
+PATH="$HOME/.local/bin:$PATH"
 PATH="$HOME/.opencode/bin:$PATH"
 export PATH
 

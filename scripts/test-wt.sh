@@ -30,10 +30,74 @@ TEST_WT_ROOT="$TMP_DIR/worktrees"
 REPO="$WORKSPACE/repo-a"
 SPACED_WORKTREE="$TMP_DIR/space dir/with space"
 
+# A fake `claude` on PATH stands in for `claude agents --json`: it prints
+# whatever JSON file FAKE_CLAUDE_AGENTS_FILE points at, or an empty array by
+# default, so agent-status tests are hermetic instead of depending on
+# whatever's actually running on the machine. A fake `kitty` joins it later,
+# right before the test that needs one.
+FAKE_BIN="$TMP_DIR/fakebin"
+mkdir -p "$FAKE_BIN"
+cat >"$FAKE_BIN/claude" <<'EOF'
+#!/usr/bin/env bash
+if [[ "$1" == "agents" ]]; then
+  if [[ -n "${FAKE_CLAUDE_AGENTS_FILE:-}" && -f "$FAKE_CLAUDE_AGENTS_FILE" ]]; then
+    cat "$FAKE_CLAUDE_AGENTS_FILE"
+  else
+    printf '[]\n'
+  fi
+  exit 0
+fi
+exit 1
+EOF
+chmod +x "$FAKE_BIN/claude"
+CLAUDE_AGENTS_FILE="$TMP_DIR/claude-agents.json"
+
+# Fake `ps`/`lsof` stand in for OpenCode's process-table detection (it has no
+# `claude agents --json` equivalent, see load_opencode_jobs). FAKE_PS_FILE
+# holds "pid comm" lines - one real (non-opencode) process is always mixed
+# in so the comm-basename filter is exercised, not just the happy path. A
+# second process reports a comm starting with "-" (real processes do this -
+# a JVM launched with argv[0] set to a flag like "-Djdk...", a login shell
+# reported as "-zsh") to catch a regression of the bug where `basename`
+# parsed that leading "-" as an option instead of part of the string,
+# aborting with "illegal option -- D" instead of just not matching.
+# FAKE_LSOF_CWDS maps pid -> cwd as "pid cwd" lines; a pid with no entry
+# there mimics lsof finding nothing (already exited, no permission).
+cat >"$FAKE_BIN/ps" <<'EOF'
+#!/usr/bin/env bash
+printf '  PID COMM\n'
+printf '1 /sbin/launchd\n'
+printf '2 -Djdk.xml.maxGeneralEntitySizeLimit=0\n'
+if [[ -n "${FAKE_PS_FILE:-}" && -f "$FAKE_PS_FILE" ]]; then
+  cat "$FAKE_PS_FILE"
+fi
+EOF
+chmod +x "$FAKE_BIN/ps"
+cat >"$FAKE_BIN/lsof" <<'EOF'
+#!/usr/bin/env bash
+pid=""
+prev=""
+for arg in "$@"; do
+  if [[ "$prev" == "-p" ]]; then
+    pid="$arg"
+  fi
+  prev="$arg"
+done
+if [[ -n "${FAKE_LSOF_CWDS:-}" && -f "$FAKE_LSOF_CWDS" ]]; then
+  cwd="$(awk -v pid="$pid" '$1 == pid { print $2 }' "$FAKE_LSOF_CWDS")"
+  if [[ -n "$cwd" ]]; then
+    printf 'p%s\nfcwd\nn%s\n' "$pid" "$cwd"
+  fi
+fi
+EOF
+chmod +x "$FAKE_BIN/lsof"
+PS_FILE="$TMP_DIR/ps.txt"
+LSOF_CWDS_FILE="$TMP_DIR/lsof-cwds.txt"
+
 # Worktree semantics are the thing under test, so this drives real git inside a
 # throwaway directory rather than faking git on PATH.
 run_wt() {
-  HOME="$FAKE_HOME" WT_WORKSPACE="$WORKSPACE" WT_ROOT="$TEST_WT_ROOT" "$WT_BIN" "$@"
+  HOME="$FAKE_HOME" WT_WORKSPACE="$WORKSPACE" WT_ROOT="$TEST_WT_ROOT" PATH="$FAKE_BIN:$PATH" "$WT_BIN" "$@"
 }
 
 mkdir -p "$FAKE_HOME" "$WORKSPACE" "$TEST_WT_ROOT" "$TMP_DIR/space dir"
@@ -47,6 +111,7 @@ git -C "$REPO" commit --quiet -m "initial commit"
 
 git -C "$REPO" worktree add --quiet -b feature "$TEST_WT_ROOT/repo-a/feature"
 git -C "$REPO" worktree add --quiet -b agent-x "$REPO/.claude/worktrees/agent-x"
+git -C "$REPO" worktree add --quiet -b agent-y "$FAKE_HOME/.local/share/opencode/worktree/repo-a-hash/agent-y"
 git -C "$REPO" worktree add --quiet -b sibling "$WORKSPACE/repo-a-sibling"
 git -C "$REPO" worktree add --quiet -b spaced "$SPACED_WORKTREE"
 
@@ -57,15 +122,20 @@ grep -Fq "repo-a${TAB}main${TAB}main${TAB}" "$LIST_FILE" ||
   fail "the primary checkout should be classified as main"
 grep -Fq "repo-a${TAB}wt${TAB}feature${TAB}" "$LIST_FILE" ||
   fail "a worktree under WT_ROOT should be classified as wt"
-grep -Fq "repo-a${TAB}claude${TAB}agent-x${TAB}" "$LIST_FILE" ||
-  fail "a worktree under .claude/worktrees should be classified as claude"
 grep -Fq "repo-a${TAB}other${TAB}sibling${TAB}" "$LIST_FILE" ||
   fail "a worktree outside every known root should be classified as other"
 grep -Fq "$SPACED_WORKTREE" "$LIST_FILE" ||
   fail "a worktree path containing spaces should survive porcelain parsing"
 
-[[ "$(grep -c "^repo-a${TAB}" "$LIST_FILE")" -eq 5 ]] ||
-  fail "expected five worktrees for repo-a"
+if grep -Fq "agent-x" "$LIST_FILE"; then
+  fail "a worktree under .claude/worktrees should be excluded from discovery"
+fi
+if grep -Fq "agent-y" "$LIST_FILE"; then
+  fail "a worktree under .local/share/opencode/worktree should be excluded from discovery"
+fi
+
+[[ "$(grep -c "^repo-a${TAB}" "$LIST_FILE")" -eq 4 ]] ||
+  fail "expected four visible worktrees for repo-a (agent-owned ones are excluded)"
 
 # repo-a-sibling is itself a linked worktree, so scanning the workspace must not
 # report it as a separate repo.
@@ -78,16 +148,114 @@ run_wt list --all --format=fzf >"$FZF_FILE"
 
 awk -F '\t' 'NF != 3 { exit 1 }' "$FZF_FILE" ||
   fail "fzf format should emit display, title, and path fields"
-grep -Fq "${TAB}repo-a:agent-x${TAB}" "$FZF_FILE" ||
+grep -Fq "${TAB}repo-a:feature${TAB}" "$FZF_FILE" ||
   fail "linked worktrees should get a repo-qualified tab title"
 grep -Fq "${TAB}repo-a${TAB}" "$FZF_FILE" ||
   fail "the primary checkout should get a bare repo tab title"
 
+# A missing optional Claude CLI must not make `wt list` exit under `set -e`.
+# Use a minimal PATH so the fake Claude binary above and any host installation
+# are not visible; skip only when `find_claude`'s fixed locations have one.
+NO_CLAUDE_BIN="$TMP_DIR/no-claude-bin"
+mkdir -p "$NO_CLAUDE_BIN"
+for command_name in bash git mktemp sort awk cut rm; do
+  command_path="$(command -v "$command_name")" ||
+    fail "required command not found for no-Claude test: $command_name"
+  ln -s "$command_path" "$NO_CLAUDE_BIN/$command_name"
+done
+if [[ ! -x "$FAKE_HOME/.local/bin/claude" &&
+      ! -x "$FAKE_HOME/bin/claude" &&
+      ! -x /usr/local/bin/claude &&
+      ! -x /opt/homebrew/bin/claude ]]; then
+  NO_CLAUDE_FILE="$TMP_DIR/no-claude.tsv"
+  (
+    cd "$REPO"
+    HOME="$FAKE_HOME" WT_WORKSPACE="$WORKSPACE" WT_ROOT="$TEST_WT_ROOT" \
+      PATH="$NO_CLAUDE_BIN" "$WT_BIN" list --format=tsv
+  ) >"$NO_CLAUDE_FILE" ||
+    fail "wt list should succeed when the optional Claude CLI is unavailable"
+  grep -Fq "repo-a${TAB}main${TAB}main${TAB}" "$NO_CLAUDE_FILE" ||
+    fail "wt list should still include the current repo when Claude is unavailable"
+fi
+
+# Agent status comes from `claude agents --json` (faked above), keyed by
+# cwd, so a worktree with a matching session (or several) should carry a
+# status glyph. wt's own field for this is field 8 once `cut -f3-` (tsv
+# format) has dropped rank/commit_time.
+cat >"$CLAUDE_AGENTS_FILE" <<JSON
+[{"cwd": "$TEST_WT_ROOT/repo-a/feature", "kind": "background", "state": "working"}]
+JSON
+export FAKE_CLAUDE_AGENTS_FILE="$CLAUDE_AGENTS_FILE"
+
+AGENT_FILE="$TMP_DIR/agent.tsv"
+run_wt list --all --format=tsv >"$AGENT_FILE"
+
+[[ "$(awk -F'\t' '$3 == "feature" { print $8 }' "$AGENT_FILE")" == "● working" ]] ||
+  fail "a worktree with a matching Claude Code session should show its agent status"
+
+# A second job on the same worktree should raise the count without changing
+# which state wins: working outranks done.
+cat >"$CLAUDE_AGENTS_FILE" <<JSON
+[
+  {"cwd": "$TEST_WT_ROOT/repo-a/feature", "kind": "background", "state": "working"},
+  {"cwd": "$TEST_WT_ROOT/repo-a/feature", "kind": "background", "state": "done"}
+]
+JSON
+
+run_wt list --all --format=tsv >"$AGENT_FILE"
+
+[[ "$(awk -F'\t' '$3 == "feature" { print $8 }' "$AGENT_FILE")" == "● working ×2" ]] ||
+  fail "a worktree with two jobs should show the higher-priority state and a count"
+
+# An interactive session only reports `status`, not `state`, and uses a
+# different vocabulary (busy/waiting/idle/shell) - this has to translate to
+# the same working/blocked/idle labels a background job's `state` produces.
+cat >"$CLAUDE_AGENTS_FILE" <<JSON
+[{"cwd": "$TEST_WT_ROOT/repo-a/feature", "kind": "interactive", "status": "waiting"}]
+JSON
+
+run_wt list --all --format=tsv >"$AGENT_FILE"
+
+[[ "$(awk -F'\t' '$3 == "feature" { print $8 }' "$AGENT_FILE")" == "⏸ needs input" ]] ||
+  fail "an interactive session's 'waiting' status should translate to needs input"
+
+unset FAKE_CLAUDE_AGENTS_FILE
+
+# OpenCode has no `claude agents --json` equivalent, so its jobs come from
+# the process table instead: a running `opencode` process resolved to its
+# cwd via `lsof`. FAKE_PS_FILE lists the pid+comm, FAKE_LSOF_CWDS maps that
+# pid to a cwd.
+printf '4242 /Users/tyler.evans/.opencode/bin/opencode\n' >"$PS_FILE"
+printf '4242 %s\n' "$TEST_WT_ROOT/repo-a/feature" >"$LSOF_CWDS_FILE"
+export FAKE_PS_FILE="$PS_FILE"
+export FAKE_LSOF_CWDS="$LSOF_CWDS_FILE"
+
+run_wt list --all --format=tsv >"$AGENT_FILE"
+
+[[ "$(awk -F'\t' '$3 == "feature" { print $8 }' "$AGENT_FILE")" == "◆ opencode" ]] ||
+  fail "a running opencode process should show its catch-all agent status"
+
+# Paired with a higher-priority Claude job on the same worktree, the more
+# specific state should win while the count still reflects both.
+cat >"$CLAUDE_AGENTS_FILE" <<JSON
+[{"cwd": "$TEST_WT_ROOT/repo-a/feature", "kind": "background", "state": "working"}]
+JSON
+export FAKE_CLAUDE_AGENTS_FILE="$CLAUDE_AGENTS_FILE"
+
+run_wt list --all --format=tsv >"$AGENT_FILE"
+
+[[ "$(awk -F'\t' '$3 == "feature" { print $8 }' "$AGENT_FILE")" == "● working ×2" ]] ||
+  fail "an opencode session sharing a worktree with a Claude job should add to the count, not outrank it"
+
+unset FAKE_CLAUDE_AGENTS_FILE
+unset FAKE_PS_FILE
+unset FAKE_LSOF_CWDS
+
 LOCAL_FILE="$TMP_DIR/local.tsv"
 (cd "$REPO/.claude/worktrees/agent-x" && run_wt list --format=tsv) >"$LOCAL_FILE"
 
-[[ "$(wc -l <"$LOCAL_FILE" | tr -d ' ')" -eq 5 ]] ||
-  fail "repo scope from inside a linked worktree should resolve the whole repo"
+[[ "$(wc -l <"$LOCAL_FILE" | tr -d ' ')" -eq 4 ]] ||
+  fail "repo scope from inside an excluded worktree should still resolve the whole repo"
 
 DRY_OUT="$TMP_DIR/new-dry.out"
 DRY_ERR="$TMP_DIR/new-dry.err"
@@ -128,5 +296,258 @@ grep -Fq "main worktree" "$RM_MAIN_ERR" || fail "rm should explain why it refuse
 if git -C "$REPO" show-ref --verify --quiet "refs/heads/tyler/CCLOUD-1-demo"; then
   fail "--delete-branch should delete the branch"
 fi
+
+MERGED_PATH="$(cd "$REPO" && run_wt new tyler/CCLOUD-2-merged)"
+printf 'merged work\n' >>"$MERGED_PATH/README.md"
+git -C "$MERGED_PATH" add README.md
+git -C "$MERGED_PATH" commit --quiet -m "merged work"
+git -C "$REPO" merge --quiet --no-edit tyler/CCLOUD-2-merged
+
+UNMERGED_PATH="$(cd "$REPO" && run_wt new tyler/CCLOUD-3-unmerged)"
+printf 'unmerged work\n' >>"$UNMERGED_PATH/README.md"
+git -C "$UNMERGED_PATH" add README.md
+git -C "$UNMERGED_PATH" commit --quiet -m "unmerged work"
+
+DIRTY_PATH="$(cd "$REPO" && run_wt new tyler/CCLOUD-4-dirty)"
+printf 'dirty\n' >>"$DIRTY_PATH/README.md"
+
+CLEAN_DRY_ERR="$TMP_DIR/clean-dry.err"
+(cd "$REPO" && run_wt clean --dry-run) 2>"$CLEAN_DRY_ERR"
+
+[[ -d "$MERGED_PATH" ]] || fail "dry-run clean should not remove a merged worktree"
+grep -Fq "DRY-RUN" "$CLEAN_DRY_ERR" || fail "dry-run clean should log planned actions"
+
+CLEAN_ERR="$TMP_DIR/clean.err"
+(cd "$REPO" && run_wt clean) 2>"$CLEAN_ERR"
+
+[[ ! -d "$MERGED_PATH" ]] || fail "clean should remove a merged, clean worktree"
+if git -C "$REPO" show-ref --verify --quiet "refs/heads/tyler/CCLOUD-2-merged"; then
+  fail "clean should delete the branch of a removed worktree"
+fi
+
+[[ -d "$UNMERGED_PATH" ]] || fail "clean should not remove an unmerged worktree"
+grep -Fq "not merged" "$CLEAN_ERR" || fail "clean should explain why it skipped an unmerged worktree"
+
+[[ -d "$DIRTY_PATH" ]] || fail "clean should not remove a worktree with uncommitted changes"
+grep -Fq "uncommitted changes" "$CLEAN_ERR" || fail "clean should explain why it skipped a dirty worktree"
+
+[[ -d "$REPO" ]] || fail "clean should never remove the main worktree"
+
+# agent-x and agent-y are both trivially clean and merged (never diverged
+# from main), so if the exclusion in cmd_clean's own scan didn't hold, this
+# run would have swept them.
+[[ -d "$REPO/.claude/worktrees/agent-x" ]] ||
+  fail "clean should never touch a worktree under .claude/worktrees"
+[[ -d "$FAKE_HOME/.local/share/opencode/worktree/repo-a-hash/agent-y" ]] ||
+  fail "clean should never touch a worktree under .local/share/opencode/worktree"
+
+# The "no open Kitty tab" gate is the difference between `wt clean` and just
+# deleting every merged worktree unconditionally, so it gets its own check
+# with a fake `kitty` joining the fake `claude` already on PATH.
+TAB_PATH="$(cd "$REPO" && run_wt new tyler/CCLOUD-5-tabbed)"
+printf 'tabbed work\n' >>"$TAB_PATH/README.md"
+git -C "$TAB_PATH" add README.md
+git -C "$TAB_PATH" commit --quiet -m "tabbed work"
+git -C "$REPO" merge --quiet --no-edit tyler/CCLOUD-5-tabbed
+
+# Stateful the same way the fake `claude` is: reads whatever `kitty @ ls`
+# JSON FAKE_KITTY_LS_FILE points at, or reports no tabs at all by default -
+# needed now that run_wt always puts $FAKE_BIN on PATH, so the two clean
+# calls below can't tell "tab open" from "tab closed" by which kitty (fake
+# vs. real) happens to answer.
+cat >"$FAKE_BIN/kitty" <<'EOF'
+#!/usr/bin/env bash
+if [[ "$1" == "@" && "$2" == "ls" ]]; then
+  if [[ -n "${FAKE_KITTY_LS_FILE:-}" && -f "$FAKE_KITTY_LS_FILE" ]]; then
+    cat "$FAKE_KITTY_LS_FILE"
+  else
+    printf '[]\n'
+  fi
+  exit 0
+fi
+if [[ "$1" == "@" && "$2" == "close-tab" ]]; then
+  if [[ -n "${FAKE_KITTY_CLOSE_TAB_LOG:-}" ]]; then
+    printf '%s\n' "$*" >>"$FAKE_KITTY_CLOSE_TAB_LOG"
+  fi
+  exit 0
+fi
+exit 1
+EOF
+chmod +x "$FAKE_BIN/kitty"
+
+KITTY_LS_FILE="$TMP_DIR/kitty-ls.json"
+cat >"$KITTY_LS_FILE" <<JSON
+[{"tabs": [{"id": 1, "title": "repo-a:tyler-CCLOUD-5-tabbed"}]}]
+JSON
+export FAKE_KITTY_LS_FILE="$KITTY_LS_FILE"
+
+TAB_ERR="$TMP_DIR/clean-tab.err"
+(cd "$REPO" && run_wt clean) 2>"$TAB_ERR"
+
+[[ -d "$TAB_PATH" ]] || fail "clean should not remove a worktree with an open Kitty tab"
+grep -Fq "still open" "$TAB_ERR" || fail "clean should explain why it skipped an open worktree"
+
+unset FAKE_KITTY_LS_FILE
+
+(cd "$REPO" && run_wt clean) 2>/dev/null
+
+[[ ! -d "$TAB_PATH" ]] || fail "clean should remove the worktree once its tab is no longer open"
+
+# The "no live agent job" gate mirrors the open-tab gate: a worktree can be
+# merged and clean but still have a Claude Code session working in it.
+AGENT_PATH="$(cd "$REPO" && run_wt new tyler/CCLOUD-6-agent-busy)"
+printf 'agent work\n' >>"$AGENT_PATH/README.md"
+git -C "$AGENT_PATH" add README.md
+git -C "$AGENT_PATH" commit --quiet -m "agent work"
+git -C "$REPO" merge --quiet --no-edit tyler/CCLOUD-6-agent-busy
+
+cat >"$CLAUDE_AGENTS_FILE" <<JSON
+[{"cwd": "$AGENT_PATH", "kind": "background", "state": "working"}]
+JSON
+export FAKE_CLAUDE_AGENTS_FILE="$CLAUDE_AGENTS_FILE"
+
+AGENT_CLEAN_ERR="$TMP_DIR/clean-agent.err"
+(cd "$REPO" && run_wt clean) 2>"$AGENT_CLEAN_ERR"
+
+[[ -d "$AGENT_PATH" ]] || fail "clean should not remove a worktree with a live agent job"
+grep -Fq "agent job is working" "$AGENT_CLEAN_ERR" ||
+  fail "clean should explain why it skipped a worktree with a live agent job"
+
+cat >"$CLAUDE_AGENTS_FILE" <<JSON
+[{"cwd": "$AGENT_PATH", "kind": "background", "state": "done"}]
+JSON
+
+(cd "$REPO" && run_wt clean) 2>/dev/null
+
+[[ ! -d "$AGENT_PATH" ]] || fail "clean should remove the worktree once its agent job is done"
+
+unset FAKE_CLAUDE_AGENTS_FILE
+
+# An idle interactive session is still a live process sitting in the
+# worktree, even though nothing's "happening" - clean should treat that the
+# same as working/blocked, not just skip the done/failed background case.
+IDLE_PATH="$(cd "$REPO" && run_wt new tyler/CCLOUD-7-agent-idle)"
+printf 'agent idle work\n' >>"$IDLE_PATH/README.md"
+git -C "$IDLE_PATH" add README.md
+git -C "$IDLE_PATH" commit --quiet -m "agent idle work"
+git -C "$REPO" merge --quiet --no-edit tyler/CCLOUD-7-agent-idle
+
+cat >"$CLAUDE_AGENTS_FILE" <<JSON
+[{"cwd": "$IDLE_PATH", "kind": "interactive", "status": "idle"}]
+JSON
+export FAKE_CLAUDE_AGENTS_FILE="$CLAUDE_AGENTS_FILE"
+
+IDLE_CLEAN_ERR="$TMP_DIR/clean-idle.err"
+(cd "$REPO" && run_wt clean) 2>"$IDLE_CLEAN_ERR"
+
+[[ -d "$IDLE_PATH" ]] || fail "clean should not remove a worktree with a live idle interactive session"
+grep -Fq "agent job is idle" "$IDLE_CLEAN_ERR" ||
+  fail "clean should explain why it skipped a worktree with a live idle session"
+
+unset FAKE_CLAUDE_AGENTS_FILE
+
+(cd "$REPO" && run_wt clean) 2>/dev/null
+
+[[ ! -d "$IDLE_PATH" ]] || fail "clean should remove the worktree once the interactive session is gone"
+
+# A running OpenCode process is just as live as a Claude session - clean
+# should treat its catch-all "opencode" state the same as working/blocked/idle.
+OPENCODE_PATH="$(cd "$REPO" && run_wt new tyler/CCLOUD-8-agent-opencode)"
+printf 'opencode work\n' >>"$OPENCODE_PATH/README.md"
+git -C "$OPENCODE_PATH" add README.md
+git -C "$OPENCODE_PATH" commit --quiet -m "opencode work"
+git -C "$REPO" merge --quiet --no-edit tyler/CCLOUD-8-agent-opencode
+
+printf '4343 /Users/tyler.evans/.opencode/bin/opencode\n' >"$PS_FILE"
+printf '4343 %s\n' "$OPENCODE_PATH" >"$LSOF_CWDS_FILE"
+export FAKE_PS_FILE="$PS_FILE"
+export FAKE_LSOF_CWDS="$LSOF_CWDS_FILE"
+
+OPENCODE_CLEAN_ERR="$TMP_DIR/clean-opencode.err"
+(cd "$REPO" && run_wt clean) 2>"$OPENCODE_CLEAN_ERR"
+
+[[ -d "$OPENCODE_PATH" ]] || fail "clean should not remove a worktree with a running opencode process"
+grep -Fq "agent job is opencode" "$OPENCODE_CLEAN_ERR" ||
+  fail "clean should explain why it skipped a worktree with a running opencode process"
+
+unset FAKE_PS_FILE
+unset FAKE_LSOF_CWDS
+
+(cd "$REPO" && run_wt clean) 2>/dev/null
+
+[[ ! -d "$OPENCODE_PATH" ]] || fail "clean should remove the worktree once the opencode process is gone"
+
+# `wt kill` operates on $PWD's own worktree (no picker, no --path) and always
+# forces through git worktree remove - dirty or not - since bypassing that
+# check is the entire point of a "kill" command, unlike `rm`/`clean` above.
+# What it does gate on, absent --force, is a typed confirmation.
+KILL_PATH="$(cd "$REPO" && run_wt new tyler/CCLOUD-9-kill)"
+printf 'dirty kill work\n' >>"$KILL_PATH/README.md"
+
+KILL_MAIN_ERR="$TMP_DIR/kill-main.err"
+if (cd "$REPO" && run_wt kill --force) 2>"$KILL_MAIN_ERR"; then
+  fail "kill should refuse the main worktree"
+fi
+grep -Fq "main worktree" "$KILL_MAIN_ERR" || fail "kill should explain why it refused the main worktree"
+
+KILL_ABORT_ERR="$TMP_DIR/kill-abort.err"
+if (cd "$KILL_PATH" && printf 'no\n' | run_wt kill) 2>"$KILL_ABORT_ERR"; then
+  fail "kill should abort unless the confirmation is exactly 'yes'"
+fi
+[[ -d "$KILL_PATH" ]] || fail "an aborted kill should leave the worktree in place"
+grep -Fq "Aborted" "$KILL_ABORT_ERR" || fail "kill should explain that it aborted"
+
+# --force skips the confirmation prompt; KITTY_WINDOW_ID unset here mimics
+# running outside Kitty entirely (SSH, tmux, plain terminal) - kill should
+# still remove the worktree and just skip the tab-closing step, not error.
+(unset KITTY_WINDOW_ID; cd "$KILL_PATH" && run_wt kill --force) 2>/dev/null
+
+[[ ! -d "$KILL_PATH" ]] || fail "forced kill should remove the worktree directory even when dirty"
+git -C "$REPO" show-ref --verify --quiet "refs/heads/tyler/CCLOUD-9-kill" ||
+  fail "kill without --delete-branch should leave the branch in place"
+
+# With a real KITTY_WINDOW_ID present, kill should close exactly that
+# window's tab via remote control, and --delete-branch should remove the
+# branch too.
+KILL2_PATH="$(cd "$REPO" && run_wt new tyler/CCLOUD-10-kill-branch)"
+CLOSE_TAB_LOG="$TMP_DIR/close-tab.log"
+export FAKE_KITTY_CLOSE_TAB_LOG="$CLOSE_TAB_LOG"
+
+(export KITTY_WINDOW_ID=42; cd "$KILL2_PATH" && run_wt kill --force --delete-branch) 2>/dev/null
+
+[[ ! -d "$KILL2_PATH" ]] || fail "forced kill should remove the worktree directory"
+if git -C "$REPO" show-ref --verify --quiet "refs/heads/tyler/CCLOUD-10-kill-branch"; then
+  fail "kill --delete-branch should delete the branch"
+fi
+grep -Fq "close-tab --match window_id:42" "$CLOSE_TAB_LOG" ||
+  fail "kill should close the tab of the KITTY_WINDOW_ID it ran in"
+
+unset FAKE_KITTY_CLOSE_TAB_LOG
+
+# `wt branches` lists local branches `wt new BRANCH` would check out as-is
+# rather than create fresh - i.e. not the HEAD of any worktree right now.
+# Killing tyler/CCLOUD-9-kill without --delete-branch above left exactly
+# that: a branch with no worktree. This backs the Kitty worktree-new picker,
+# which offers reusing one of these instead of always prompting for a new
+# branch name.
+BRANCHES_FILE="$TMP_DIR/branches.tsv"
+(cd "$REPO" && run_wt branches) >"$BRANCHES_FILE"
+
+grep -Fq "tyler/CCLOUD-9-kill" "$BRANCHES_FILE" ||
+  fail "branches should list a local branch with no worktree"
+if grep -qE "^main${TAB}" "$BRANCHES_FILE"; then
+  fail "branches should not list the branch checked out in the primary worktree"
+fi
+if grep -qE "^feature${TAB}" "$BRANCHES_FILE"; then
+  fail "branches should not list a branch checked out in another worktree"
+fi
+
+# Reusing a listed branch should behave exactly like `wt new` given that
+# branch name directly: check out as-is, no new branch created.
+REUSE_PATH="$(cd "$REPO" && run_wt new tyler/CCLOUD-9-kill)"
+[[ -d "$REUSE_PATH" ]] ||
+  fail "wt new should recreate a worktree for a branch listed by wt branches"
+[[ "$(git -C "$REUSE_PATH" symbolic-ref --quiet --short HEAD)" == "tyler/CCLOUD-9-kill" ]] ||
+  fail "the recreated worktree should check out the existing branch, not a new one"
 
 printf 'wt verification passed\n'

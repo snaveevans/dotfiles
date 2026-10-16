@@ -24,20 +24,27 @@ ORIGIN=""
 META_SHAS=()
 META_TIMES=()
 META_AGES=()
+AGENT_CWDS=()
+AGENT_STATES=()
+AGENT_LOADED=false
+AGENT_STATE=""
+AGENT_COUNT=0
 
 usage() {
   cat <<'EOF'
 Usage: wt [command] [options] [query]
 
-List and switch between git worktrees, including those created by Claude Code
-and opencode.
+List and switch between git worktrees created with `wt new`.
 
 Commands:
   path [query]     Pick a worktree and print its path (default)
   list [query]     Print worktrees in scope
   new BRANCH       Create a worktree under $WT_ROOT and print its path
+  branches         Print local branches not checked out in any worktree
   rm [query]       Pick a worktree and remove it
+  kill             Delete the current worktree (forced) and close this Kitty tab
   prune            Drop stale worktree registrations
+  clean            Remove worktrees that are merged, clean, and unopened
   tab [query]      Open or focus a Kitty tab for a worktree
 
 Options:
@@ -46,7 +53,7 @@ Options:
       --repo NAME  Act on NAME under $WT_WORKSPACE instead of the current repo
       --path PATH  Act on PATH instead of prompting
       --title NAME Kitty tab title to pair with --path
-      --from REF   Base ref for `wt new` (default: origin's HEAD branch)
+      --from REF   Base ref for `wt new`/`wt clean` (default: origin's HEAD branch)
       --format FMT Output format for `list`: tty, tsv, or fzf
       --force      Remove a worktree even when it has uncommitted changes
       --delete-branch  Also delete the branch when removing a worktree
@@ -55,7 +62,10 @@ Options:
 
 Key bindings:
   Ctrl-k w         zsh: pick a worktree and cd into it
-  cmd+enter w      Kitty: pick a worktree, open or focus its tab
+  cmd+enter w      Kitty: pick a worktree (all repos), open or focus its tab
+  cmd+enter r      Kitty: pick a worktree (this repo), open or focus its tab
+  cmd+enter c      Kitty: create a worktree, open a tab into it
+  cmd+enter k      Kitty: kill this worktree and its branch, close the tab (asks first)
   <leader>gw       Neovim: worktrees in this repo
   <leader>gW       Neovim: worktrees across every repo
 
@@ -161,6 +171,198 @@ scope_repos() {
   workspace_repos
 }
 
+# Claude Code and opencode create worktrees for their own background-job
+# isolation, under these fixed locations regardless of repo. `wt` used to
+# track those too, but everything now goes through `wt new` under $WT_ROOT
+# instead, so worktrees under either path are invisible to every command.
+is_agent_worktree() {
+  case "$1" in
+    */.claude/worktrees/* | */.local/share/opencode/worktree/*)
+      return 0
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+# `claude`, like `wt` itself from Kitty's side (see kitty_selector.py's
+# find_wt()), typically lives under ~/.local/bin - a location a
+# Dock-launched Kitty's kittens (and anything they spawn, `wt` included)
+# don't see on PATH. Checked before load_agent_jobs's plain `command -v` so
+# the picker isn't silently blind to every session whenever it's invoked
+# from a kitten rather than an interactive shell.
+find_claude() {
+  local candidate
+
+  for candidate in "$HOME/.local/bin/claude" "$HOME/bin/claude" /usr/local/bin/claude /opt/homebrew/bin/claude; do
+    if [[ -x "$candidate" ]]; then
+      printf '%s\n' "$candidate"
+      return 0
+    fi
+  done
+
+  command -v claude 2>/dev/null || true
+}
+
+# `claude agents --json` is Claude Code's own scriptable session list
+# (documented via `claude agents --help` as "for scripting; does not require
+# a TTY"), covering both background jobs and live interactive sessions in
+# one call. Background jobs report a `state` (working/blocked/done/failed);
+# interactive sessions only report a `status` (busy/waiting/idle/shell),
+# which gets translated below - reading ~/.claude/jobs directly (an earlier
+# version of this) missed interactive sessions entirely, since a plain
+# `claude` session sitting in a terminal has no job directory, only
+# background jobs do.
+load_claude_jobs() {
+  local claude_bin
+  claude_bin="$(find_claude)"
+  [[ -n "$claude_bin" ]] || return 0
+  command -v jq >/dev/null 2>&1 || return 0
+
+  local cwd kind job_state job_status state
+
+  # Fields are joined with a pipe, not a tab: bash's `read` treats tab (and
+  # space, and newline) as "IFS whitespace" and silently collapses/strips
+  # empty fields even when IFS is set to just a tab, which misaligns columns
+  # here since state/status are routinely empty (a job has one or the
+  # other, never both). A pipe isn't IFS whitespace, so empty fields survive
+  # - and it isn't a character a real cwd would ever contain.
+  while IFS='|' read -r cwd kind job_state job_status; do
+    [[ -n "$cwd" ]] || continue
+
+    if [[ "$kind" == "background" ]]; then
+      state="$job_state"
+    else
+      case "$job_status" in
+        busy) state="working" ;;
+        waiting) state="blocked" ;;
+        idle | shell) state="idle" ;;
+        *) state="" ;;
+      esac
+    fi
+
+    [[ -n "$state" ]] || continue
+
+    AGENT_CWDS+=("$cwd")
+    AGENT_STATES+=("$state")
+  done < <(
+    "$claude_bin" agents --all --json 2>/dev/null |
+      jq -r '.[] | [(.cwd // ""), .kind, (.state // ""), (.status // "")] | join("|")' 2>/dev/null || true
+  )
+}
+
+# OpenCode has no equivalent of `claude agents --json` - `opencode session
+# list` only ever returns historical session metadata (title, timestamps),
+# never which sessions are currently live or what they're doing. The process
+# table is the only reliable live signal, so this finds running `opencode`
+# processes and resolves each one's cwd via `lsof`. There's no way to tell
+# busy from idle this way, so every match reports the same catch-all
+# "opencode" state rather than claiming a precision we don't have.
+load_opencode_jobs() {
+  command -v ps >/dev/null 2>&1 || return 0
+  command -v lsof >/dev/null 2>&1 || return 0
+
+  local pid comm cwd
+
+  while read -r pid comm; do
+    [[ "$pid" =~ ^[0-9]+$ ]] || continue
+    # Plain parameter expansion, not `basename "$comm"`: some real processes
+    # report a comm value starting with "-" (a JVM launched with argv[0] set
+    # to a flag like "-Djdk...", a login shell as "-zsh"), and external
+    # `basename` parses a leading "-" as an option rather than the string to
+    # operate on, failing with "illegal option -- D"/"-- z" instead of ever
+    # comparing it to "opencode".
+    [[ "${comm##*/}" == "opencode" ]] || continue
+
+    cwd="$(lsof -a -p "$pid" -d cwd -Fn 2>/dev/null | sed -n 's/^n//p')"
+    [[ -n "$cwd" ]] || continue
+
+    AGENT_CWDS+=("$cwd")
+    AGENT_STATES+=("opencode")
+  done < <(ps -eo pid,comm 2>/dev/null)
+}
+
+# Loaded once per `wt` process (not once per worktree) and cached in
+# AGENT_LOADED, since load_agent_jobs itself never runs inside a command
+# substitution - a subshell would lose the cache on every call. Claude and
+# OpenCode are loaded independently so one tool being unavailable never
+# hides the other.
+load_agent_jobs() {
+  "$AGENT_LOADED" && return 0
+  AGENT_LOADED=true
+
+  load_claude_jobs
+  load_opencode_jobs
+}
+
+# Sets AGENT_STATE/AGENT_COUNT rather than printing, same reasoning as
+# classify_origin. A worktree "has" a job if the job's cwd is at or under its
+# path, since agents often work a few directories deep rather than at the
+# worktree root. When more than one job matches, the most attention-worthy
+# state wins, lowest number first: blocked (waiting on you), failed,
+# working, done, idle (a session is open but nothing is happening). Numeric
+# priority rather than a chain of case-guarded assignments, since the latter
+# only generalizes correctly to two tiers - this needs five.
+agent_status_for() {
+  local path="$1"
+  local cwd state index priority best_priority
+
+  load_agent_jobs
+
+  AGENT_STATE=""
+  AGENT_COUNT=0
+  best_priority=99
+
+  for ((index = 0; index < ${#AGENT_CWDS[@]}; index++)); do
+    cwd="${AGENT_CWDS[$index]}"
+    [[ "$cwd" == "$path" || "$cwd" == "$path"/* ]] || continue
+
+    state="${AGENT_STATES[$index]}"
+    ((AGENT_COUNT++)) || true
+
+    case "$state" in
+      blocked) priority=0 ;;
+      failed) priority=1 ;;
+      working) priority=2 ;;
+      done) priority=3 ;;
+      idle) priority=4 ;;
+      opencode) priority=5 ;;
+      *) priority=99 ;;
+    esac
+
+    if ((priority < best_priority)); then
+      best_priority=$priority
+      AGENT_STATE="$state"
+    fi
+  done
+}
+
+agent_glyph_for() {
+  local state="$1"
+  local count="$2"
+  local label
+
+  case "$state" in
+    working) label="● working" ;;
+    blocked) label="⏸ needs input" ;;
+    failed) label="✗ failed" ;;
+    done) label="✓ done" ;;
+    idle) label="○ idle" ;;
+    opencode) label="◆ opencode" ;;
+    *)
+      printf '\n'
+      return 0
+      ;;
+  esac
+
+  if [[ "$count" -gt 1 ]]; then
+    label="$label ×$count"
+  fi
+
+  printf '%s\n' "$label"
+}
+
 # Sets ORIGIN rather than printing: a command substitution here forks once per
 # worktree, which is measurable across a full workspace scan.
 classify_origin() {
@@ -173,12 +375,6 @@ classify_origin() {
   fi
 
   case "$path" in
-    */.claude/worktrees/*)
-      ORIGIN=claude
-      ;;
-    */.local/share/opencode/worktree/*)
-      ORIGIN=opencode
-      ;;
     "$WT_ROOT"/*)
       ORIGIN=wt
       ;;
@@ -248,7 +444,7 @@ emit_record() {
   local head="$4"
   local branch="$5"
   local flags="$6"
-  local branch_display dirty rank commit_time age title index
+  local branch_display dirty rank commit_time age title index agent_glyph
 
   [[ -n "$path" ]] || return 0
 
@@ -304,8 +500,11 @@ emit_record() {
     rank=0
   fi
 
-  printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
-    "$rank" "$commit_time" "$repo" "$ORIGIN" "$branch_display" "$dirty" "$age" "$title" "$path"
+  agent_status_for "$path"
+  agent_glyph="$(agent_glyph_for "$AGENT_STATE" "$AGENT_COUNT")"
+
+  printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+    "$rank" "$commit_time" "$repo" "$ORIGIN" "$branch_display" "$dirty" "$age" "$title" "$path" "$agent_glyph"
 }
 
 parse_repo() {
@@ -340,7 +539,7 @@ parse_repo() {
         flags="${line%% *}"
         ;;
       "")
-        if [[ -n "$path" ]]; then
+        if [[ -n "$path" ]] && ! is_agent_worktree "$path"; then
           paths+=("$path")
           heads+=("$head")
           branches+=("$branch")
@@ -355,7 +554,7 @@ parse_repo() {
     esac
   done < <(git -C "$scan_dir" worktree list --porcelain 2>/dev/null)
 
-  if [[ -n "$path" ]]; then
+  if [[ -n "$path" ]] && ! is_agent_worktree "$path"; then
     paths+=("$path")
     heads+=("$head")
     branches+=("$branch")
@@ -410,6 +609,10 @@ render_records() {
         line = sprintf("%-*s  %-*s  %s %-*s  %s", w_repo, $3, w_origin, $4, $6, w_branch, $5, $7)
       } else {
         line = sprintf("%-*s  %-*s  %-*s  %s", w_repo, $3, w_origin, $4, w_branch, $5, $7)
+      }
+
+      if ($10 != "") {
+        line = line "  " $10
       }
 
       if (with_path == "true") {
@@ -629,6 +832,26 @@ cmd_new() {
   fi
 }
 
+# Local branches `wt new BRANCH` would check out as-is rather than create -
+# i.e. not the current HEAD of any worktree of this repo, `wt`-managed or
+# not (an agent's own background worktree counts too: git would refuse to
+# check the branch out a second time regardless of who owns the worktree).
+# Used by the Kitty worktree-new picker to offer reusing an existing branch
+# instead of always prompting for a brand new one.
+cmd_branches() {
+  local repo_main checked_out
+
+  repo_main="$(resolve_repo_main)"
+  checked_out="$(git -C "$repo_main" worktree list --porcelain | sed -n 's|^branch refs/heads/||p')"
+
+  git -C "$repo_main" for-each-ref --sort=-committerdate \
+    --format='%(refname:short)%09%(committerdate:relative)' refs/heads/ |
+    while IFS=$'\t' read -r branch date; do
+      grep -qxF "$branch" <<<"$checked_out" && continue
+      printf '%s\t%s\n' "$branch" "$date"
+    done
+}
+
 cmd_rm() {
   local selected path repo_main branch
 
@@ -668,6 +891,54 @@ cmd_rm() {
   fi
 }
 
+# Unlike cmd_rm, this always operates on $PWD's own worktree (no picker, no
+# --path) and always forces through uncommitted changes - the whole point of
+# a "kill" command is that it doesn't stop to ask whether the worktree is
+# clean. What it does ask, unless --force is passed, is a typed confirmation,
+# since it also closes the Kitty tab it's run from - one fat-fingered
+# keypress would otherwise delete work and kill the session in the same
+# breath with no undo.
+cmd_kill() {
+  local target repo_main branch dirty_note="" confirm=""
+
+  target="$(git -C "$PWD" rev-parse --show-toplevel 2>/dev/null || true)"
+  [[ -n "$target" ]] || die "Not inside a git worktree"
+  target="$(physical_path "$target")"
+
+  repo_main="$(main_worktree_of "$target")" || die "Not a git worktree: $target"
+
+  if [[ "$target" == "$repo_main" ]]; then
+    die "Refusing to kill the main worktree: $target"
+  fi
+
+  branch="$(git -C "$target" symbolic-ref --quiet --short HEAD 2>/dev/null || true)"
+  [[ "$(dirty_marker "$target")" == "*" ]] && dirty_note=" (including uncommitted changes)"
+
+  if ! "$FORCE"; then
+    log "This deletes $target$dirty_note, removes its worktree registration, and closes this Kitty tab and every window in it."
+    if "$DELETE_BRANCH" && [[ -n "$branch" ]]; then
+      log "It also deletes the branch $branch."
+    fi
+
+    read -r -p "Type 'yes' to continue: " confirm
+    [[ "$confirm" == "yes" ]] || die "Aborted"
+  fi
+
+  run git -C "$repo_main" worktree remove --force "$target"
+  log "Removed $target"
+
+  if "$DELETE_BRANCH" && [[ -n "$branch" ]]; then
+    run git -C "$repo_main" branch -D "$branch"
+    log "Deleted branch $branch"
+  fi
+
+  # Not running under Kitty (no remote control, or invoked over SSH/tmux) is
+  # not an error - the worktree is still gone, there's just no tab to close.
+  if [[ -n "${KITTY_WINDOW_ID:-}" ]] && command -v kitty >/dev/null 2>&1; then
+    run kitty @ close-tab --match "window_id:$KITTY_WINDOW_ID" >/dev/null 2>&1 || true
+  fi
+}
+
 cmd_prune() {
   local main_path
 
@@ -675,6 +946,151 @@ cmd_prune() {
     log "Pruning $main_path"
     run git -C "$main_path" worktree prune -v
   done < <(scope_repos)
+}
+
+# A worktree with an open Kitty tab still has a live session someone may be
+# using; treat "can't tell" (not running under Kitty, no jq, remote control
+# off) as "no tab", same fail-open stance focus_or_launch_tab already takes.
+tab_open() {
+  local title="$1"
+  local ids
+
+  command -v kitty >/dev/null 2>&1 || return 1
+  command -v jq >/dev/null 2>&1 || return 1
+
+  ids="$(kitty @ ls 2>/dev/null | jq -r --arg t "$title" '.[].tabs[] | select(.title == $t) | .id' 2>/dev/null || true)"
+
+  [[ -n "$ids" ]]
+}
+
+cmd_clean() {
+  local main_path repo base path head branch flags line title
+  local count index paths heads branches flag_list
+  local removed=0 skipped=0
+
+  while IFS= read -r main_path; do
+    repo="${main_path##*/}"
+
+    if [[ -n "$FROM_REF" ]]; then
+      base="$FROM_REF"
+    else
+      if git -C "$main_path" remote get-url origin >/dev/null 2>&1; then
+        run git -C "$main_path" fetch --quiet origin ||
+          log "$repo: could not fetch origin, checking against local refs"
+      fi
+      base="$(default_base_ref "$main_path")" || true
+    fi
+
+    if [[ -z "$base" ]]; then
+      log "Skipping $repo: could not determine a base ref (pass --from REF)"
+      continue
+    fi
+
+    paths=()
+    heads=()
+    branches=()
+    flag_list=()
+    path=""
+    head=""
+    branch=""
+    flags=""
+
+    while IFS= read -r line; do
+      case "$line" in
+        "worktree "*)
+          path="${line#worktree }"
+          ;;
+        "HEAD "*)
+          head="${line#HEAD }"
+          ;;
+        "branch "*)
+          branch="${line#branch refs/heads/}"
+          ;;
+        detached)
+          branch=""
+          ;;
+        bare | locked* | prunable*)
+          flags="${line%% *}"
+          ;;
+        "")
+          if [[ -n "$path" ]]; then
+            paths+=("$path")
+            heads+=("$head")
+            branches+=("$branch")
+            flag_list+=("$flags")
+          fi
+
+          path=""
+          head=""
+          branch=""
+          flags=""
+          ;;
+      esac
+    done < <(git -C "$main_path" worktree list --porcelain 2>/dev/null)
+
+    if [[ -n "$path" ]]; then
+      paths+=("$path")
+      heads+=("$head")
+      branches+=("$branch")
+      flag_list+=("$flags")
+    fi
+
+    count=${#paths[@]}
+
+    for ((index = 0; index < count; index++)); do
+      path="${paths[$index]}"
+      branch="${branches[$index]}"
+      flags="${flag_list[$index]}"
+
+      [[ "$path" == "$main_path" ]] && continue
+      [[ "$flags" == "bare" ]] && continue
+      is_agent_worktree "$path" && continue
+      # A missing directory is `wt prune`'s job, not this one's.
+      [[ -d "$path" ]] || continue
+
+      if [[ -z "$branch" ]]; then
+        log "Skipping $path: detached HEAD, nothing to check it's merged into"
+        ((skipped++)) || true
+        continue
+      fi
+
+      if [[ "$(dirty_marker "$path")" == "*" ]]; then
+        log "Skipping $path: uncommitted changes"
+        ((skipped++)) || true
+        continue
+      fi
+
+      if ! git -C "$main_path" merge-base --is-ancestor "$branch" "$base" 2>/dev/null; then
+        log "Skipping $path: $branch is not merged into $base"
+        ((skipped++)) || true
+        continue
+      fi
+
+      title="$repo:${path##*/}"
+
+      if tab_open "$title"; then
+        log "Skipping $path: Kitty tab '$title' is still open"
+        ((skipped++)) || true
+        continue
+      fi
+
+      agent_status_for "$path"
+      case "$AGENT_STATE" in
+        working | blocked | idle | opencode)
+          log "Skipping $path: agent job is $AGENT_STATE there"
+          ((skipped++)) || true
+          continue
+          ;;
+      esac
+
+      log "Removing $path ($branch, merged into $base)"
+      run git -C "$main_path" worktree remove "$path"
+      run git -C "$main_path" branch -D "$branch"
+      ((removed++)) || true
+    done
+  done < <(scope_repos)
+
+  log "Removed $removed worktree(s), skipped $skipped"
 }
 
 require_cmd git
@@ -777,11 +1193,20 @@ case "$COMMAND" in
   new | n | add)
     cmd_new "${ARGS[0]:-}"
     ;;
+  branches | br)
+    cmd_branches
+    ;;
   rm | remove)
     cmd_rm "${ARGS[0]:-}"
     ;;
+  kill)
+    cmd_kill
+    ;;
   prune)
     cmd_prune
+    ;;
+  clean)
+    cmd_clean
     ;;
   tab | t)
     cmd_tab "${ARGS[0]:-}"
