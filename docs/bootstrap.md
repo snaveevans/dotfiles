@@ -50,7 +50,7 @@ This repo now uses an explicit bootstrap + link + refresh flow for setup and day
   - installs packages and bootstrap dependencies only
 - `scripts/install-home-links.sh`
   - creates parent directories as needed
-  - symlinks tracked config from `home/` into `$HOME`, including Pi's `~/.pi/agent/keybindings.json`
+  - symlinks tracked config from `home/` into `$HOME`, including OpenCode's `~/.config/opencode/opencode.jsonc` and Pi's `~/.pi/agent/keybindings.json`
   - links tracked Copilot CLI defaults to `~/.copilot/settings.json`
   - backs up an existing target before replacing it; settings are not merged
 - `scripts/refresh-secrets.sh`

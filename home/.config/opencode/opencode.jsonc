@@ -1,0 +1,70 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "plugins": [],
+  "default_agent": "build",
+  "model": "openai/gpt-6-luna",
+  "providers": {
+    "openai": {
+      "models": {
+        "gpt-6-luna": {
+          "settings": {
+            "reasoningEffort": "max"
+          }
+        }
+      }
+    }
+  },
+  "policies": [
+    { "action": "provider.use", "resource": "*", "effect": "deny" },
+    { "action": "provider.use", "resource": "openai", "effect": "allow" },
+    { "action": "provider.use", "resource": "xai", "effect": "allow" }
+  ],
+  "permissions": [
+    { "action": "*", "resource": "*", "effect": "allow" },
+    { "action": "external_directory", "resource": "*", "effect": "ask" },
+    { "action": "external_directory", "resource": "~", "effect": "allow" },
+    { "action": "external_directory", "resource": "~/*", "effect": "allow" }
+  ],
+  "mcp": {
+    "servers": {
+      "context7": {
+        "type": "remote",
+        "url": "https://mcp.context7.com/mcp",
+        "oauth": false,
+        "headers": {
+          "CONTEXT7_API_KEY": "{env:CONTEXT7_API_KEY}"
+        },
+        "disabled": false
+      },
+      "chrome-devtools": {
+        "type": "local",
+        "command": ["npx", "-y", "chrome-devtools-mcp@latest"],
+        "disabled": false
+      },
+      "playwright": {
+        "type": "local",
+        "command": ["npx", "@playwright/mcp@latest"],
+        "disabled": false
+      },
+      "brave-search": {
+        "type": "local",
+        "command": [
+          "npx",
+          "-y",
+          "@brave/brave-search-mcp-server",
+          "--transport",
+          "stdio"
+        ],
+        "environment": {
+          "BRAVE_API_KEY": "{env:BRAVE_API_KEY}"
+        },
+        "disabled": false
+      },
+      "ios-simulator": {
+        "type": "local",
+        "command": ["npx", "-y", "ios-simulator-mcp"],
+        "disabled": false
+      }
+    }
+  }
+}
