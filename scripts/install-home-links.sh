@@ -17,6 +17,7 @@ LINK_PATHS=(
   ".copilot/settings.json"
   ".hammerspoon"
   ".config/nvim"
+  ".config/opencode/opencode.jsonc"
   ".config/starship.toml"
   ".config/i3"
   ".config/rofi"
