@@ -65,7 +65,7 @@ This repo now uses an explicit bootstrap + link + refresh flow for setup and day
 - `scripts/bootstrap-darwin.sh`
   - Homebrew packages/casks
   - Oh My Zsh and zsh plugin/theme setup
-  - macOS defaults and Dock tweaks
+  - macOS defaults: input, Finder, Dock, and app tweaks, plus screenshots saved to `~/screenshots`
 - `scripts/bootstrap-linux.sh`
   - apt packages and Linux tooling installs
   - Bitwarden CLI provisioning for the explicit `bw login` + `scripts/refresh-secrets.sh` flow
