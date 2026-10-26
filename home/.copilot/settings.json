@@ -2,8 +2,8 @@
   "renderMarkdown": true,
   "theme": "default",
   "showReasoning": false,
-  "model": "gpt-6-luna",
-  "effortLevel": "max",
+  "model": "claude-sonnet-5.5",
+  "effortLevel": "high",
   "keepAlive": "on",
   "defaultPermissionMode": "allow-all",
   "footer": {
@@ -26,5 +26,9 @@
   "disabledMcpServers": [
     "figma",
     "launchdarkly"
-  ]
+  ],
+  "enabledPlugins": {
+    "computer-use": true
+  },
+  "experimental": true
 }
