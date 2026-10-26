@@ -39,6 +39,11 @@ esac
 
 # source /usr/local/share/zsh-autosuggestions/zsh-autosuggestions.zsh
 
+gjt() {
+  twg jira workitem get "$1" --fields description -o json --output-summary none \
+    | jq -r '.data[0].description | [.. | objects | select(.type=="paragraph" or .type=="heading") | [.. | .text? // empty] | join("")] | join("\n\n")'
+}
+
 function _clear () {
   zle && { zle send-break; zle -R }
 }
@@ -130,6 +135,8 @@ bindkey -M viins '^kw' _worktree
 bindkey -s '^g' '$(git branch | fzf)^M'
 bindkey -s '^o' 'nvim^M'
 
+alias coa="copilot --agent agentic-engineering-workflow:aew"
+alias co=copilot
 alias tf=terraform
 alias pn=pnpm
 alias lg=lazygit
