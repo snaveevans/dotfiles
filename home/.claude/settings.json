@@ -1,5 +1,5 @@
 {
-  "model": "haiku",
+  "model": "claude-sonnet-5-5",
   "enabledPlugins": {
     "frontend-design@claude-plugins-official": true,
     "typescript-lsp@claude-plugins-official": true
@@ -12,10 +12,10 @@
       }
     }
   },
-  "effortLevel": "xhigh",
+  "effortLevel": "high",
   "modelSettings": {
     "claude-sonnet-5-5": {
-      "effortLevel": "medium"
+      "effortLevel": "high"
     }
   },
   "statusLine": {
