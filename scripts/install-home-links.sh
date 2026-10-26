@@ -15,6 +15,8 @@ LINK_PATHS=(
   ".gitconfig"
   ".rgignore"
   ".copilot/settings.json"
+  ".claude/settings.json"
+  ".claude/keybindings.json"
   ".hammerspoon"
   ".config/nvim"
   ".config/opencode/opencode.jsonc"

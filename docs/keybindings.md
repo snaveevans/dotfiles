@@ -147,6 +147,32 @@ that package; no local copies of those extensions are needed.
 
 `Ctrl+x` starts a short-lived chord; the following `m`, `l`, or `n` runs the
 action. Pi's default bindings for these actions are disabled to avoid overlap.
+
+## Claude Code
+
+Defined in `home/.claude/keybindings.json`, linked to `~/.claude/keybindings.json`
+by `scripts/install-home-links.sh`. Changes apply without a restart.
+
+| Binding | Action |
+| --- | --- |
+| `ctrl+x n` | New session (`/clear`) |
+| `ctrl+x l` | Resume a session (`/resume`) |
+| `ctrl+x m` | Model picker |
+| `ctrl+x c` | Compact the conversation (`/compact`) |
+| `ctrl+x x` | Export the conversation (`/export`) |
+| `ctrl+x e` | Open the prompt in `$EDITOR` |
+| `ctrl+x s` | Status (`/status`) |
+| `ctrl+x t` | Theme (`/theme`) |
+| `ctrl+x a` | Agents (`/agents`) |
+| `ctrl+x u` | Rewind (`/rewind`) |
+| `ctrl+x q` | Exit (`/exit`) |
+
+These `ctrl+x` chords use the same prefix as Claude's built-in chords, such as
+`ctrl+x ctrl+e` for the editor and `ctrl+x ctrl+s` for send-now. The defaults
+stay in place.
+
+`~/.claude/settings.json` (linked from `home/.claude/settings.json`) sets the
+status line, which needs `jq` on the machine.
 `Shift+Tab` is registered by `pi-plugins`; `Ctrl+t` replaces Pi's default
 `Shift+Tab` thinking shortcut. The context toggle has no effect on models
 without a 272k catalog window. Run `/reload` after updating the keybindings
