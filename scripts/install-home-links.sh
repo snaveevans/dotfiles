@@ -169,6 +169,7 @@ install_kitty() {
   ensure_real_directory ".config/kitty"
   link_path ".config/kitty/kitty.conf"
   link_path ".config/kitty/kitty_selector.py"
+  link_path ".config/kitty/center_content.py"
   link_path ".config/kitty/startup-session.conf"
   link_path ".config/kitty/os"
   link_runtime_symlink ".config/kitty/os.conf" ".config/kitty/os/${os_name}.conf"

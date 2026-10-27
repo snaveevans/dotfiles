@@ -41,6 +41,7 @@ Defined in `home/.config/kitty/kitty.conf`. `cmd+enter` is a chord prefix.
 | `cmd+enter k` | kill the current worktree and its branch (forced) and close this tab, after confirming |
 | `F2` / `F3` | new tab / rename tab |
 | `F1` | show Kitty environment variables |
+| `F4` | toggle centered mode: pad the current window so the text area is 1200px wide and centered |
 | `cmd+shift+h/j/k/l` | focus the neighboring window left/down/up/right |
 | `ctrl+shift+h/j/k/l` | resize window narrower/shorter/taller/wider |
 | `cmd+shift+z` | toggle the stack layout (zoom one window) |
