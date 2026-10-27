@@ -55,4 +55,16 @@ return {
       })
     end,
   },
+  {
+    "saghen/blink.cmp",
+    opts = {
+      -- Enter always inserts a newline and Tab always indents, even with the menu or
+      -- Copilot suggestion showing. Accept explicitly with <C-y>.
+      keymap = {
+        preset = "default",
+        ["<CR>"] = { "fallback" },
+        ["<Tab>"] = { "snippet_forward", "fallback" },
+      },
+    },
+  },
 }

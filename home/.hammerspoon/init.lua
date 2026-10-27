@@ -9,7 +9,7 @@ local appModalBindings = {
   { "'", "Claude.app" },
   { ";", "ChatGPT.app" },
   { "p", "OpenCode" },
-  { "return", "Brave Browser.app" },
+  { "return", "Microsoft Edge.app" },
   { "i", "IntellJ IDEA.app" },
   { "o", "Visual Studio Code.app" },
   { "m", "Microsoft Outlook.app" },

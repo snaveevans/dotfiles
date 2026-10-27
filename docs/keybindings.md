@@ -90,6 +90,8 @@ specs in `lua/plugins/`. Everything else is LazyVim's.
 | `<leader><cr>` | clear search highlight |
 | `Ctrl-j` / `Ctrl-k` | half page down / up |
 | `Alt-j` / `Alt-k` | move the line or selection down / up |
+| `Ctrl-y` (insert) | accept the completion / Copilot suggestion (`Enter` and `Tab` never accept) |
+| `Tab` (insert) | jump to next snippet placeholder, otherwise indent |
 
 The file picker respects `.gitignore` with an allow-list of exceptions, so
 `.env*` files show up even when a repo ignores them. Extend `unignore_globs` in
