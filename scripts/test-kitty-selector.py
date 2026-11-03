@@ -281,7 +281,92 @@ def main():
     if ordered != expected:
         fail(f"expected alphabetical fallback with no history, got: {ordered!r}")
 
+    check_create_worktree(ks)
+
     print("kitty_selector agent-status assertions passed")
+
+
+def check_create_worktree(ks):
+    """Drives the Kitty `cmd+enter c` picker with a fake `wt` and fzf.
+
+    A branch that already has a worktree must open that worktree's tab and
+    run no `wt new`, so no new branch or worktree gets made. A branch with no
+    worktree, or a typed name, still goes through `wt new`.
+    """
+
+    class FakeResult:
+        def __init__(self, stdout="", returncode=0, stderr=""):
+            self.stdout = stdout
+            self.returncode = returncode
+            self.stderr = stderr
+
+    branches_stdout = "\n".join(
+        [
+            "main\t1 hour ago\t/ws/repo-a\trepo-a",
+            "tyler/x\t1 day ago\t/ws/worktrees/repo-a/tyler-x\trepo-a:tyler-x",
+            "tyler/y\t3 days ago\t\t",
+        ]
+    ) + "\n"
+
+    def run_picker(pick, query=""):
+        calls = []
+        fzf_input = {}
+
+        def run(args, **kwargs):
+            calls.append(args)
+            if args[0] == "wt" and args[1] == "branches":
+                return FakeResult(branches_stdout)
+            if args[0] == "fzf":
+                fzf_input["text"] = kwargs["input"]
+                rows = kwargs["input"].split("\n")
+                row = next((r for r in rows if pick and r.split("\t")[1] == pick), "")
+                return FakeResult(f"{query}\n{row}\n")
+            if args[0] == "wt" and args[1] == "new":
+                return FakeResult("/worktrees/repo-a/new-dest\n")
+            # `wt list <dest>` for the new worktree's tab title: nothing found,
+            # so the title falls back to the basename.
+            return FakeResult("")
+
+        ks.subprocess.run = run
+        ks.prompt_line = lambda *a, **k: None
+        result = ks.create_worktree()
+        new_calls = [c for c in calls if c[0] == "wt" and c[1] == "new"]
+        return result, new_calls, fzf_input.get("text", "")
+
+    ks.find_wt = lambda: "wt"
+    ks.find_fzf = lambda: "fzf"
+
+    # Checked out in a worktree: open its tab, no `wt new`.
+    result, new_calls, fzf_text = run_picker(pick="tyler/x")
+    if new_calls:
+        fail(f"a branch with a worktree should not run wt new, ran: {new_calls!r}")
+    if result != {
+        "status": "success",
+        "selected_directory": "/ws/worktrees/repo-a/tyler-x",
+        "tab_title": "repo-a:tyler-x",
+    }:
+        fail(f"a branch with a worktree should open that worktree's tab, got: {result!r}")
+    if "tyler/x  (1 day ago)  [worktree]\ttyler/x\t" not in fzf_text:
+        fail(f"the picker should mark a checked-out branch as [worktree], got: {fzf_text!r}")
+
+    # The primary checkout counts as a worktree too.
+    result, new_calls, _ = run_picker(pick="main")
+    if new_calls or result.get("selected_directory") != "/ws/repo-a" or result.get("tab_title") != "repo-a":
+        fail(f"the primary checkout's branch should open its tab, got: {result!r}, new: {new_calls!r}")
+
+    # No worktree: create one with `wt new`, as before.
+    result, new_calls, fzf_text = run_picker(pick="tyler/y")
+    if new_calls != [["wt", "new", "tyler/y"]]:
+        fail(f"a branch with no worktree should run wt new for it, got: {new_calls!r}")
+    if "tyler/y  (3 days ago)\ttyler/y\t\t" not in fzf_text:
+        fail(f"a branch with no worktree should not be marked [worktree], got: {fzf_text!r}")
+    if result.get("selected_directory") != "/worktrees/repo-a/new-dest":
+        fail(f"expected the newly created worktree to be opened, got: {result!r}")
+
+    # A typed name that matches no listed branch falls through to `wt new`.
+    result, new_calls, _ = run_picker(pick=None, query="brand-new")
+    if new_calls != [["wt", "new", "brand-new"]]:
+        fail(f"a typed name with no match should run wt new for it, got: {new_calls!r}")
 
 
 if __name__ == "__main__":

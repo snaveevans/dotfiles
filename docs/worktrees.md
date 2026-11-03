@@ -39,7 +39,7 @@ subcommand passes straight through.
 wt                    pick a worktree and cd into it
 wt list               print the worktrees in scope
 wt new BRANCH         create a worktree under $WT_ROOT and cd into it
-wt branches           print local branches not checked out in any worktree
+wt branches           print local branches, with the worktree each is checked out in
 wt rm                 pick a worktree and remove it
 wt kill               delete the current worktree (forced) and close this Kitty tab
 wt prune              drop stale worktree registrations
@@ -144,7 +144,7 @@ breaks if that happens; worktrees just stop showing that tool's glyph.
 | `Ctrl-k w` | zsh | pick a worktree and cd into it |
 | `cmd+enter w` | Kitty | pick a worktree (all repos), open or focus its tab |
 | `cmd+enter r` | Kitty | pick a worktree (this repo), open or focus its tab |
-| `cmd+enter c` | Kitty | pick an existing branch to reuse, or type a new one (then a base branch), create a worktree, open a tab into it |
+| `cmd+enter c` | Kitty | pick a branch: one with a worktree opens its tab, one without gets a worktree; or type a new one (then a base branch) to create a worktree and open a tab into it |
 | `cmd+enter k` | Kitty | kill the current worktree and its branch (forced) and close this tab, after confirming |
 | `<leader>gw` | Neovim | worktrees in the current repo |
 | `<leader>gW` | Neovim | worktrees across every repo |
@@ -180,11 +180,17 @@ creating a new one, whenever `BRANCH` already exists - useful when an agent
 worktree, leaving that branch without a worktree of its own.
 
 `cmd+enter c` in Kitty surfaces this directly: its branch prompt is backed by
-`wt branches` (local branches not checked out in any worktree right now,
-sorted by recency), so picking one skips straight to `wt new BRANCH` with no
-base-branch prompt - there's nothing to base an existing branch on. Typing a
-name that matches none of the listed branches falls through to the ordinary
-create flow instead: a base-branch prompt, then a fresh branch off it.
+`wt branches`, which lists every local branch of the repo, sorted by recency.
+Picking a branch that has no worktree skips straight to `wt new BRANCH` with no
+base-branch prompt - there's nothing to base an existing branch on. Picking a
+branch that already has a worktree, including the primary checkout, marks it
+`[worktree]` and opens that worktree's tab, creating nothing. Typing a name
+that matches none of the listed branches falls through to the ordinary create
+flow instead: a base-branch prompt, then a fresh branch off it.
+
+Branches checked out only in an agent's worktree (`.claude/worktrees/` or the
+OpenCode worktree directory) are left out, matching how discovery hides those
+worktrees.
 
 ## Cleaning up
 

@@ -173,15 +173,16 @@ def prompt_line(message: str, prompt: str = "> ") -> str | None:
 
 
 def create_worktree() -> dict[str, str]:
-    """Pick an existing branch to reuse, or type a new one, and create a worktree for it.
+    """Pick a local branch, then open its worktree's tab or create a worktree for it.
 
-    One fzf prompt does both jobs: `wt branches` seeds it with local branches
-    not checked out anywhere (so picking one reuses it as-is, no new branch,
-    no base-ref prompt - `wt new` already skips branch creation for a name
-    that already exists). Typing something that matches none of them and
-    hitting enter leaves nothing selected, which - since fzf still hands back
-    the raw query with --print-query - falls through to today's flow: base
-    branch prompt, then `wt new` creates it fresh.
+    One fzf prompt does both jobs. `wt branches` seeds it with every local
+    branch. A branch that already has a worktree (the primary checkout
+    included) just opens that worktree's tab: no new branch, no new worktree.
+    A branch with no worktree is checked out as-is with `wt new`, with no
+    base-ref prompt. Typing something that matches none of them and hitting
+    enter leaves nothing selected, which - since fzf still hands back the raw
+    query with --print-query - falls through to the base branch prompt, then
+    `wt new` creates the branch fresh.
     """
     wt_path = find_wt()
     if not wt_path:
@@ -198,6 +199,10 @@ def create_worktree() -> dict[str, str]:
         stdout=subprocess.PIPE,
         text=True,
     )
+    # `wt branches` rows: branch, date, worktree path, tab title. Path and
+    # title are empty for a branch with no worktree. The display column
+    # carries the same info for the picker, and the hidden columns carry
+    # the fields the selection needs.
     rows = []
     for row in listing.stdout.split("\n"):
         if not row.strip():
@@ -205,11 +210,17 @@ def create_worktree() -> dict[str, str]:
         fields = row.split("\t")
         branch = fields[0]
         date = fields[1] if len(fields) > 1 else ""
-        rows.append(f"{branch}  ({date})\t{branch}" if date else f"{branch}\t{branch}")
+        path = fields[2] if len(fields) > 2 else ""
+        title = fields[3] if len(fields) > 3 else ""
+        label = f"{branch}  ({date})" if date else branch
+        if path:
+            label += "  [worktree]"
+        rows.append(f"{label}\t{branch}\t{path}\t{title}")
 
     result = subprocess.run(
         [fzf_path, "+m", "--print-query", "--delimiter=\t", "--with-nth=1",
-         "--prompt=branch> ", "--header=pick a branch to reuse, or type a new name"],
+         "--prompt=branch> ",
+         "--header=pick a branch ([worktree] opens its tab), or type a new name"],
         input="\n".join(rows),
         stdout=subprocess.PIPE,
         text=True,
@@ -219,7 +230,13 @@ def create_worktree() -> dict[str, str]:
     selected = lines[1] if len(lines) > 1 and lines[1].strip() else ""
 
     if selected:
-        branch = selected.split("\t")[-1]
+        fields = selected.split("\t")
+        branch = fields[1]
+        path = fields[2] if len(fields) > 2 else ""
+        title = fields[3] if len(fields) > 3 else ""
+        if path:
+            # Already checked out somewhere: open that tab, create nothing.
+            return {"status": "success", "selected_directory": path, "tab_title": title}
         new_args = [wt_path, "new", branch]
     else:
         branch = query
