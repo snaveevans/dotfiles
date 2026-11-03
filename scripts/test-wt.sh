@@ -115,6 +115,33 @@ git -C "$REPO" worktree add --quiet -b agent-y "$FAKE_HOME/.local/share/opencode
 git -C "$REPO" worktree add --quiet -b sibling "$WORKSPACE/repo-a-sibling"
 git -C "$REPO" worktree add --quiet -b spaced "$SPACED_WORKTREE"
 
+# `wt branches` lists every local branch with four columns: branch, date,
+# worktree path, tab title. A branch already checked out in a worktree keeps
+# its path and tab title, so the Kitty worktree-new picker opens that tab
+# instead of creating anything. Agent worktrees stay hidden, as discovery
+# hides them. Later `wt clean` steps remove feature, sibling and spaced, so
+# this runs while they all still exist.
+BRANCHES_FILE="$TMP_DIR/branches.tsv"
+(cd "$REPO" && run_wt branches) >"$BRANCHES_FILE"
+
+# Prints `path|title` for the one row of a branch; nothing if it is not listed.
+branch_row() {
+  awk -F'\t' -v b="$1" '$1 == b { print $3 "|" $4 }' "$BRANCHES_FILE"
+}
+
+[[ "$(branch_row main)" == "$REPO|repo-a" ]] ||
+  fail "branches should list the primary worktree's branch with its path and the repo title"
+[[ "$(branch_row feature)" == "$TEST_WT_ROOT/repo-a/feature|repo-a:feature" ]] ||
+  fail "branches should list a branch checked out in a worktree with that path and tab title"
+[[ "$(branch_row sibling)" == "$WORKSPACE/repo-a-sibling|repo-a:repo-a-sibling" ]] ||
+  fail "branches should list a sibling-directory worktree with its path and tab title"
+[[ "$(branch_row spaced)" == "$SPACED_WORKTREE|repo-a:with space" ]] ||
+  fail "branches should keep a worktree path with spaces intact"
+[[ -z "$(branch_row agent-x)" ]] ||
+  fail "branches should not list a branch checked out only in an agent worktree"
+[[ -z "$(branch_row agent-y)" ]] ||
+  fail "branches should not list a branch checked out only in an opencode worktree"
+
 LIST_FILE="$TMP_DIR/list.tsv"
 run_wt list --all --format=tsv >"$LIST_FILE"
 
@@ -524,23 +551,16 @@ grep -Fq "close-tab --match window_id:42" "$CLOSE_TAB_LOG" ||
 
 unset FAKE_KITTY_CLOSE_TAB_LOG
 
-# `wt branches` lists local branches `wt new BRANCH` would check out as-is
-# rather than create fresh - i.e. not the HEAD of any worktree right now.
-# Killing tyler/CCLOUD-9-kill without --delete-branch above left exactly
-# that: a branch with no worktree. This backs the Kitty worktree-new picker,
-# which offers reusing one of these instead of always prompting for a new
-# branch name.
+# Killing tyler/CCLOUD-9-kill without --delete-branch above left a branch with
+# no worktree. `wt branches` must list it with empty path and title, so the
+# picker runs `wt new` for it and makes a fresh worktree.
 BRANCHES_FILE="$TMP_DIR/branches.tsv"
 (cd "$REPO" && run_wt branches) >"$BRANCHES_FILE"
 
-grep -Fq "tyler/CCLOUD-9-kill" "$BRANCHES_FILE" ||
-  fail "branches should list a local branch with no worktree"
-if grep -qE "^main${TAB}" "$BRANCHES_FILE"; then
-  fail "branches should not list the branch checked out in the primary worktree"
-fi
-if grep -qE "^feature${TAB}" "$BRANCHES_FILE"; then
-  fail "branches should not list a branch checked out in another worktree"
-fi
+[[ "$(branch_row tyler/CCLOUD-9-kill)" == "|" ]] ||
+  fail "branches should list a local branch with no worktree, with empty path and title"
+[[ "$(branch_row main)" == "$REPO|repo-a" ]] ||
+  fail "branches should still list the primary worktree's branch with its path"
 
 # Reusing a listed branch should behave exactly like `wt new` given that
 # branch name directly: check out as-is, no new branch created.

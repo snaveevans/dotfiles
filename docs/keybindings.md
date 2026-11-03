@@ -36,7 +36,7 @@ Defined in `home/.config/kitty/kitty.conf`. `cmd+enter` is a chord prefix.
 | `cmd+enter r` | pick a git worktree (this repo), open or focus its tab |
 | `cmd+enter p` | pick a project under `~/workspace`, open or focus its tab |
 | `cmd+enter o` | pick an already-open tab, most-recently-used first |
-| `cmd+enter c` | pick a branch to reuse (or type a new one), create a worktree, open a tab into it |
+| `cmd+enter c` | pick a branch: one with a worktree (marked `[worktree]`) opens its tab; one without gets a worktree created for it; or type a new one (then a base branch) to create |
 | `cmd+enter n` | new window in the current directory |
 | `cmd+enter k` | kill the current worktree and its branch (forced) and close this tab, after confirming |
 | `F2` / `F3` | new tab / rename tab |

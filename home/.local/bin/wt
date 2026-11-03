@@ -40,7 +40,7 @@ Commands:
   path [query]     Pick a worktree and print its path (default)
   list [query]     Print worktrees in scope
   new BRANCH       Create a worktree under $WT_ROOT and print its path
-  branches         Print local branches not checked out in any worktree
+  branches         Print local branches, with the worktree each is checked out in
   rm [query]       Pick a worktree and remove it
   kill             Delete the current worktree (forced) and close this Kitty tab
   prune            Drop stale worktree registrations
@@ -832,23 +832,45 @@ cmd_new() {
   fi
 }
 
-# Local branches `wt new BRANCH` would check out as-is rather than create -
-# i.e. not the current HEAD of any worktree of this repo, `wt`-managed or
-# not (an agent's own background worktree counts too: git would refuse to
-# check the branch out a second time regardless of who owns the worktree).
-# Used by the Kitty worktree-new picker to offer reusing an existing branch
-# instead of always prompting for a brand new one.
+# Local branches of this repo, most recent first, for the Kitty worktree-new
+# picker. Each row is `branch<TAB>date<TAB>path<TAB>tab title`:
+#   - a branch with no worktree has empty path and title, so `wt new BRANCH`
+#     checks it out in a fresh worktree;
+#   - a branch already checked out in a worktree (including the primary
+#     checkout) carries that worktree's path and the title `wt` uses for its
+#     tab, so the picker can open that tab without creating anything.
+# Branches checked out only in an agent's worktree (.claude/worktrees or the
+# OpenCode worktree dir) are left out, the same way discovery hides those.
 cmd_branches() {
-  local repo_main checked_out
+  local repo_main repo checkouts branch date path title
 
   repo_main="$(resolve_repo_main)"
-  checked_out="$(git -C "$repo_main" worktree list --porcelain | sed -n 's|^branch refs/heads/||p')"
+  repo="${repo_main##*/}"
+
+  # `branch<TAB>path` for every worktree that has a branch checked out.
+  checkouts="$(git -C "$repo_main" worktree list --porcelain | awk '
+    /^worktree / { path = substr($0, 10) }
+    /^branch refs\/heads\// { printf "%s\t%s\n", substr($0, 19), path }
+  ')"
 
   git -C "$repo_main" for-each-ref --sort=-committerdate \
     --format='%(refname:short)%09%(committerdate:relative)' refs/heads/ |
     while IFS=$'\t' read -r branch date; do
-      grep -qxF "$branch" <<<"$checked_out" && continue
-      printf '%s\t%s\n' "$branch" "$date"
+      path="$(awk -F'\t' -v b="$branch" '$1 == b { print $2; exit }' <<<"$checkouts")"
+      title=""
+
+      if [[ -n "$path" ]]; then
+        is_agent_worktree "$path" && continue
+
+        # Same title rule as emit_record: the primary checkout is just the repo.
+        if [[ "$path" == "$repo_main" ]]; then
+          title="$repo"
+        else
+          title="$repo:${path##*/}"
+        fi
+      fi
+
+      printf '%s\t%s\t%s\t%s\n' "$branch" "$date" "$path" "$title"
     done
 }
 
