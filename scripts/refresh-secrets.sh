@@ -306,20 +306,39 @@ project_muse_mcp() {
   # Write through symlinks so the link layout is preserved, and keep the
   # file's existing mode and trailing-newline state (this file holds no
   # secrets, so secret-file permissions do not apply here).
+  local hops=0
+  local link_target
   while [[ -L "$write_path" ]]; do
-    write_path="$(readlink "$write_path")"
+    if ((++hops > 40)); then
+      log "WARNING: skipping Muse MCP cleanup, too many symlink levels at $settings_path"
+      return 0
+    fi
+    link_target="$(readlink "$write_path")"
+    case "$link_target" in
+      /*) write_path="$link_target" ;;
+      *) write_path="$(dirname "$write_path")/$link_target" ;;
+    esac
   done
-  orig_mode="$(stat -f %A "$write_path" 2>/dev/null || stat -c %a "$write_path")"
+
+  # Callers run under set -e; a failed write here must warn, not abort.
+  if ! orig_mode="$(stat -f %Lp "$write_path" 2>/dev/null || stat -c %a "$write_path" 2>/dev/null)"; then
+    log "WARNING: skipping Muse MCP cleanup, cannot stat $write_path"
+    return 0
+  fi
   if [[ "$(tail -c 1 "$write_path" | od -An -tx1 | tr -d ' \n')" == "0a" ]]; then
     merged_json="${merged_json}"$'\n'
   fi
 
   parent_dir="$(dirname "$write_path")"
-  mkdir -p "$parent_dir"
-  tmp_file="$(mktemp "$parent_dir/.tmp.$(basename "$write_path").XXXXXX")"
-  printf '%s' "$merged_json" > "$tmp_file"
-  chmod "$orig_mode" "$tmp_file"
-  mv "$tmp_file" "$write_path"
+  if ! tmp_file="$(mktemp "$parent_dir/.tmp.$(basename "$write_path").XXXXXX")"; then
+    log "WARNING: skipping Muse MCP cleanup, cannot create temp file in $parent_dir"
+    return 0
+  fi
+  if ! { printf '%s' "$merged_json" > "$tmp_file" && chmod "$orig_mode" "$tmp_file" && mv "$tmp_file" "$write_path"; }; then
+    rm -f "$tmp_file"
+    log "WARNING: skipping Muse MCP cleanup, could not write $write_path"
+    return 0
+  fi
   log "Updated Muse MCP settings: $settings_path"
 }
 

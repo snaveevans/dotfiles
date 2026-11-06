@@ -224,4 +224,20 @@ PATH="$FAKE_BIN:$PATH" BW_LOG_FILE="$BW_LOG_FILE" \
 grep -Fq 'WARNING: skipping Muse MCP cleanup' "$OUTPUT_FILE" || fail "malformed Muse settings should warn, not fail"
 [[ "$(cat "$MALFORMED_HOME/.config/muse/settings.json")" == "{oops" ]] || fail "malformed Muse settings should be left untouched"
 
+# A relative symlinked Muse settings file is updated through the link: the
+# link survives, the target is cleaned, and its mode is preserved.
+SYMLINK_HOME="$TMP_DIR/symlink-home"
+mkdir -p "$SYMLINK_HOME/.config/muse" "$SYMLINK_HOME/synced"
+printf '{"keep": 1, "mcpServers": {"context7": {}, "my-own": {}}}\n' > "$SYMLINK_HOME/synced/settings.json"
+chmod 644 "$SYMLINK_HOME/synced/settings.json"
+ln -s ../../synced/settings.json "$SYMLINK_HOME/.config/muse/settings.json"
+PATH="$FAKE_BIN:$PATH" BW_LOG_FILE="$BW_LOG_FILE" \
+  bash "$REPO_ROOT/scripts/refresh-secrets.sh" --home "$SYMLINK_HOME" > "$OUTPUT_FILE"
+[[ -L "$SYMLINK_HOME/.config/muse/settings.json" ]] || fail "symlinked Muse settings should stay a symlink"
+grep -Fq '"context7"' "$SYMLINK_HOME/synced/settings.json" && fail "symlink target should have retired servers removed"
+grep -Fq '"my-own"' "$SYMLINK_HOME/synced/settings.json" || fail "symlink target should keep unrelated servers"
+[[ "$(tail -c 1 "$SYMLINK_HOME/synced/settings.json")" == "" ]] || fail "trailing newline should be preserved"
+symlink_mode="$(stat -f %Lp "$SYMLINK_HOME/synced/settings.json" 2>/dev/null || stat -c %a "$SYMLINK_HOME/synced/settings.json")"
+[[ "$symlink_mode" == "644" ]] || fail "Muse settings mode should be preserved, got $symlink_mode"
+
 printf 'refresh-secrets fake-bw verification passed\n'
