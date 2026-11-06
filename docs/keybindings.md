@@ -181,22 +181,6 @@ status line, which needs `jq` on the machine.
 without a 272k catalog window. Run `/reload` after updating the keybindings
 link or Pi package.
 
-## Codex CLI
-
-The project configuration in `.codex/config.toml` applies when running Codex
-in this trusted repository. Restart Codex to load changes.
-
-| Binding | Action |
-| --- | --- |
-| `Ctrl+o` | Open or close the transcript, as in Claude Code |
-| `Ctrl+g` / `Ctrl+x e` | Open the prompt in an external editor |
-| `Ctrl+n` / `Ctrl+p`, `j` / `k`, or arrows | Move through selection lists |
-| `Ctrl+t` | Copy the last response (moved from `Ctrl+o`) |
-
-The OpenCode configuration in this repository does not specify custom
-keybindings. Codex does not expose direct keymap actions for most of the
-Claude Code `Ctrl+x` session and slash-command shortcuts.
-
 ## Where these live
 
 | Surface | File |
@@ -206,7 +190,6 @@ Claude Code `Ctrl+x` session and slash-command shortcuts.
 | Neovim | `home/.config/nvim/lua/config/keymaps.lua`, `lua/plugins/*.lua` |
 | Hammerspoon | `home/.hammerspoon/init.lua` |
 | Pi | `home/.pi/agent/keybindings.json`, `pi-plugins/packages/custom/extensions/` |
-| Codex CLI | `.codex/config.toml` (this repository only) |
 
 zsh and Hammerspoon reload without an install step: `re` for the shell,
 `cmd+alt+ctrl+R` for Hammerspoon. Kitty needs a config reload, and Neovim
