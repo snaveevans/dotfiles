@@ -24,37 +24,10 @@ targets:
     skills:
       path: ~/.agents/skills
 
-# MCP servers, declared once and synced per target below.
-# Secrets stay references ({fromEnv: VAR}); never commit literal values.
-# Machine-specific servers (node_repl, computer-use, krita, aseprite-live)
-# stay local-only and are intentionally not declared here.
-# OpenCode is not an MCP target: its opencode.jsonc is a repo symlink and
-# skillshare only writes regular files, so OpenCode MCP stays hand-managed
-# in home/.config/opencode/opencode.jsonc (same NPX forms as below).
-# ios-simulator lives only in that file for the same reason.
-mcp:
-  targets:
-    - claude
-    - codex
-  servers:
-    chrome-devtools:
-      command: npx
-      args: ["-y", "chrome-devtools-mcp@latest"]
-    playwright:
-      command: npx
-      args: ["-y", "@playwright/mcp@latest"]
-      targets: [codex]
-    brave-search:
-      command: npx
-      args: ["-y", "@brave/brave-search-mcp-server", "--transport", "stdio"]
-      env:
-        BRAVE_API_KEY: {fromEnv: BRAVE_API_KEY}
-      targets: [codex]
-    context7:
-      command: npx
-      args: ["-y", "@upstash/context7-mcp"]
-      env:
-        CONTEXT7_API_KEY: {fromEnv: CONTEXT7_API_KEY}
+# MCP servers used to be declared here and synced per target. All shared
+# servers have been replaced by CLI skills (see docs/migrations/), and the
+# machine-specific ones (node_repl, computer-use, krita, aseprite-live)
+# stay local-only, so there is no mcp: block at all.
 
 # Fold $HOME to ~ on save so the tracked config stays machine-independent.
 preserve_tilde_on_save: true

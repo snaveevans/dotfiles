@@ -110,7 +110,7 @@ grep -Fq 'Skipping Muse MCP update' "$OUTPUT_FILE" || fail "a dry run without Mu
 ALL_HOME="$TMP_DIR/all-home"
 mkdir -p "$ALL_HOME/.config/muse"
 cat > "$ALL_HOME/.config/muse/settings.json" <<'EOF'
-{"schema_version": 1, "provider": "meta", "custom_keep": true, "mcpServers": {"my-own": {"type": "stdio", "command": "mine", "mode": "optional"}, "context7": {"type": "stdio", "command": "npx", "args": ["-y", "@upstash/context7-mcp"], "mode": "optional"}}}
+{"schema_version": 1, "provider": "meta", "custom_keep": true, "mcpServers": {"my-own": {"type": "stdio", "command": "mine", "mode": "optional"}, "context7": {"type": "stdio", "command": "npx", "args": ["-y", "@upstash/context7-mcp"], "mode": "optional"}, "brave-search": {"type": "stdio", "command": "npx", "args": ["-y", "@brave/brave-search-mcp-server"], "mode": "optional", "env": {"BRAVE_API_KEY": "stale-token"}}, "ios-simulator": {"type": "stdio", "command": "npx", "args": ["-y", "ios-simulator-mcp"], "mode": "optional"}}}
 EOF
 PATH="$FAKE_BIN:$PATH" BW_LOG_FILE="$BW_LOG_FILE" \
   bash "$REPO_ROOT/scripts/refresh-secrets.sh" --home "$ALL_HOME" > "$OUTPUT_FILE"
@@ -129,12 +129,15 @@ grep -Fq '//npm.pkg.github.com/:_authToken=${GITHUB_PACKAGES_TOKEN}' "$ALL_HOME/
 [[ -f "$ALL_HOME/.gradle/gradle.properties" ]] || fail "tag-less run should write the gradle artifact"
 [[ -f "$ALL_HOME/.m2/settings.xml" ]] || fail "tag-less run should write the maven artifact"
 [[ ! -e "$ALL_HOME/.config/secrets/tags" ]] || fail "a run without --tag should not write a persisted tag selection"
-grep -Fq '"CONTEXT7_API_KEY": "context7-token"' "$ALL_HOME/.config/muse/settings.json" ||
-  fail "tag-less run should inject the Context7 key into Muse settings"
-grep -Fq '"BRAVE_API_KEY": "brave-token"' "$ALL_HOME/.config/muse/settings.json" ||
-  fail "tag-less run should inject the Brave key into Muse settings"
-grep -Fq 'chrome-devtools-mcp@latest' "$ALL_HOME/.config/muse/settings.json" ||
-  fail "tag-less run should add the keyless Muse MCP servers"
+if grep -Fq '"context7"' "$ALL_HOME/.config/muse/settings.json"; then
+  fail "tag-less run should remove the migrated context7 Muse server"
+fi
+if grep -Fq '"brave-search"' "$ALL_HOME/.config/muse/settings.json"; then
+  fail "tag-less run should remove the migrated brave-search Muse server"
+fi
+if grep -Fq '"ios-simulator"' "$ALL_HOME/.config/muse/settings.json"; then
+  fail "tag-less run should remove the retired ios-simulator Muse server"
+fi
 grep -Fq '"custom_keep": true' "$ALL_HOME/.config/muse/settings.json" ||
   fail "Muse settings merge should preserve unrelated keys"
 grep -Fq '"my-own"' "$ALL_HOME/.config/muse/settings.json" ||

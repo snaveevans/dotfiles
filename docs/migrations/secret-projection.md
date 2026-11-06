@@ -28,7 +28,7 @@ tags are `work` and `personal`.
 | --- | --- | --- |
 | Brave Search | `BRAVE_API_KEY` | `work`, `personal` |
 | Context7 | `CONTEXT7_API_KEY` | `work`, `personal` |
-| Muse MCP (via `settings.json`) | literals for the two keys above | follows the same tags |
+| Muse MCP leftovers | retired servers are deleted from `~/.config/muse/settings.json` when present; nothing is added | follows the same tags |
 | Synthetic | `SYNTHETIC_API_KEY` | `personal` |
 | GitHub Packages | `GITHUB_PACKAGES_TOKEN` (`work_access_token`), `GITHUB_PACKAGES_PERSONAL_TOKEN` (`personal_access_token`) | `work`, `personal` |
 | Artifactory | feeds `~/.npmrc`, `gradle.properties`, `settings.xml` only - no env exports | `work` |
@@ -66,9 +66,8 @@ entirely.
   - GitHub Packages `_authToken` references `${GITHUB_PACKAGES_TOKEN}` from the env file (work tag) or `${GITHUB_PACKAGES_PERSONAL_TOKEN}` (personal tag only); npm expands it at runtime
   - the `@octanner` GitHub Packages scope and the Artifactory block appear only when the `work` tag is selected
 - `~/.config/muse/settings.json`
-  - the five known MCP servers are ensured with their NPX definitions and `"mode": "optional"` (mirrors `home/.config/skillshare/config.yaml`)
-  - `CONTEXT7_API_KEY` and `BRAVE_API_KEY` are written as literal `env` values because Muse expands no `${VAR}` references
-  - tag-filtered keys are removed again; everything else in the file (other keys, unknown servers) is preserved
+  - the retired MCP servers (`context7`, `brave-search`, `playwright`, `chrome-devtools`, `ios-simulator`) are deleted when present
+  - everything else in the file (other keys, unknown servers) is preserved
   - skipped with a message when the file does not exist yet (launch Muse once, then re-run)
 - `~/.gradle/gradle.properties`
   - provides `centralUsername` and `centralPassword` for Gradle Artifactory authentication

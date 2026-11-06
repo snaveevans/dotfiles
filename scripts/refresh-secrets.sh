@@ -254,12 +254,8 @@ write_secret_file() {
   log "Wrote $target_path"
 }
 
-# Merge the known MCP servers into Muse Code's settings. Muse expands no
-# ${VAR} references, so the two keyed servers receive literal values here.
-# Every other key in the file, and any server this script does not know, is
-# preserved. Tag-filtered keys are removed again instead of lingering.
-# Server list mirrors home/.config/skillshare/config.yaml mcp.servers; the
-# tracked muse-mcp-mirror skill keeps the two in step.
+# Remove the retired MCP servers from Muse Code's settings. Every other key
+# in the file, and any server this script does not know, is preserved.
 project_muse_mcp() {
   local settings_path="$1"
   local merged_json
@@ -270,19 +266,8 @@ project_muse_mcp() {
   fi
 
   merged_json="$(
-    MUSE_BRAVE_API_KEY="$brave_api_key" \
-    MUSE_CONTEXT7_API_KEY="$context7_api_key" \
-    jq \
-      --argjson brave_enabled "$BRAVE_ENABLED" \
-      --argjson context7_enabled "$CONTEXT7_ENABLED" \
-      '
-      .mcpServers["chrome-devtools"] |= ((. // {}) | .type = "stdio" | .command = "npx" | .args = ["-y", "chrome-devtools-mcp@latest"] | .mode = "optional")
-      | .mcpServers["playwright"] |= ((. // {}) | .type = "stdio" | .command = "npx" | .args = ["-y", "@playwright/mcp@latest"] | .mode = "optional")
-      | .mcpServers["ios-simulator"] |= ((. // {}) | .type = "stdio" | .command = "npx" | .args = ["-y", "ios-simulator-mcp"] | .mode = "optional")
-      | .mcpServers["context7"] |= ((. // {}) | .type = "stdio" | .command = "npx" | .args = ["-y", "@upstash/context7-mcp"] | .mode = "optional")
-      | if $context7_enabled then .mcpServers["context7"]["env"] = {"CONTEXT7_API_KEY": env.MUSE_CONTEXT7_API_KEY} else del(.mcpServers["context7"]["env"]["CONTEXT7_API_KEY"]) end
-      | .mcpServers["brave-search"] |= ((. // {}) | .type = "stdio" | .command = "npx" | .args = ["-y", "@brave/brave-search-mcp-server", "--transport", "stdio"] | .mode = "optional")
-      | if $brave_enabled then .mcpServers["brave-search"]["env"] = {"BRAVE_API_KEY": env.MUSE_BRAVE_API_KEY} else del(.mcpServers["brave-search"]["env"]["BRAVE_API_KEY"]) end
+    jq '
+      del(.mcpServers["context7"], .mcpServers["brave-search"], .mcpServers["playwright"], .mcpServers["chrome-devtools"], .mcpServers["ios-simulator"])
       ' "$settings_path"
   )" || die "Failed to merge Muse MCP settings in $settings_path"
 

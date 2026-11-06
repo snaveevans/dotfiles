@@ -42,18 +42,17 @@ This repo now uses an explicit bootstrap + link + refresh flow for setup and day
    ```bash
    scripts/provision-pi.sh
    ```
-8. Sync skills and MCP servers with skillshare (config and sources are
-   already linked from `home/.config/skillshare/`):
+8. Sync skills with skillshare (config and sources are already linked
+   from `home/.config/skillshare/`):
    ```bash
    brew install skillshare
    skillshare sync
-   skillshare sync mcp
    ```
    On the first sync, adopt conflicts with `import` (keep the agent's
-   entry) or `replace` (take the tracked declaration). Then run
-   `skillshare mcp check`. Muse Code is not a skillshare target, so mirror
-   MCP changes into `~/.config/muse/settings.json` by hand; the tracked
-   `muse-mcp-mirror` skill walks agents through that step.
+   entry) or `replace` (take the tracked declaration). Former MCP servers
+   are gone: browser automation, docs lookup, and search now run through
+   CLI skills (`chrome-devtools-cli`, `playwright-cli`, `find-docs`,
+   `web-search`), with API keys coming from `~/.config/secrets/env`.
 
 ## What each script does
 
@@ -72,7 +71,7 @@ This repo now uses an explicit bootstrap + link + refresh flow for setup and day
 - `scripts/refresh-secrets.sh`
   - reads Bitwarden once
   - writes only local secret artifacts such as `~/.config/secrets/env` and `~/.npmrc`
-  - merges the shared MCP servers and their keys into `~/.config/muse/settings.json` (the one client skillshare cannot write)
+  - deletes the retired MCP servers from `~/.config/muse/settings.json` when present, preserving everything else
 - `scripts/provision-pi.sh`
   - links `~/.pi/agent/settings.json` and `~/.pi/agent/models.json` to the tracked per-tag files (`settings.work.json`, `models.personal.json`, ...)
   - consumes the tag selection persisted by `refresh-secrets.sh --tag`; re-run it after changing that selection
