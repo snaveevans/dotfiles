@@ -28,10 +28,10 @@ tags are `work` and `personal`.
 | --- | --- | --- |
 | Brave Search | `BRAVE_API_KEY` | `work`, `personal` |
 | Context7 | `CONTEXT7_API_KEY` | `work`, `personal` |
+| Muse MCP leftovers | retired servers named in the `retired_muse_servers` array in `project_muse_mcp` are deleted from `~/.config/muse/settings.json` when present; nothing is added | runs on every refresh, tag-independent |
 | Synthetic | `SYNTHETIC_API_KEY` | `personal` |
 | GitHub Packages | `GITHUB_PACKAGES_TOKEN` (`work_access_token`), `GITHUB_PACKAGES_PERSONAL_TOKEN` (`personal_access_token`) | `work`, `personal` |
 | Artifactory | feeds `~/.npmrc`, `gradle.properties`, `settings.xml` only - no env exports | `work` |
-| Cloudflare | `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN` | `personal` |
 
 ```bash
 scripts/refresh-secrets.sh --tag work                # work-only machine
@@ -58,8 +58,6 @@ entirely.
     - `CONTEXT7_API_KEY`
     - `SYNTHETIC_API_KEY` (referenced by `home/.pi/agent/models.json` as `$SYNTHETIC_API_KEY` for Pi's Synthetic provider)
     - `GITHUB_PACKAGES_TOKEN` (not `GITHUB_TOKEN` — that name is reserved by `gh`/GitHub Actions and would override CLI auth)
-    - `CLOUDFLARE_ACCOUNT_ID`
-    - `CLOUDFLARE_API_TOKEN`
 - `~/.config/secrets/tags`
   - untracked, non-secret record of the explicit `--tag` selection from the most recent tagged run
   - read back by later tag-less runs on the same machine
@@ -67,6 +65,10 @@ entirely.
   - generated replacement for the old `private_dot_npmrc.tmpl`
   - GitHub Packages `_authToken` references `${GITHUB_PACKAGES_TOKEN}` from the env file (work tag) or `${GITHUB_PACKAGES_PERSONAL_TOKEN}` (personal tag only); npm expands it at runtime
   - the `@octanner` GitHub Packages scope and the Artifactory block appear only when the `work` tag is selected
+- `~/.config/muse/settings.json`
+  - the retired MCP servers (`context7`, `brave-search`, `playwright`, `chrome-devtools`, `ios-simulator`) are deleted when present
+  - everything else in the file (other keys, unknown servers) is preserved
+  - skipped with a message when the file does not exist yet (launch Muse once, then re-run)
 - `~/.gradle/gradle.properties`
   - provides `centralUsername` and `centralPassword` for Gradle Artifactory authentication
   - uses the same Bitwarden item as the npmrc Artifactory block (`artifactory.octanner.net`)
@@ -104,12 +106,6 @@ Defaults come from the current repo's existing template usage:
     - `email`
     - `access_token`
     - `encrypted_password`
-- Cloudflare
-  - item: `cloudflare.com`
-  - fields:
-    - `account_id`
-    - `github_actions_token`
-
 If your Bitwarden items differ, override the defaults for a run with environment variables before invoking the script:
 
 ```bash
@@ -133,15 +129,13 @@ Supported overrides:
 - `BW_FIELD_ARTIFACTORY_EMAIL`
 - `BW_FIELD_ARTIFACTORY_TOKEN`
 - `BW_FIELD_ARTIFACTORY_ENCRYPTED_PASSWORD`
-- `BW_ITEM_CLOUDFLARE`
-- `BW_FIELD_CLOUDFLARE_ACCOUNT_ID`
-- `BW_FIELD_CLOUDFLARE_API_TOKEN`
 
 ## Notes
 
 - Run `bw login` first if the CLI is not authenticated yet.
 - Use `scripts/refresh-secrets.sh --help` for options.
 - Use `scripts/refresh-secrets.sh --dry-run` to validate reads without writing files.
+- Cloudflare (`CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN`) was removed because nothing in the repo consumed it. The secrets stay in Bitwarden; to restore, re-add the item block, fields, tags, and env exports following the Brave/Context7 pattern, plus test fixtures.
 
 ## Safety notes
 

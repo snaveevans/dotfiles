@@ -42,6 +42,17 @@ This repo now uses an explicit bootstrap + link + refresh flow for setup and day
    ```bash
    scripts/provision-pi.sh
    ```
+8. Sync skills with skillshare (config and sources are already linked
+   from `home/.config/skillshare/`):
+   ```bash
+   brew install skillshare
+   skillshare sync
+   ```
+   On the first sync, adopt conflicts with `import` (keep the agent's
+   entry) or `replace` (take the tracked declaration). Former MCP servers
+   are gone: browser automation, docs lookup, and search now run through
+   CLI skills (`chrome-devtools-cli`, `playwright-cli`, `find-docs`,
+   `web-search`), with API keys coming from `~/.config/secrets/env`.
 
 ## What each script does
 
@@ -50,16 +61,18 @@ This repo now uses an explicit bootstrap + link + refresh flow for setup and day
   - installs packages and bootstrap dependencies only
 - `scripts/install-home-links.sh`
   - creates parent directories as needed
-  - symlinks tracked config from `home/` into `$HOME`, including OpenCode's `~/.config/opencode/opencode.jsonc` and Pi's `~/.pi/agent/keybindings.json`
+  - symlinks tracked config from `home/` into `$HOME`, including OpenCode's `~/.config/opencode/opencode.jsonc`, Pi's `~/.pi/agent/keybindings.json`, and the skillshare source at `~/.config/skillshare`
   - configures OpenCode's permissions to allow tools and resources without prompts, including shell commands,
     sensitive files, and directories outside the home directory; project or agent rules and policies can override this
   - disables the `pitfalls-maintainer`, `pitfalls-reader`, `web-ui-crafter`, `bug-fixer`,
-    `conventional-commits`, and `ios-rebuild-validate` skills without deleting their files
+    and `conventional-commits` skills without deleting their files (`ios-rebuild-validate`
+    was retired with the ios-simulator MCP removal)
   - links tracked Copilot CLI defaults to `~/.copilot/settings.json`
   - backs up an existing target before replacing it; settings are not merged
 - `scripts/refresh-secrets.sh`
   - reads Bitwarden once
   - writes only local secret artifacts such as `~/.config/secrets/env` and `~/.npmrc`
+  - deletes the retired MCP servers from `~/.config/muse/settings.json` when present, preserving everything else
 - `scripts/provision-pi.sh`
   - links `~/.pi/agent/settings.json` and `~/.pi/agent/models.json` to the tracked per-tag files (`settings.work.json`, `models.personal.json`, ...)
   - consumes the tag selection persisted by `refresh-secrets.sh --tag`; re-run it after changing that selection

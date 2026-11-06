@@ -29,10 +29,6 @@ ARTIFACTORY_EMAIL_FIELD="${BW_FIELD_ARTIFACTORY_EMAIL:-email}"
 ARTIFACTORY_TOKEN_FIELD="${BW_FIELD_ARTIFACTORY_TOKEN:-access_token}"
 ARTIFACTORY_ENCRYPTED_PASSWORD_FIELD="${BW_FIELD_ARTIFACTORY_ENCRYPTED_PASSWORD:-encrypted_password}"
 
-CLOUDFLARE_ITEM="${BW_ITEM_CLOUDFLARE:-cloudflare.com}"
-CLOUDFLARE_ACCOUNT_ID_FIELD="${BW_FIELD_CLOUDFLARE_ACCOUNT_ID:-account_id}"
-CLOUDFLARE_API_TOKEN_FIELD="${BW_FIELD_CLOUDFLARE_API_TOKEN:-github_actions_token}"
-
 # Which environments each item belongs to. An item is projected when any of
 # its tags is requested via --tag (or the persisted selection); with no tag
 # filter at all, every item is projected.
@@ -45,7 +41,6 @@ CONTEXT7_TAGS="work personal"
 SYNTHETIC_TAGS="personal"
 GITHUB_PACKAGES_TAGS="work personal"
 ARTIFACTORY_TAGS="work"
-CLOUDFLARE_TAGS="personal"
 
 die() {
   printf 'Error: %s\n' "$*" >&2
@@ -68,6 +63,7 @@ Generated artifacts (subset depends on the selected tags):
   ~/.npmrc
   ~/.gradle/gradle.properties
   ~/.m2/settings.xml
+  ~/.config/muse/settings.json (MCP server entries only; other keys untouched)
 
 Options:
   --tag TAG   Project only items carrying TAG (repeatable; known tags: work,
@@ -258,6 +254,94 @@ write_secret_file() {
   log "Wrote $target_path"
 }
 
+# One-time cleanup, kept so machines that never ran the migration still
+# converge: remove the retired MCP servers from Muse Code's settings.
+# Single source of truth for the retired list is the local
+# retired_muse_servers array below; docs and tests refer to it instead of
+# copying the names.
+# Runs last and never fails the refresh: secret artifacts are already
+# written by the time this runs, and a Muse settings problem must not
+# block secret projection.
+project_muse_mcp() {
+  local settings_path="$1"
+  local write_path="$settings_path"
+  local merged_json
+  local current_canonical
+  local merged_canonical
+  local del_list=""
+  local server
+  local orig_mode
+  local tmp_file
+  local parent_dir
+
+  local retired_muse_servers=(context7 brave-search playwright chrome-devtools ios-simulator)
+
+  if [[ ! -e "$settings_path" ]]; then
+    log "Skipping Muse MCP update: $settings_path does not exist yet (launch Muse once, then re-run)."
+    return 0
+  fi
+
+  for server in "${retired_muse_servers[@]}"; do
+    del_list+=".mcpServers[\"$server\"],"
+  done
+  del_list="${del_list%,}"
+
+  merged_json="$(jq "del($del_list)" "$settings_path")" || {
+    log "WARNING: skipping Muse MCP cleanup, could not parse $settings_path"
+    return 0
+  }
+
+  if current_canonical="$(jq -S . "$settings_path" 2>/dev/null)" &&
+    merged_canonical="$(printf '%s' "$merged_json" | jq -S . 2>/dev/null)" &&
+    [[ "$current_canonical" == "$merged_canonical" ]]; then
+    log "Muse MCP settings unchanged: $settings_path"
+    return 0
+  fi
+
+  if "$DRY_RUN"; then
+    log "DRY-RUN: update $settings_path (remove retired MCP servers)"
+    return 0
+  fi
+
+  # Write through symlinks so the link layout is preserved, and keep the
+  # file's existing mode and trailing-newline state (this file holds no
+  # secrets, so secret-file permissions do not apply here).
+  local hops=0
+  local link_target
+  while [[ -L "$write_path" ]]; do
+    if ((++hops > 40)); then
+      log "WARNING: skipping Muse MCP cleanup, too many symlink levels at $settings_path"
+      return 0
+    fi
+    link_target="$(readlink "$write_path")"
+    case "$link_target" in
+      /*) write_path="$link_target" ;;
+      *) write_path="$(dirname "$write_path")/$link_target" ;;
+    esac
+  done
+
+  # Callers run under set -e; a failed write here must warn, not abort.
+  if ! orig_mode="$(stat -f %Lp "$write_path" 2>/dev/null || stat -c %a "$write_path" 2>/dev/null)"; then
+    log "WARNING: skipping Muse MCP cleanup, cannot stat $write_path"
+    return 0
+  fi
+  if [[ "$(tail -c 1 "$write_path" | od -An -tx1 | tr -d ' \n')" == "0a" ]]; then
+    merged_json="${merged_json}"$'\n'
+  fi
+
+  parent_dir="$(dirname "$write_path")"
+  if ! tmp_file="$(mktemp "$parent_dir/.tmp.$(basename "$write_path").XXXXXX")"; then
+    log "WARNING: skipping Muse MCP cleanup, cannot create temp file in $parent_dir"
+    return 0
+  fi
+  if ! { printf '%s' "$merged_json" > "$tmp_file" && chmod "$orig_mode" "$tmp_file" && mv "$tmp_file" "$write_path"; }; then
+    rm -f "$tmp_file"
+    log "WARNING: skipping Muse MCP cleanup, could not write $write_path"
+    return 0
+  fi
+  log "Updated Muse MCP settings: $settings_path"
+}
+
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --dry-run)
@@ -292,6 +376,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 ENV_OUTPUT_PATH="$TARGET_HOME/.config/secrets/env"
+MUSE_SETTINGS_PATH="$TARGET_HOME/.config/muse/settings.json"
 TAGS_OUTPUT_PATH="$TARGET_HOME/.config/secrets/tags"
 NPMRC_OUTPUT_PATH="$TARGET_HOME/.npmrc"
 GRADLE_PROPERTIES_OUTPUT_PATH="$TARGET_HOME/.gradle/gradle.properties"
@@ -352,8 +437,6 @@ SYNTHETIC_ENABLED=false
 item_enabled "$SYNTHETIC_TAGS" && SYNTHETIC_ENABLED=true
 ARTIFACTORY_ENABLED=false
 item_enabled "$ARTIFACTORY_TAGS" && ARTIFACTORY_ENABLED=true
-CLOUDFLARE_ENABLED=false
-item_enabled "$CLOUDFLARE_TAGS" && CLOUDFLARE_ENABLED=true
 
 GITHUB_WORK_ENABLED=false
 GITHUB_PERSONAL_ENABLED=false
@@ -410,14 +493,6 @@ if "$ARTIFACTORY_ENABLED"; then
   artifactory_username="${artifactory_email%%@*}"
 fi
 
-cloudflare_account_id=""
-cloudflare_api_token=""
-if "$CLOUDFLARE_ENABLED"; then
-  cloudflare_item_json="$(bw_get_item_json "$CLOUDFLARE_ITEM")"
-  cloudflare_account_id="$(bw_field_value "$cloudflare_item_json" "$CLOUDFLARE_ACCOUNT_ID_FIELD" "$CLOUDFLARE_ITEM")"
-  cloudflare_api_token="$(bw_field_value "$cloudflare_item_json" "$CLOUDFLARE_API_TOKEN_FIELD" "$CLOUDFLARE_ITEM")"
-fi
-
 env_content="$({
   printf '# Generated by scripts/refresh-secrets.sh\n'
   if "$BRAVE_ENABLED"; then printf 'export BRAVE_API_KEY=%q\n' "$brave_api_key"; fi
@@ -425,8 +500,6 @@ env_content="$({
   if "$SYNTHETIC_ENABLED"; then printf 'export SYNTHETIC_API_KEY=%q\n' "$synthetic_api_key"; fi
   if "$GITHUB_WORK_ENABLED"; then printf 'export GITHUB_PACKAGES_TOKEN=%q\n' "$github_packages_work_token"; fi
   if "$GITHUB_PERSONAL_ENABLED"; then printf 'export GITHUB_PACKAGES_PERSONAL_TOKEN=%q\n' "$github_packages_personal_token"; fi
-  if "$CLOUDFLARE_ENABLED"; then printf 'export CLOUDFLARE_ACCOUNT_ID=%q\n' "$cloudflare_account_id"; fi
-  if "$CLOUDFLARE_ENABLED"; then printf 'export CLOUDFLARE_API_TOKEN=%q\n' "$cloudflare_api_token"; fi
 })"
 
 npmrc_content=""
@@ -490,6 +563,8 @@ EOF
   write_secret_file "$GRADLE_PROPERTIES_OUTPUT_PATH" "$gradle_properties_content"
   write_secret_file "$MAVEN_SETTINGS_OUTPUT_PATH" "$maven_settings_content"
 fi
+
+project_muse_mcp "$MUSE_SETTINGS_PATH"
 
 if "$DRY_RUN"; then
   log "Dry run complete."

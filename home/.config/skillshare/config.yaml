@@ -1,0 +1,33 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/runkids/skillshare/main/schemas/config.schema.json
+
+# Single source of truth for synced skills (MCP servers were migrated away).
+# Tracked in dotfiles at home/.config/skillshare/ and linked to
+# ~/.config/skillshare/ by scripts/install-home-links.sh.
+source: ~/.config/skillshare/skills
+
+# Merge keeps local-only skills in each target (third-party skills that have
+# not been adopted yet survive sync; only source-managed links are pruned).
+mode: merge
+
+# Skill targets (AI CLI skill directories). Muse Code is not a built-in
+# skillshare target, but it reads ~/.claude/skills and ~/.agents/skills
+# natively, so syncing here covers it. Codex has no target of its own: it
+# reads the universal path (~/.agents/skills) directly.
+targets:
+  claude:
+    skills:
+      path: ~/.claude/skills
+  opencode:
+    skills:
+      path: ~/.config/opencode/skills
+  universal:
+    skills:
+      path: ~/.agents/skills
+
+# MCP servers used to be declared here and synced per target. All shared
+# servers have been replaced by CLI skills (see docs/migrations/), and the
+# machine-specific ones (node_repl, computer-use, krita, aseprite-live)
+# stay local-only, so there is no mcp: block at all.
+
+# Fold $HOME to ~ on save so the tracked config stays machine-independent.
+preserve_tilde_on_save: true

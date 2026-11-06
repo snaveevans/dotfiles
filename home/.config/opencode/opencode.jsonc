@@ -22,52 +22,9 @@
     { "action": "skill.use", "resource": "pitfalls-reader", "effect": "deny" },
     { "action": "skill.use", "resource": "web-ui-crafter", "effect": "deny" },
     { "action": "skill.use", "resource": "bug-fixer", "effect": "deny" },
-    { "action": "skill.use", "resource": "conventional-commits", "effect": "deny" },
-    { "action": "skill.use", "resource": "ios-rebuild-validate", "effect": "deny" }
+    { "action": "skill.use", "resource": "conventional-commits", "effect": "deny" }
   ],
   "permissions": [
     { "action": "*", "resource": "*", "effect": "allow" }
-  ],
-  "mcp": {
-    "servers": {
-      "context7": {
-        "type": "remote",
-        "url": "https://mcp.context7.com/mcp",
-        "oauth": false,
-        "headers": {
-          "CONTEXT7_API_KEY": "{env:CONTEXT7_API_KEY}"
-        },
-        "disabled": false
-      },
-      "chrome-devtools": {
-        "type": "local",
-        "command": ["npx", "-y", "chrome-devtools-mcp@latest"],
-        "disabled": false
-      },
-      "playwright": {
-        "type": "local",
-        "command": ["npx", "@playwright/mcp@latest"],
-        "disabled": false
-      },
-      "brave-search": {
-        "type": "local",
-        "command": [
-          "npx",
-          "-y",
-          "@brave/brave-search-mcp-server",
-          "--transport",
-          "stdio"
-        ],
-        "environment": {
-          "BRAVE_API_KEY": "{env:BRAVE_API_KEY}"
-        },
-        "disabled": false
-      },
-      "ios-simulator": {
-        "type": "local",
-        "command": ["npx", "-y", "ios-simulator-mcp"],
-        "disabled": false
-      }
-    }
-  }
+  ]
 }

@@ -20,6 +20,7 @@ LINK_PATHS=(
   ".hammerspoon"
   ".config/nvim"
   ".config/opencode/opencode.jsonc"
+  ".config/skillshare"
   ".config/starship.toml"
   ".config/i3"
   ".config/rofi"
@@ -179,6 +180,7 @@ install_local_bin() {
   ensure_real_directory ".local/bin"
   link_path ".local/bin/pi"
   link_path ".local/bin/wt"
+  link_path ".local/bin/muse-usage"
 }
 
 install_pi() {

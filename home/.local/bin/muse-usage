@@ -1,0 +1,358 @@
+#!/usr/bin/env python3
+"""Total `muse` CLI token usage from its local session logs and price it at Meta API rates.
+
+Read-only. Counting rule (see memory note muse-cli-token-usage):
+  provider-family, reported=true `goal_usage_attribution` records from
+    - session.jsonl:              main_root + reminder_child
+    - subagent/*/session.jsonl:   workflow_child only (reminder files duplicate the parent's)
+    - approval-review/*.jsonl:    everything (not attributed in the parent)
+  input_tokens includes cached tokens; output_tokens includes reasoning tokens.
+
+Examples:
+  muse-usage                          # all time
+  muse-usage --since 2026-11-06       # window start (local time); add --until to bound it
+  muse-usage --days 7 --month         # last 7 days, extrapolated to a 30.44-day month
+  muse-usage --since "2026-11-06 09:00" --month --json
+  muse-usage --since "2026-11-02 22:08" --used 81   # 81% of the weekly quota used -> week and month
+"""
+import argparse
+import collections
+import datetime as dt
+import json
+import os
+import sys
+from typing import Any, Callable, Iterator, Optional
+
+ROOT = os.path.expanduser(os.environ.get("MUSE_SESSIONS_DIR", "~/.local/share/muse/sessions"))
+
+# USD per 1M tokens: (uncached input, cached input, output).
+# Source: https://dev.meta.ai/products/meta-model-api/ as of 2026-11-06. Prices change; re-check
+# or override with --rates FILE.json ({"model": [in, cached, out], ...}). No cache-write price is
+# published (cache_write_tokens was always 0), and reasoning is already inside output_tokens.
+RATES: dict[str, tuple[float, float, float]] = {
+    "muse-spark-1.3": (1.25, 0.15, 4.25),
+    "muse-spark-1.3-contributor": (0.10, 0.002, 0.20),
+    "muse-wonder-1.0": (4.00, 0.20, 20.00),
+}
+APPROVAL_MODEL = "muse-spark-1.3-contributor"  # named in the status events of every approval-review log
+DEFAULT_MODEL = "muse-spark-1.3"  # for calls whose model the logs never recorded
+WEEKS_PER_MONTH = 365.25 / 12 / 7
+FIELDS = ("input_tokens", "output_tokens", "cached_tokens", "reasoning_tokens")
+
+
+def rows(path: str) -> Iterator[dict]:
+    with open(path, errors="replace") as f:
+        for line in f:
+            try:
+                yield json.loads(line)
+            except ValueError:
+                continue
+
+
+def classify(path: str) -> tuple[str, str, str]:
+    rel = os.path.relpath(path, ROOT).split(os.sep)
+    if len(rel) == 5 and rel[-1] == "session.jsonl":
+        return "main", rel[3], rel[3]
+    if len(rel) == 7 and rel[4] == "subagent":
+        return "subagent", rel[3], rel[5]
+    if len(rel) == 6 and rel[4] == "approval-review":
+        return "approval", rel[3], rel[5].replace(".jsonl", "")
+    return "other", "", ""
+
+
+def when(kind: str, recorded_at: Optional[int], run_id: Optional[str]) -> dt.datetime:
+    # approval-review logs carry a bad clock; their run id is a UUIDv7 holding the real ms time
+    if kind == "approval" and run_id:
+        return dt.datetime.fromtimestamp(int(run_id.replace("-", "")[:12], 16) / 1000)
+    return dt.datetime.fromtimestamp((recorded_at or 0) / 1e6)
+
+
+def load() -> tuple[list[dict], list[dict]]:
+    attrs: list[dict] = []
+    mcs: list[dict] = []
+    for dp, _dn, fn in os.walk(ROOT):
+        for name in fn:
+            if not name.endswith(".jsonl"):
+                continue
+            p = os.path.join(dp, name)
+            kind, main_id, child_id = classify(p)
+            if kind == "other":
+                continue
+            for o in rows(p):
+                pl = o.get("payload")
+                ev = pl.get("event") if isinstance(pl, dict) else None
+                if not isinstance(ev, dict):
+                    continue
+                k = ev.get("kind")
+                base = dict(kind=kind, main_id=main_id, child_id=child_id)
+                if k == "goal_usage_attribution":
+                    r = ev["record"]
+                    q = r.get("quantity") or {}
+                    attrs.append(
+                        dict(
+                            base,
+                            when=when(kind, o.get("recorded_at"), pl.get("run_id")),
+                            usage_id=r.get("usage_id"),
+                            family=r.get("usage_family"),
+                            reported=bool(q.get("reported")),
+                            q={f: q.get(f) or 0 for f in FIELDS},
+                            owner=r.get("owner") or {},
+                        )
+                    )
+                elif k == "model_completed" and isinstance(ev.get("usage"), dict):
+                    u = ev["usage"]
+                    mcs.append(dict(base, model=ev.get("model"), q={f: u.get(f) or 0 for f in FIELDS}))
+    return attrs, mcs
+
+
+def canonical(attrs: list[dict]) -> list[dict]:
+    out = []
+    for a in attrs:
+        if a["family"] != "provider" or not a["reported"]:
+            continue
+        if a["kind"] == "subagent" and a["owner"].get("owner_type") == "reminder_child":
+            continue
+        out.append(a)
+    return out
+
+
+def category(a: dict) -> str:
+    if a["kind"] == "approval":
+        return "approval-review"
+    return {"main_root": "main agent", "workflow_child": "workflow subagents", "reminder_child": "reminder calls"}.get(
+        a["owner"].get("owner_type"), "other"
+    )
+
+
+def resolve_models(recs: list[dict], mcs: list[dict]) -> Callable[[dict], Optional[str]]:
+    """model_of(record) -> model id, or None if the logs never recorded one."""
+    sig = lambda q: tuple(q[f] for f in FIELDS)  # noqa: E731
+    pool: dict[tuple, list[str]] = collections.defaultdict(list)
+    for x in mcs:
+        pool[(x["kind"], x["main_id"], x["child_id"], sig(x["q"]))].append(x["model"])
+    by_id: dict[str, str] = {}
+    for a in recs:
+        lst = pool.get((a["kind"], a["main_id"], a["child_id"], sig(a["q"])))
+        if lst:
+            by_id[a["usage_id"]] = lst.pop(0)
+    child_model = {x["child_id"]: x["model"] for x in mcs if x["kind"] == "subagent"}
+    for a in recs:
+        if a["kind"] == "main" and a["owner"].get("owner_type") == "reminder_child":
+            cm = child_model.get(a["owner"].get("owner_id"))
+            if cm:
+                by_id[a["usage_id"]] = cm
+
+    def model_of(a: dict) -> Optional[str]:
+        if a["kind"] == "approval":
+            return APPROVAL_MODEL
+        return by_id.get(a["usage_id"])
+
+    return model_of
+
+
+def cost_parts(q: dict, rate: tuple[float, float, float]) -> tuple[float, float, float]:
+    r_in, r_cr, r_out = rate
+    return ((q["input_tokens"] - q["cached_tokens"]) * r_in / 1e6, q["cached_tokens"] * r_cr / 1e6, q["output_tokens"] * r_out / 1e6)
+
+
+def price(recs: list[dict], model_of: Callable, unknown_as: str = DEFAULT_MODEL, spark_as: Optional[str] = None) -> dict:
+    """Cost of recs. spark_as reprices every plain spark call (e.g. as the contributor tier)."""
+    by_model: dict[str, dict] = collections.defaultdict(lambda: dict(calls=0, uncached_usd=0.0, cached_usd=0.0, output_usd=0.0))
+    for a in recs:
+        mdl = model_of(a) or unknown_as
+        if spark_as and mdl == DEFAULT_MODEL:
+            mdl = spark_as
+        u, c, o = cost_parts(a["q"], RATES[mdl])
+        r = by_model[mdl]
+        r["calls"] += 1
+        r["uncached_usd"] += u
+        r["cached_usd"] += c
+        r["output_usd"] += o
+    total = sum(r["uncached_usd"] + r["cached_usd"] + r["output_usd"] for r in by_model.values())
+    return dict(total=total, by_model=dict(by_model))
+
+
+def no_cache_total(recs: list[dict], model_of: Callable) -> float:
+    t = 0.0
+    for a in recs:
+        r_in, _, r_out = RATES[model_of(a) or DEFAULT_MODEL]
+        t += a["q"]["input_tokens"] * r_in / 1e6 + a["q"]["output_tokens"] * r_out / 1e6
+    return t
+
+
+def tally(recs: list[dict], keyf: Callable) -> dict[str, dict]:
+    t: dict[str, collections.Counter] = collections.defaultdict(collections.Counter)
+    for a in recs:
+        c = t[keyf(a)]
+        c["calls"] += 1
+        for f in FIELDS:
+            c[f] += a["q"][f]
+    return {k: dict(v) for k, v in sorted(t.items())}
+
+
+def parse_when(s: str) -> dt.datetime:
+    for fmt in ("%Y-%m-%d %H:%M", "%Y-%m-%dT%H:%M", "%Y-%m-%d"):
+        try:
+            return dt.datetime.strptime(s, fmt)
+        except ValueError:
+            pass
+    raise argparse.ArgumentTypeError(f"bad date {s!r}; use YYYY-MM-DD or 'YYYY-MM-DD HH:MM' (local time)")
+
+
+def parse_pct(s: str) -> float:
+    try:
+        v = float(s.strip().rstrip("%"))
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"bad percentage {s!r}; use e.g. 81 or 81%")
+    if not 0 < v <= 100:
+        raise argparse.ArgumentTypeError("percentage used must be in (0, 100]")
+    return v
+
+
+def tok_line(c: dict) -> str:
+    inp, cr = c["input_tokens"], c["cached_tokens"]
+    return (
+        f"calls {c['calls']:>5}  in {inp:>12,} (cached {cr:>12,}, uncached {inp - cr:>11,})  "
+        f"out {c['output_tokens']:>10,} (reasoning {c['reasoning_tokens']:,})"
+    )
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--since", type=parse_when, help="window start, local time (inclusive)")
+    ap.add_argument("--until", type=parse_when, help="window end, local time (exclusive)")
+    ap.add_argument("--days", type=float, help="window = last N days (ignored if --since is given)")
+    ap.add_argument("--month", action="store_true", help="also extrapolate the window to a 30.44-day month")
+    ap.add_argument(
+        "--used",
+        type=parse_pct,
+        metavar="PCT",
+        help="percent of your weekly quota used in the window (81 or 81%%); scales the window to a full week, then a month",
+    )
+    ap.add_argument("--rates", help="JSON file overriding RATES: {model: [in, cached_in, out]} per 1M tokens")
+    ap.add_argument("--json", action="store_true", help="machine-readable output")
+    args = ap.parse_args()
+
+    if args.rates:
+        with open(args.rates) as f:
+            RATES.update({k: tuple(v) for k, v in json.load(f).items()})
+    if not os.path.isdir(ROOT):
+        print(f"no muse session store at {ROOT}", file=sys.stderr)
+        return 1
+
+    attrs, mcs = load()
+    recs = canonical(attrs)
+    model_of = resolve_models(recs, mcs)
+
+    now = dt.datetime.now()
+    since = args.since or (now - dt.timedelta(days=args.days) if args.days else None)
+    until = args.until
+    if since:
+        recs = [a for a in recs if a["when"] >= since]
+    if until:
+        recs = [a for a in recs if a["when"] < until]
+    if not recs:
+        print("no usage in that window")
+        return 0
+
+    first, last = min(a["when"] for a in recs), max(a["when"] for a in recs)
+    start, end = since or first, until or max(last, now if since else last)
+    window_days = max((end - start).total_seconds() / 86400, 1e-9)
+
+    totals = collections.Counter()
+    for a in recs:
+        totals["calls"] += 1
+        for f in FIELDS:
+            totals[f] += a["q"][f]
+    unknown = [a for a in recs if model_of(a) is None]
+
+    best = price(recs, model_of)
+    scenarios = {
+        "best estimate": best["total"],
+        "unrecorded-model calls as wonder": price(recs, model_of, unknown_as="muse-wonder-1.0")["total"],
+        "all plain spark as contributor tier": price(recs, model_of, spark_as="muse-spark-1.3-contributor")["total"],
+        "no prompt-cache discount": no_cache_total(recs, model_of),
+    }
+    by_cat = tally(recs, category)
+    by_day = tally(recs, lambda a: a["when"].strftime("%Y-%m-%d"))
+    cat_cost = {k: price([a for a in recs if category(a) == k], model_of)["total"] for k in by_cat}
+    day_cost = {k: price([a for a in recs if a["when"].strftime("%Y-%m-%d") == k], model_of)["total"] for k in by_day}
+
+    window_weeks = window_days / 7
+    extrap = None
+    if args.month or args.used:
+        # --used: the window consumed PCT% of a week's quota, so 100% = window / (PCT/100)
+        week_factor = 100 / args.used if args.used else 1 / window_weeks
+        factor = week_factor * WEEKS_PER_MONTH
+        extrap = dict(
+            window_days=window_days,
+            used_pct=args.used,
+            week_factor=week_factor,
+            week_cost_usd=best["total"] * week_factor,
+            factor=factor,
+            cost_usd=best["total"] * factor,
+            input_tokens=totals["input_tokens"] * factor,
+            output_tokens=totals["output_tokens"] * factor,
+            cached_tokens=totals["cached_tokens"] * factor,
+        )
+
+    if args.json:
+        print(
+            json.dumps(
+                dict(
+                    window=dict(start=start.isoformat(), end=end.isoformat(), days=window_days),
+                    totals=dict(totals),
+                    cost=best,
+                    scenarios=scenarios,
+                    by_category={k: dict(v, cost_usd=cat_cost[k]) for k, v in by_cat.items()},
+                    by_day={k: dict(v, cost_usd=day_cost[k]) for k, v in by_day.items()},
+                    unrecorded_model_calls=len(unknown),
+                    extrapolated_month=extrap,
+                    rates=RATES,
+                ),
+                indent=2,
+            )
+        )
+        return 0
+
+    print(f"window: {start:%Y-%m-%d %H:%M} -> {end:%Y-%m-%d %H:%M}  ({window_days:.2f} days; first call {first:%m-%d %H:%M}, last {last:%m-%d %H:%M})")
+    print("\nTOKENS\n  " + tok_line(totals))
+    print("\nby source")
+    for k, c in sorted(by_cat.items(), key=lambda kv: -kv[1]["input_tokens"]):
+        print(f"  {k:<20}{tok_line(c)}   ${cat_cost[k]:>8.2f}")
+    print("\nby day")
+    for k, c in by_day.items():
+        print(f"  {k}  {tok_line(c)}   ${day_cost[k]:>8.2f}")
+
+    print("\nAPI-EQUIVALENT COST (USD)")
+    print(f"  {'model':<28}{'calls':>6}{'uncached in':>13}{'cached in':>11}{'output':>10}{'total':>10}")
+    for mdl, r in sorted(best["by_model"].items(), key=lambda kv: -(kv[1]["uncached_usd"] + kv[1]["cached_usd"] + kv[1]["output_usd"])):
+        t = r["uncached_usd"] + r["cached_usd"] + r["output_usd"]
+        print(f"  {mdl:<28}{r['calls']:>6}{r['uncached_usd']:>13.2f}{r['cached_usd']:>11.2f}{r['output_usd']:>10.2f}{t:>10.2f}")
+    print(f"  {'TOTAL':<28}{totals['calls']:>6}{'':>34}{best['total']:>10.2f}")
+    print(f"\n  {len(unknown)} call(s) have no recorded model; priced as {DEFAULT_MODEL}.")
+    print("  scenarios:")
+    for k, v in scenarios.items():
+        print(f"    {k:<38}${v:>9.2f}")
+
+    if extrap:
+        if args.used:
+            wf = extrap["week_factor"]
+            print(f"\nWEEKLY QUOTA ({args.used:g}% used -> x{wf:.3f} to reach 100%)")
+            print(f"  tokens/week: in {totals['input_tokens'] * wf / 1e6:,.1f}M (cached {totals['cached_tokens'] * wf / 1e6:,.1f}M)  out {totals['output_tokens'] * wf / 1e6:,.2f}M")
+            print(f"  API-equivalent cost/week: ${extrap['week_cost_usd']:,.2f}   (low ${min(scenarios['all plain spark as contributor tier'], best['total']) * wf:,.2f} if all spark billed at contributor tier; high ${scenarios['unrecorded-model calls as wonder'] * wf:,.2f} if unrecorded calls were wonder)")
+            print(f"\nMONTHLY EXTRAPOLATION (week x {WEEKS_PER_MONTH:.3f} weeks/month)")
+        else:
+            print(f"\nMONTHLY EXTRAPOLATION (window {window_days:.2f} days x {extrap['factor']:.3f} = 30.44 days)")
+        print(f"  tokens/month: in {extrap['input_tokens'] / 1e6:,.1f}M (cached {extrap['cached_tokens'] / 1e6:,.1f}M)  out {extrap['output_tokens'] / 1e6:,.2f}M")
+        print(f"  API-equivalent cost/month: ${extrap['cost_usd']:,.2f}")
+        print(f"  (low ${min(scenarios['all plain spark as contributor tier'], best['total']) * extrap['factor']:,.2f} if all spark billed at contributor tier;"
+              f" high ${scenarios['unrecorded-model calls as wonder'] * extrap['factor']:,.2f} if unrecorded calls were wonder)")
+        if not args.used and (window_days < 6.5 or window_days > 7.5):
+            print("  note: window is not ~7 days; pass --since at the start of your weekly quota window for a clean weekly figure.")
+    print("\nrates are notional list prices (see RATES), not your subscription charge; web search is not priced.")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

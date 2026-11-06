@@ -1,0 +1,5 @@
+# skillshare-managed runtime state (never commit). Tracked declarations in
+# config.yaml and skills/ are the source of truth; skillshare rewrites only
+# its own metadata here. Skillshare backups, logs, and state live outside
+# the repo (~/.local/share/skillshare, ~/.local/state/skillshare).
+.metadata.json

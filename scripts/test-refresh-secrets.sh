@@ -68,9 +68,6 @@ case "${1:-}" in
       artifactory.octanner.net)
         printf '{"name":"artifactory.octanner.net","fields":[{"name":"email","value":"user@example.com"},{"name":"access_token","value":"artifactory-token"},{"name":"encrypted_password","value":"artifactory-encrypted-password"}]}'
         ;;
-      cloudflare.com)
-        printf '{"name":"cloudflare.com","fields":[{"name":"account_id","value":"cloudflare-account-id"},{"name":"github_actions_token","value":"cloudflare-api-token"}]}'
-        ;;
       *)
         exit 1
         ;;
@@ -100,9 +97,10 @@ grep -Fq -- '--session fake-session-token get item context7 --raw' "$BW_LOG_FILE
 grep -Fq -- '--session fake-session-token get item synthetic.new --raw' "$BW_LOG_FILE" || fail "expected Synthetic item read"
 grep -Fq -- '--session fake-session-token get item ebac9653-5fbd-4dac-b22d-af9a0116b6bb --raw' "$BW_LOG_FILE" || fail "expected github packages item read"
 grep -Fq -- '--session fake-session-token get item artifactory.octanner.net --raw' "$BW_LOG_FILE" || fail "expected artifactory item read"
-grep -Fq -- '--session fake-session-token get item cloudflare.com --raw' "$BW_LOG_FILE" || fail "expected cloudflare item read"
+grep -Fq 'Skipping Muse MCP update' "$OUTPUT_FILE" || fail "a dry run without Muse settings should say it skips the Muse merge"
 
 [[ ! -e "$TARGET_HOME/.config/secrets/env" ]] || fail "dry run should not write env artifact"
+[[ ! -e "$TARGET_HOME/.config/muse/settings.json" ]] || fail "dry run should not create Muse settings"
 [[ ! -e "$TARGET_HOME/.npmrc" ]] || fail "dry run should not write npmrc artifact"
 [[ ! -e "$TARGET_HOME/.gradle/gradle.properties" ]] || fail "dry run should not write gradle artifact"
 [[ ! -e "$TARGET_HOME/.m2/settings.xml" ]] || fail "dry run should not write maven settings artifact"
@@ -110,6 +108,10 @@ grep -Fq -- '--session fake-session-token get item cloudflare.com --raw' "$BW_LO
 # A tag-less refresh projects every item, including the GitHub Packages work
 # and personal tokens from their dedicated fields.
 ALL_HOME="$TMP_DIR/all-home"
+mkdir -p "$ALL_HOME/.config/muse"
+cat > "$ALL_HOME/.config/muse/settings.json" <<'EOF'
+{"schema_version": 1, "provider": "meta", "custom_keep": true, "mcpServers": {"my-own": {"type": "stdio", "command": "mine", "mode": "optional"}, "context7": {"type": "stdio", "command": "npx", "args": ["-y", "@upstash/context7-mcp"], "mode": "optional"}, "brave-search": {"type": "stdio", "command": "npx", "args": ["-y", "@brave/brave-search-mcp-server"], "mode": "optional", "env": {"BRAVE_API_KEY": "stale-token"}}, "playwright": {"type": "stdio", "command": "npx", "args": ["-y", "@playwright/mcp@latest"], "mode": "optional"}, "chrome-devtools": {"type": "stdio", "command": "npx", "args": ["-y", "chrome-devtools-mcp@latest"], "mode": "optional"}, "ios-simulator": {"type": "stdio", "command": "npx", "args": ["-y", "ios-simulator-mcp"], "mode": "optional"}}}
+EOF
 PATH="$FAKE_BIN:$PATH" BW_LOG_FILE="$BW_LOG_FILE" \
   bash "$REPO_ROOT/scripts/refresh-secrets.sh" --home "$ALL_HOME" > "$OUTPUT_FILE"
 
@@ -120,8 +122,6 @@ grep -Fq 'export GITHUB_PACKAGES_TOKEN=github-work-token' "$ALL_HOME/.config/sec
   fail "tag-less run should export the GitHub Packages work token from work_access_token"
 grep -Fq 'export GITHUB_PACKAGES_PERSONAL_TOKEN=github-personal-token' "$ALL_HOME/.config/secrets/env" ||
   fail "tag-less run should export the GitHub Packages personal token from personal_access_token"
-grep -Fq 'export CLOUDFLARE_API_TOKEN=cloudflare-api-token' "$ALL_HOME/.config/secrets/env" ||
-  fail "tag-less run should export the Cloudflare token"
 grep -Fq '@octanner-ui:registry=https://artifactory.octanner.net/api/npm/oct-npmjs/' "$ALL_HOME/.npmrc" ||
   fail "tag-less run should include the Artifactory npmrc block"
 grep -Fq '//npm.pkg.github.com/:_authToken=${GITHUB_PACKAGES_TOKEN}' "$ALL_HOME/.npmrc" ||
@@ -129,6 +129,25 @@ grep -Fq '//npm.pkg.github.com/:_authToken=${GITHUB_PACKAGES_TOKEN}' "$ALL_HOME/
 [[ -f "$ALL_HOME/.gradle/gradle.properties" ]] || fail "tag-less run should write the gradle artifact"
 [[ -f "$ALL_HOME/.m2/settings.xml" ]] || fail "tag-less run should write the maven artifact"
 [[ ! -e "$ALL_HOME/.config/secrets/tags" ]] || fail "a run without --tag should not write a persisted tag selection"
+if grep -Fq '"context7"' "$ALL_HOME/.config/muse/settings.json"; then
+  fail "tag-less run should remove the migrated context7 Muse server"
+fi
+if grep -Fq '"brave-search"' "$ALL_HOME/.config/muse/settings.json"; then
+  fail "tag-less run should remove the migrated brave-search Muse server"
+fi
+if grep -Fq '"ios-simulator"' "$ALL_HOME/.config/muse/settings.json"; then
+  fail "tag-less run should remove the retired ios-simulator Muse server"
+fi
+if grep -Fq '"playwright"' "$ALL_HOME/.config/muse/settings.json"; then
+  fail "tag-less run should remove the migrated playwright Muse server"
+fi
+if grep -Fq '"chrome-devtools"' "$ALL_HOME/.config/muse/settings.json"; then
+  fail "tag-less run should remove the migrated chrome-devtools Muse server"
+fi
+grep -Fq '"custom_keep": true' "$ALL_HOME/.config/muse/settings.json" ||
+  fail "Muse settings merge should preserve unrelated keys"
+grep -Fq '"my-own"' "$ALL_HOME/.config/muse/settings.json" ||
+  fail "Muse settings merge should preserve servers it does not manage"
 
 # --tag work drops every personal-only secret and keeps the work artifacts.
 WORK_HOME="$TMP_DIR/work-home"
@@ -143,9 +162,6 @@ grep -Fq 'export GITHUB_PACKAGES_TOKEN=github-work-token' "$WORK_HOME/.config/se
 if grep -Fq 'SYNTHETIC_API_KEY' "$WORK_HOME/.config/secrets/env"; then
   fail "work run should not export personal-only secrets"
 fi
-if grep -Fq 'CLOUDFLARE' "$WORK_HOME/.config/secrets/env"; then
-  fail "work run should not export personal-only secrets"
-fi
 if grep -Fq 'GITHUB_PACKAGES_PERSONAL_TOKEN' "$WORK_HOME/.config/secrets/env"; then
   fail "work run should not export the GitHub Packages personal token"
 fi
@@ -156,6 +172,7 @@ grep -Fq '@octanner-ui:registry=https://artifactory.octanner.net/api/npm/oct-npm
 [[ -f "$WORK_HOME/.gradle/gradle.properties" ]] || fail "work run should write the gradle artifact"
 [[ -f "$WORK_HOME/.m2/settings.xml" ]] || fail "work run should write the maven artifact"
 grep -Fqx 'work' "$WORK_HOME/.config/secrets/tags" || fail "an explicit --tag run should persist its selection"
+grep -Fq 'Skipping Muse MCP update' "$OUTPUT_FILE" || fail "a run without Muse settings should say it skips the Muse merge"
 
 # --tag personal keeps shared + personal secrets, uses the personal GitHub
 # Packages token for @snaveevans, and skips work-only artifacts.
@@ -165,8 +182,6 @@ PATH="$FAKE_BIN:$PATH" BW_LOG_FILE="$BW_LOG_FILE" \
 
 grep -Fq 'export BRAVE_API_KEY=brave-token' "$PERSONAL_HOME/.config/secrets/env" || fail "personal run should keep shared secrets"
 grep -Fq 'export SYNTHETIC_API_KEY=synthetic-token' "$PERSONAL_HOME/.config/secrets/env" || fail "personal run should export the Synthetic key"
-grep -Fq 'export CLOUDFLARE_ACCOUNT_ID=cloudflare-account-id' "$PERSONAL_HOME/.config/secrets/env" ||
-  fail "personal run should export the Cloudflare account id"
 grep -Fq 'export GITHUB_PACKAGES_PERSONAL_TOKEN=github-personal-token' "$PERSONAL_HOME/.config/secrets/env" ||
   fail "personal run should export the GitHub Packages personal token"
 if grep -Fq 'export GITHUB_PACKAGES_TOKEN' "$PERSONAL_HOME/.config/secrets/env"; then
@@ -198,5 +213,31 @@ if PATH="$FAKE_BIN:$PATH" BW_LOG_FILE="$BW_LOG_FILE" \
   fail "an unknown tag should fail"
 fi
 grep -Fq 'Unknown tag: bogus' "$OUTPUT_FILE" || fail "an unknown tag should be explained"
+
+# Malformed Muse settings warn instead of failing the refresh, and the
+# file is left untouched.
+MALFORMED_HOME="$TMP_DIR/malformed-home"
+mkdir -p "$MALFORMED_HOME/.config/muse"
+printf '{oops' > "$MALFORMED_HOME/.config/muse/settings.json"
+PATH="$FAKE_BIN:$PATH" BW_LOG_FILE="$BW_LOG_FILE" \
+  bash "$REPO_ROOT/scripts/refresh-secrets.sh" --home "$MALFORMED_HOME" > "$OUTPUT_FILE"
+grep -Fq 'WARNING: skipping Muse MCP cleanup' "$OUTPUT_FILE" || fail "malformed Muse settings should warn, not fail"
+[[ "$(cat "$MALFORMED_HOME/.config/muse/settings.json")" == "{oops" ]] || fail "malformed Muse settings should be left untouched"
+
+# A relative symlinked Muse settings file is updated through the link: the
+# link survives, the target is cleaned, and its mode is preserved.
+SYMLINK_HOME="$TMP_DIR/symlink-home"
+mkdir -p "$SYMLINK_HOME/.config/muse" "$SYMLINK_HOME/synced"
+printf '{"keep": 1, "mcpServers": {"context7": {}, "my-own": {}}}\n' > "$SYMLINK_HOME/synced/settings.json"
+chmod 644 "$SYMLINK_HOME/synced/settings.json"
+ln -s ../../synced/settings.json "$SYMLINK_HOME/.config/muse/settings.json"
+PATH="$FAKE_BIN:$PATH" BW_LOG_FILE="$BW_LOG_FILE" \
+  bash "$REPO_ROOT/scripts/refresh-secrets.sh" --home "$SYMLINK_HOME" > "$OUTPUT_FILE"
+[[ -L "$SYMLINK_HOME/.config/muse/settings.json" ]] || fail "symlinked Muse settings should stay a symlink"
+grep -Fq '"context7"' "$SYMLINK_HOME/synced/settings.json" && fail "symlink target should have retired servers removed"
+grep -Fq '"my-own"' "$SYMLINK_HOME/synced/settings.json" || fail "symlink target should keep unrelated servers"
+[[ "$(tail -c 1 "$SYMLINK_HOME/synced/settings.json")" == "" ]] || fail "trailing newline should be preserved"
+symlink_mode="$(stat -f %Lp "$SYMLINK_HOME/synced/settings.json" 2>/dev/null || stat -c %a "$SYMLINK_HOME/synced/settings.json")"
+[[ "$symlink_mode" == "644" ]] || fail "Muse settings mode should be preserved, got $symlink_mode"
 
 printf 'refresh-secrets fake-bw verification passed\n'
