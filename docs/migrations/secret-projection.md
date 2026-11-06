@@ -28,7 +28,7 @@ tags are `work` and `personal`.
 | --- | --- | --- |
 | Brave Search | `BRAVE_API_KEY` | `work`, `personal` |
 | Context7 | `CONTEXT7_API_KEY` | `work`, `personal` |
-| Muse MCP leftovers | retired servers are deleted from `~/.config/muse/settings.json` when present; nothing is added | follows the same tags |
+| Muse MCP leftovers | retired servers named in the `retired_muse_servers` array in `project_muse_mcp` are deleted from `~/.config/muse/settings.json` when present; nothing is added | runs on every refresh, tag-independent |
 | Synthetic | `SYNTHETIC_API_KEY` | `personal` |
 | GitHub Packages | `GITHUB_PACKAGES_TOKEN` (`work_access_token`), `GITHUB_PACKAGES_PERSONAL_TOKEN` (`personal_access_token`) | `work`, `personal` |
 | Artifactory | feeds `~/.npmrc`, `gradle.properties`, `settings.xml` only - no env exports | `work` |
@@ -135,6 +135,7 @@ Supported overrides:
 - Run `bw login` first if the CLI is not authenticated yet.
 - Use `scripts/refresh-secrets.sh --help` for options.
 - Use `scripts/refresh-secrets.sh --dry-run` to validate reads without writing files.
+- Cloudflare (`CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN`) was removed because nothing in the repo consumed it. The secrets stay in Bitwarden; to restore, re-add the item block, fields, tags, and env exports following the Brave/Context7 pattern, plus test fixtures.
 
 ## Safety notes
 

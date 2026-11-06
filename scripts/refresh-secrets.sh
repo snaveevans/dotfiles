@@ -254,29 +254,73 @@ write_secret_file() {
   log "Wrote $target_path"
 }
 
-# Remove the retired MCP servers from Muse Code's settings. Every other key
-# in the file, and any server this script does not know, is preserved.
+# One-time cleanup, kept so machines that never ran the migration still
+# converge: remove the retired MCP servers from Muse Code's settings.
+# Single source of truth for the retired list is the local
+# retired_muse_servers array below; docs and tests refer to it instead of
+# copying the names.
+# Runs last and never fails the refresh: secret artifacts are already
+# written by the time this runs, and a Muse settings problem must not
+# block secret projection.
 project_muse_mcp() {
   local settings_path="$1"
+  local write_path="$settings_path"
   local merged_json
+  local current_canonical
+  local merged_canonical
+  local del_list=""
+  local server
+  local orig_mode
+  local tmp_file
+  local parent_dir
+
+  local retired_muse_servers=(context7 brave-search playwright chrome-devtools ios-simulator)
 
   if [[ ! -e "$settings_path" ]]; then
     log "Skipping Muse MCP update: $settings_path does not exist yet (launch Muse once, then re-run)."
     return 0
   fi
 
-  merged_json="$(
-    jq '
-      del(.mcpServers["context7"], .mcpServers["brave-search"], .mcpServers["playwright"], .mcpServers["chrome-devtools"], .mcpServers["ios-simulator"])
-      ' "$settings_path"
-  )" || die "Failed to merge Muse MCP settings in $settings_path"
+  for server in "${retired_muse_servers[@]}"; do
+    del_list+=".mcpServers[\"$server\"],"
+  done
+  del_list="${del_list%,}"
 
-  if [[ "$(cat "$settings_path")" == "$merged_json" ]]; then
+  merged_json="$(jq "del($del_list)" "$settings_path")" || {
+    log "WARNING: skipping Muse MCP cleanup, could not parse $settings_path"
+    return 0
+  }
+
+  if current_canonical="$(jq -S . "$settings_path" 2>/dev/null)" &&
+    merged_canonical="$(printf '%s' "$merged_json" | jq -S . 2>/dev/null)" &&
+    [[ "$current_canonical" == "$merged_canonical" ]]; then
     log "Muse MCP settings unchanged: $settings_path"
     return 0
   fi
 
-  write_secret_file "$settings_path" "$merged_json"
+  if "$DRY_RUN"; then
+    log "DRY-RUN: update $settings_path (remove retired MCP servers)"
+    return 0
+  fi
+
+  # Write through symlinks so the link layout is preserved, and keep the
+  # file's existing mode and trailing-newline state (this file holds no
+  # secrets, so secret-file permissions do not apply here).
+  while [[ -L "$write_path" ]]; do
+    write_path="$(readlink "$write_path")"
+  done
+  orig_mode="$(stat -f %A "$write_path" 2>/dev/null || stat -c %a "$write_path")"
+  if [[ "$(tail -c 1 "$write_path" | od -An -tx1 | tr -d ' \n')" == "0a" ]]; then
+    merged_json="${merged_json}"$'\n'
+  fi
+
+  parent_dir="$(dirname "$write_path")"
+  mkdir -p "$parent_dir"
+  tmp_file="$(mktemp "$parent_dir/.tmp.$(basename "$write_path").XXXXXX")"
+  printf '%s' "$merged_json" > "$tmp_file"
+  chmod "$orig_mode" "$tmp_file"
+  mv "$tmp_file" "$write_path"
+  log "Updated Muse MCP settings: $settings_path"
 }
 
 while [[ $# -gt 0 ]]; do
@@ -463,7 +507,6 @@ if "$GITHUB_WORK_ENABLED" || "$GITHUB_PERSONAL_ENABLED" || "$ARTIFACTORY_ENABLED
 fi
 
 write_secret_file "$ENV_OUTPUT_PATH" "$env_content"
-project_muse_mcp "$MUSE_SETTINGS_PATH"
 
 if "$EXPLICIT_TAGS"; then
   tags_content=""
@@ -501,6 +544,8 @@ EOF
   write_secret_file "$GRADLE_PROPERTIES_OUTPUT_PATH" "$gradle_properties_content"
   write_secret_file "$MAVEN_SETTINGS_OUTPUT_PATH" "$maven_settings_content"
 fi
+
+project_muse_mcp "$MUSE_SETTINGS_PATH"
 
 if "$DRY_RUN"; then
   log "Dry run complete."

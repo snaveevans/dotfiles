@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/runkids/skillshare/main/schemas/config.schema.json
 
-# Single source of truth for skills and MCP servers.
+# Single source of truth for synced skills (MCP servers were migrated away).
 # Tracked in dotfiles at home/.config/skillshare/ and linked to
 # ~/.config/skillshare/ by scripts/install-home-links.sh.
 source: ~/.config/skillshare/skills

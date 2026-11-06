@@ -65,7 +65,8 @@ This repo now uses an explicit bootstrap + link + refresh flow for setup and day
   - configures OpenCode's permissions to allow tools and resources without prompts, including shell commands,
     sensitive files, and directories outside the home directory; project or agent rules and policies can override this
   - disables the `pitfalls-maintainer`, `pitfalls-reader`, `web-ui-crafter`, `bug-fixer`,
-    `conventional-commits`, and `ios-rebuild-validate` skills without deleting their files
+    and `conventional-commits` skills without deleting their files (`ios-rebuild-validate`
+    was retired with the ios-simulator MCP removal)
   - links tracked Copilot CLI defaults to `~/.copilot/settings.json`
   - backs up an existing target before replacing it; settings are not merged
 - `scripts/refresh-secrets.sh`

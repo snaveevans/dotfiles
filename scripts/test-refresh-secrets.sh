@@ -110,7 +110,7 @@ grep -Fq 'Skipping Muse MCP update' "$OUTPUT_FILE" || fail "a dry run without Mu
 ALL_HOME="$TMP_DIR/all-home"
 mkdir -p "$ALL_HOME/.config/muse"
 cat > "$ALL_HOME/.config/muse/settings.json" <<'EOF'
-{"schema_version": 1, "provider": "meta", "custom_keep": true, "mcpServers": {"my-own": {"type": "stdio", "command": "mine", "mode": "optional"}, "context7": {"type": "stdio", "command": "npx", "args": ["-y", "@upstash/context7-mcp"], "mode": "optional"}, "brave-search": {"type": "stdio", "command": "npx", "args": ["-y", "@brave/brave-search-mcp-server"], "mode": "optional", "env": {"BRAVE_API_KEY": "stale-token"}}, "ios-simulator": {"type": "stdio", "command": "npx", "args": ["-y", "ios-simulator-mcp"], "mode": "optional"}}}
+{"schema_version": 1, "provider": "meta", "custom_keep": true, "mcpServers": {"my-own": {"type": "stdio", "command": "mine", "mode": "optional"}, "context7": {"type": "stdio", "command": "npx", "args": ["-y", "@upstash/context7-mcp"], "mode": "optional"}, "brave-search": {"type": "stdio", "command": "npx", "args": ["-y", "@brave/brave-search-mcp-server"], "mode": "optional", "env": {"BRAVE_API_KEY": "stale-token"}}, "playwright": {"type": "stdio", "command": "npx", "args": ["-y", "@playwright/mcp@latest"], "mode": "optional"}, "chrome-devtools": {"type": "stdio", "command": "npx", "args": ["-y", "chrome-devtools-mcp@latest"], "mode": "optional"}, "ios-simulator": {"type": "stdio", "command": "npx", "args": ["-y", "ios-simulator-mcp"], "mode": "optional"}}}
 EOF
 PATH="$FAKE_BIN:$PATH" BW_LOG_FILE="$BW_LOG_FILE" \
   bash "$REPO_ROOT/scripts/refresh-secrets.sh" --home "$ALL_HOME" > "$OUTPUT_FILE"
@@ -137,6 +137,12 @@ if grep -Fq '"brave-search"' "$ALL_HOME/.config/muse/settings.json"; then
 fi
 if grep -Fq '"ios-simulator"' "$ALL_HOME/.config/muse/settings.json"; then
   fail "tag-less run should remove the retired ios-simulator Muse server"
+fi
+if grep -Fq '"playwright"' "$ALL_HOME/.config/muse/settings.json"; then
+  fail "tag-less run should remove the migrated playwright Muse server"
+fi
+if grep -Fq '"chrome-devtools"' "$ALL_HOME/.config/muse/settings.json"; then
+  fail "tag-less run should remove the migrated chrome-devtools Muse server"
 fi
 grep -Fq '"custom_keep": true' "$ALL_HOME/.config/muse/settings.json" ||
   fail "Muse settings merge should preserve unrelated keys"
@@ -207,5 +213,15 @@ if PATH="$FAKE_BIN:$PATH" BW_LOG_FILE="$BW_LOG_FILE" \
   fail "an unknown tag should fail"
 fi
 grep -Fq 'Unknown tag: bogus' "$OUTPUT_FILE" || fail "an unknown tag should be explained"
+
+# Malformed Muse settings warn instead of failing the refresh, and the
+# file is left untouched.
+MALFORMED_HOME="$TMP_DIR/malformed-home"
+mkdir -p "$MALFORMED_HOME/.config/muse"
+printf '{oops' > "$MALFORMED_HOME/.config/muse/settings.json"
+PATH="$FAKE_BIN:$PATH" BW_LOG_FILE="$BW_LOG_FILE" \
+  bash "$REPO_ROOT/scripts/refresh-secrets.sh" --home "$MALFORMED_HOME" > "$OUTPUT_FILE"
+grep -Fq 'WARNING: skipping Muse MCP cleanup' "$OUTPUT_FILE" || fail "malformed Muse settings should warn, not fail"
+[[ "$(cat "$MALFORMED_HOME/.config/muse/settings.json")" == "{oops" ]] || fail "malformed Muse settings should be left untouched"
 
 printf 'refresh-secrets fake-bw verification passed\n'
