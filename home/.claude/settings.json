@@ -3,7 +3,7 @@
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
     "CLAUDE_CODE_IDLE_COMPACT_MIN_TOKENS": "150000"
   },
-  "model": "opusplan",
+  "model": "sonnet",
   "disableAgentView": true,
   "statusLine": {
     "type": "command",
@@ -11,7 +11,9 @@
   },
   "enabledPlugins": {
     "frontend-design@claude-plugins-official": true,
-    "typescript-lsp@claude-plugins-official": true
+    "typescript-lsp@claude-plugins-official": true,
+    "aew@agentic-engineering-workflow": true,
+    "codex@openai-codex": true
   },
   "extraKnownMarketplaces": {
     "snaveevans": {
@@ -19,12 +21,25 @@
         "source": "directory",
         "path": "/Users/tyler/workspace/ai-plugins"
       }
+    },
+    "agentic-engineering-workflow": {
+      "source": {
+        "source": "directory",
+        "path": "/Users/tyler/workspace/agentic-engineering-workflow"
+      }
+    },
+    "openai-codex": {
+      "source": {
+        "source": "github",
+        "repo": "openai/codex-plugin-cc"
+      }
     }
   },
   "effortLevel": "high",
   "modelSettings": {
     "claude-sonnet-5-5": {
-      "effortLevel": "xhigh"
+      "effortLevel": "medium",
+      "autoCompactWindow": "auto"
     },
     "claude-opus-5-5": {
       "effortLevel": "high"
@@ -41,5 +56,48 @@
   },
   "skipWorkflowUsageWarning": true,
   "agentPushNotifEnabled": true,
+  "autoMode": {
+    "environment": [
+      "### Org-wide",
+      "**Organization**: None configured",
+      "**Cloud provider(s)**: Cloudflare (Workers, D1, Queues) — used by this repo's deploy pipeline (wrangler, CLOUDFLARE_ACCOUNT_ID / CLOUDFLARE_API_TOKEN in CI)",
+      "**Repository visibility**: private (plarea/pineapple, verified via gh)",
+      "**Internal sharing / snippet hosting**: None configured — treat public paste/gist services as outside the trust boundary",
+      "**Secrets management**: Cloudflare Worker secrets (BETTER_AUTH_SECRET, GOOGLE_CLIENT_ID/SECRET) — never committed; CI secrets CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_API_TOKEN, GITHUB_TOKEN referenced in workflows",
+      "**Default / protected branches**: main (default, protected via ruleset `default-protection`, active)",
+      "**CI/CD deploy targets**: Cloudflare Workers via `.github/workflows/deploy.yml` (merges to main auto-deploy)",
+      "**Network posture**: None configured",
+      "**Host containment**: None configured — assume Claude Code runs on an ordinary developer machine with open internet",
+      "**Source control**: plarea/pineapple (github.com:plarea/pineapple.git) and its configured remote only",
+      "**Trusted internal domains**: None configured",
+      "**Trusted cloud buckets**: None configured",
+      "**Key internal services**: None configured",
+      "**Internal package registry**: None configured",
+      "**Sensitive data locations & audiences**: apps/api/.env.typegen, apps/web/.env.development.local, apps/web/.env.example, and any .env.local / .env.*.local files (gitignored) — contain local/dev secrets; keep out of commits and share only with audiences cleared at the [named+specifics] bar",
+      "**Data retention / declassification**: None configured",
+      "**Sensitive remote targets**: any namespace, host, or container whose name carries `prod` or `production` as a whole word or name segment",
+      "**Protected deployment namespaces / environments**: None configured — fall back to the Sensitive remote targets heuristic",
+      "**Protected IaC scopes**: IAM, RBAC, networking, quota, and node-pool resources; anything whose name or tag carries `prod` or `production` as a whole word or name segment",
+      "**Cloud provider(s)**: None configured",
+      "**Repository visibility**: public (snaveevans/dotfiles, verified via gh)",
+      "**Secrets management**: Bitwarden (bw) used to refresh local secret artifacts via scripts/refresh-secrets.sh; secrets kept out of git (.config/secrets/ gitignored)",
+      "**Default / protected branches**: main (default, protected via ruleset `default`, active)",
+      "**CI/CD deploy targets**: None configured",
+      "**Host containment**: None configured — assume Claude Code runs on an ordinary developer machine or CI runner with open internet",
+      "**Source control**: snaveevans/dotfiles (github.com:snaveevans/dotfiles.git) and its configured remote only",
+      "**Sensitive data locations & audiences**: .config/secrets/ (gitignored, Bitwarden-sourced secret artifacts), docs/decisions/ADR-0001-adopt-symlink-first-dotfiles-workflow-with-bitwarden-secret-projection.md, docs/decisions/ADR-0007-tag-scoped-secret-projection.md, docs/migrations/secret-projection.md, scripts/refresh-secrets.sh, scripts/test-refresh-secrets.sh — share only with audiences cleared at the [named+specifics] bar",
+      "### User-specific",
+      "**Primary use of Claude Code**: software development (Cloudflare Workers/D1 field-ops app, TypeScript monorepo)",
+      "**Trusted repo**: plarea/pineapple (this repo's working directory and its origin remote, github.com:plarea/pineapple.git) — private, so confidential material is fine here, but secrets are never cleared into it by visibility alone",
+      "**Org-specific CLIs**: None configured — pnpm, wrangler, gh used routinely but are standard toolchain, not org-specific",
+      "**Primary use of Claude Code**: software development (personal dotfiles repo — symlink-first config management, bootstrap scripts, Bitwarden secret projection)",
+      "**Trusted repo**: snaveevans/dotfiles (this repo's working directory and its origin remote, github.com:snaveevans/dotfiles.git) — public, so only this repo's own work belongs here; confidential/secret material is never cleared into it by visibility",
+      "**Org-specific CLiS**: None configured — bw, pnpm, npm, gh, pi used routinely but are standard personal toolchain, not org-specific"
+    ],
+    "soft_deny": [
+      "$defaults",
+      "Bash(./scripts/refresh-secrets.sh:*) in ~/.dotfiles — writes local secret artifacts from Bitwarden, keep as a reviewed step rather than fully automatic"
+    ]
+  },
   "voiceEnabled": true
 }

@@ -51,6 +51,10 @@ This repo now uses an explicit bootstrap + link + refresh flow for setup and day
 - `scripts/install-home-links.sh`
   - creates parent directories as needed
   - symlinks tracked config from `home/` into `$HOME`, including OpenCode's `~/.config/opencode/opencode.jsonc` and Pi's `~/.pi/agent/keybindings.json`
+  - configures OpenCode's permissions to allow tools and resources without prompts, including shell commands,
+    sensitive files, and directories outside the home directory; project or agent rules and policies can override this
+  - disables the `pitfalls-maintainer`, `pitfalls-reader`, `web-ui-crafter`, `bug-fixer`,
+    `conventional-commits`, and `ios-rebuild-validate` skills without deleting their files
   - links tracked Copilot CLI defaults to `~/.copilot/settings.json`
   - backs up an existing target before replacing it; settings are not merged
 - `scripts/refresh-secrets.sh`
