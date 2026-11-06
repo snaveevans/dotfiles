@@ -78,10 +78,25 @@
       "**Sensitive remote targets**: any namespace, host, or container whose name carries `prod` or `production` as a whole word or name segment",
       "**Protected deployment namespaces / environments**: None configured — fall back to the Sensitive remote targets heuristic",
       "**Protected IaC scopes**: IAM, RBAC, networking, quota, and node-pool resources; anything whose name or tag carries `prod` or `production` as a whole word or name segment",
+      "**Cloud provider(s)**: None configured",
+      "**Repository visibility**: public (snaveevans/dotfiles, verified via gh)",
+      "**Secrets management**: Bitwarden (bw) used to refresh local secret artifacts via scripts/refresh-secrets.sh; secrets kept out of git (.config/secrets/ gitignored)",
+      "**Default / protected branches**: main (default, protected via ruleset `default`, active)",
+      "**CI/CD deploy targets**: None configured",
+      "**Host containment**: None configured — assume Claude Code runs on an ordinary developer machine or CI runner with open internet",
+      "**Source control**: snaveevans/dotfiles (github.com:snaveevans/dotfiles.git) and its configured remote only",
+      "**Sensitive data locations & audiences**: .config/secrets/ (gitignored, Bitwarden-sourced secret artifacts), docs/decisions/ADR-0001-adopt-symlink-first-dotfiles-workflow-with-bitwarden-secret-projection.md, docs/decisions/ADR-0007-tag-scoped-secret-projection.md, docs/migrations/secret-projection.md, scripts/refresh-secrets.sh, scripts/test-refresh-secrets.sh — share only with audiences cleared at the [named+specifics] bar",
       "### User-specific",
       "**Primary use of Claude Code**: software development (Cloudflare Workers/D1 field-ops app, TypeScript monorepo)",
       "**Trusted repo**: plarea/pineapple (this repo's working directory and its origin remote, github.com:plarea/pineapple.git) — private, so confidential material is fine here, but secrets are never cleared into it by visibility alone",
-      "**Org-specific CLIs**: None configured — pnpm, wrangler, gh used routinely but are standard toolchain, not org-specific"
+      "**Org-specific CLIs**: None configured — pnpm, wrangler, gh used routinely but are standard toolchain, not org-specific",
+      "**Primary use of Claude Code**: software development (personal dotfiles repo — symlink-first config management, bootstrap scripts, Bitwarden secret projection)",
+      "**Trusted repo**: snaveevans/dotfiles (this repo's working directory and its origin remote, github.com:snaveevans/dotfiles.git) — public, so only this repo's own work belongs here; confidential/secret material is never cleared into it by visibility",
+      "**Org-specific CLiS**: None configured — bw, pnpm, npm, gh, pi used routinely but are standard personal toolchain, not org-specific"
+    ],
+    "soft_deny": [
+      "$defaults",
+      "Bash(./scripts/refresh-secrets.sh:*) in ~/.dotfiles — writes local secret artifacts from Bitwarden, keep as a reviewed step rather than fully automatic"
     ]
   },
   "voiceEnabled": true
