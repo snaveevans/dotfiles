@@ -17,13 +17,16 @@
   "policies": [
     { "action": "provider.use", "resource": "*", "effect": "deny" },
     { "action": "provider.use", "resource": "openai", "effect": "allow" },
-    { "action": "provider.use", "resource": "xai", "effect": "allow" }
+    { "action": "provider.use", "resource": "xai", "effect": "allow" },
+    { "action": "skill.use", "resource": "pitfalls-maintainer", "effect": "deny" },
+    { "action": "skill.use", "resource": "pitfalls-reader", "effect": "deny" },
+    { "action": "skill.use", "resource": "web-ui-crafter", "effect": "deny" },
+    { "action": "skill.use", "resource": "bug-fixer", "effect": "deny" },
+    { "action": "skill.use", "resource": "conventional-commits", "effect": "deny" },
+    { "action": "skill.use", "resource": "ios-rebuild-validate", "effect": "deny" }
   ],
   "permissions": [
-    { "action": "*", "resource": "*", "effect": "allow" },
-    { "action": "external_directory", "resource": "*", "effect": "ask" },
-    { "action": "external_directory", "resource": "~", "effect": "allow" },
-    { "action": "external_directory", "resource": "~/*", "effect": "allow" }
+    { "action": "*", "resource": "*", "effect": "allow" }
   ],
   "mcp": {
     "servers": {

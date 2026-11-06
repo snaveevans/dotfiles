@@ -1,0 +1,11 @@
+[tui.keymap.global]
+open_transcript = "ctrl-o"
+copy = "ctrl-t"
+open_external_editor = ["ctrl-g", "ctrl-x e"]
+
+[tui.keymap.pager]
+close_transcript = "ctrl-o"
+
+[tui.keymap.list]
+move_down = ["down", "j", "ctrl-n"]
+move_up = ["up", "k", "ctrl-p"]
