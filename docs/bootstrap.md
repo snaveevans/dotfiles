@@ -42,6 +42,18 @@ This repo now uses an explicit bootstrap + link + refresh flow for setup and day
    ```bash
    scripts/provision-pi.sh
    ```
+8. Sync skills and MCP servers with skillshare (config and sources are
+   already linked from `home/.config/skillshare/`):
+   ```bash
+   brew install skillshare
+   skillshare sync
+   skillshare sync mcp
+   ```
+   On the first sync, adopt conflicts with `import` (keep the agent's
+   entry) or `replace` (take the tracked declaration). Then run
+   `skillshare mcp check`. Muse Code is not a skillshare target, so mirror
+   MCP changes into `~/.config/muse/settings.json` by hand; the tracked
+   `muse-mcp-mirror` skill walks agents through that step.
 
 ## What each script does
 
@@ -50,7 +62,7 @@ This repo now uses an explicit bootstrap + link + refresh flow for setup and day
   - installs packages and bootstrap dependencies only
 - `scripts/install-home-links.sh`
   - creates parent directories as needed
-  - symlinks tracked config from `home/` into `$HOME`, including OpenCode's `~/.config/opencode/opencode.jsonc` and Pi's `~/.pi/agent/keybindings.json`
+  - symlinks tracked config from `home/` into `$HOME`, including OpenCode's `~/.config/opencode/opencode.jsonc`, Pi's `~/.pi/agent/keybindings.json`, and the skillshare source at `~/.config/skillshare`
   - configures OpenCode's permissions to allow tools and resources without prompts, including shell commands,
     sensitive files, and directories outside the home directory; project or agent rules and policies can override this
   - disables the `pitfalls-maintainer`, `pitfalls-reader`, `web-ui-crafter`, `bug-fixer`,
@@ -60,6 +72,7 @@ This repo now uses an explicit bootstrap + link + refresh flow for setup and day
 - `scripts/refresh-secrets.sh`
   - reads Bitwarden once
   - writes only local secret artifacts such as `~/.config/secrets/env` and `~/.npmrc`
+  - merges the shared MCP servers and their keys into `~/.config/muse/settings.json` (the one client skillshare cannot write)
 - `scripts/provision-pi.sh`
   - links `~/.pi/agent/settings.json` and `~/.pi/agent/models.json` to the tracked per-tag files (`settings.work.json`, `models.personal.json`, ...)
   - consumes the tag selection persisted by `refresh-secrets.sh --tag`; re-run it after changing that selection

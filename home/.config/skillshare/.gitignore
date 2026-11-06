@@ -1,0 +1,2 @@
+# skillshare-managed state; the declarations in config.yaml are the source of truth.
+.metadata.json

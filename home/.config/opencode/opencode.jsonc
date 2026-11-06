@@ -31,10 +31,9 @@
   "mcp": {
     "servers": {
       "context7": {
-        "type": "remote",
-        "url": "https://mcp.context7.com/mcp",
-        "oauth": false,
-        "headers": {
+        "type": "local",
+        "command": ["npx", "-y", "@upstash/context7-mcp"],
+        "environment": {
           "CONTEXT7_API_KEY": "{env:CONTEXT7_API_KEY}"
         },
         "disabled": false
@@ -46,7 +45,7 @@
       },
       "playwright": {
         "type": "local",
-        "command": ["npx", "@playwright/mcp@latest"],
+        "command": ["npx", "-y", "@playwright/mcp@latest"],
         "disabled": false
       },
       "brave-search": {

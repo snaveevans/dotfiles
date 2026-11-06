@@ -1,0 +1,60 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/runkids/skillshare/main/schemas/config.schema.json
+
+# Single source of truth for skills and MCP servers.
+# Tracked in dotfiles at home/.config/skillshare/ and linked to
+# ~/.config/skillshare/ by scripts/install-home-links.sh.
+source: ~/.config/skillshare/skills
+
+# Merge keeps local-only skills in each target (third-party skills that have
+# not been adopted yet survive sync; only source-managed links are pruned).
+mode: merge
+
+# Skill targets (AI CLI skill directories). Muse Code is not a built-in
+# skillshare target, but it reads ~/.claude/skills and ~/.agents/skills
+# natively, so syncing here covers it. Codex has no target of its own: it
+# reads the universal path (~/.agents/skills) directly.
+targets:
+  claude:
+    skills:
+      path: ~/.claude/skills
+  opencode:
+    skills:
+      path: ~/.config/opencode/skills
+  universal:
+    skills:
+      path: ~/.agents/skills
+
+# MCP servers, declared once and synced per target below.
+# Secrets stay references ({fromEnv: VAR}); never commit literal values.
+# Machine-specific servers (node_repl, computer-use, krita, aseprite-live)
+# stay local-only and are intentionally not declared here.
+# OpenCode is not an MCP target: its opencode.jsonc is a repo symlink and
+# skillshare only writes regular files, so OpenCode MCP stays hand-managed
+# in home/.config/opencode/opencode.jsonc (same NPX forms as below).
+# ios-simulator lives only in that file for the same reason.
+mcp:
+  targets:
+    - claude
+    - codex
+  servers:
+    chrome-devtools:
+      command: npx
+      args: ["-y", "chrome-devtools-mcp@latest"]
+    playwright:
+      command: npx
+      args: ["-y", "@playwright/mcp@latest"]
+      targets: [codex]
+    brave-search:
+      command: npx
+      args: ["-y", "@brave/brave-search-mcp-server", "--transport", "stdio"]
+      env:
+        BRAVE_API_KEY: {fromEnv: BRAVE_API_KEY}
+      targets: [codex]
+    context7:
+      command: npx
+      args: ["-y", "@upstash/context7-mcp"]
+      env:
+        CONTEXT7_API_KEY: {fromEnv: CONTEXT7_API_KEY}
+
+# Fold $HOME to ~ on save so the tracked config stays machine-independent.
+preserve_tilde_on_save: true
