@@ -89,7 +89,6 @@ specs in `lua/plugins/`. Everything else is LazyVim's.
 | `<leader>gdh` | commit-by-commit history for this file |
 | `<leader>gdu` | show this file as a unified diff in a new tab (`q` or `gdu` again closes it); works on any file, including brand-new ones |
 | `<leader>gdx` | close the diff view |
-| `<leader>gr` | review drawer: changed files on the left (`Enter` opens modified in Diffview, new as a regular file; `r` refreshes, `q` closes) |
 | `<leader>/` (visual) | grep the repo for the selected text |
 | `<leader><leader>` / `<leader>p` | find files |
 | `<leader>o` | buffers |

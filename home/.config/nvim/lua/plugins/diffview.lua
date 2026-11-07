@@ -241,13 +241,6 @@ return {
         desc = "Toggle unified diff",
       },
       {
-        "<leader>gr",
-        function()
-          require("review").open()
-        end,
-        desc = "Review changed files",
-      },
-      {
         "<leader>gdx",
         "<cmd>DiffviewClose<cr>",
         desc = "Close diff view",

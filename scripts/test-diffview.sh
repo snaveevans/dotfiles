@@ -18,7 +18,6 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 SPEC="$REPO_ROOT/home/.config/nvim/lua/plugins/diffview.lua"
-REVIEW="$REPO_ROOT/home/.config/nvim/lua/review.lua"
 
 # Resolved so path comparisons match what git reports (macOS /var symlink).
 TMP_DIR="$(cd "$(mktemp -d)" && pwd -P)"
@@ -42,7 +41,6 @@ skip() {
 command -v git >/dev/null 2>&1 || fail "git is required for this verification script"
 command -v nvim >/dev/null 2>&1 || skip "nvim is not installed"
 [[ -f "$SPEC" ]] || fail "diffview plugin spec is missing: $SPEC"
-[[ -f "$REVIEW" ]] || fail "review module is missing: $REVIEW"
 
 LAZY_DIR="$HOME/.local/share/nvim/lazy"
 [[ -d "$LAZY_DIR/diffview.nvim" ]] || skip "diffview.nvim is not installed under $LAZY_DIR"
@@ -65,7 +63,6 @@ cat >"$TMP_DIR/driver.lua" <<EOF
 local phase = _G.arg[1]
 local fixture = os.getenv("DIFFVIEW_TEST_FIXTURE")
 local spec_path = os.getenv("DIFFVIEW_TEST_SPEC")
-local review_path = os.getenv("DIFFVIEW_TEST_REVIEW")
 local home = os.getenv("HOME")
 vim.opt.rtp:append(home .. "/.local/share/nvim/lazy/diffview.nvim")
 vim.opt.rtp:append(home .. "/.local/share/nvim/lazy/plenary.nvim")
@@ -75,79 +72,7 @@ vim.cmd("runtime plugin/diffview.lua")
 vim.cmd("cd " .. vim.fn.fnameescape(fixture))
 
 local lib = require("diffview.lib")
-if phase == "panel" then
-  local review = dofile(review_path)
-  -- Porcelain edge cases: renames review under the new name, quoted
-  -- paths are unquoted.
-  local parsed = review.parse('R  old.txt -> renamed.txt\n?? "sp ace.txt"\n M a.txt\n')
-  assert(
-    parsed.modified[1] == "a.txt" and parsed.modified[2] == "renamed.txt",
-    "parse should split renames and sort modified"
-  )
-  assert(parsed.new[1] == "sp ace.txt", "parse should unquote new files")
-  vim.cmd("edit a.txt")
-  review.open()
-  local panel = nil
-  for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
-    if vim.api.nvim_buf_get_name(vim.api.nvim_win_get_buf(win)):find("review://files", 1, true) then
-      panel = win
-    end
-  end
-  assert(panel ~= nil, "review panel did not open")
-  local buf = vim.api.nvim_win_get_buf(panel)
-  local function find_line(wanted)
-    for lnum, line in ipairs(vim.api.nvim_buf_get_lines(buf, 0, -1, false)) do
-      if line == wanted then
-        return lnum
-      end
-    end
-    return nil
-  end
-  assert(find_line("Modified (1)") ~= nil, "panel is missing the Modified section")
-  assert(find_line("New (1)") ~= nil, "panel is missing the New section")
-  local tabs_before = #vim.api.nvim_list_tabpages()
-  vim.api.nvim_win_set_cursor(panel, { find_line("a.txt"), 0 })
-  vim.api.nvim_set_current_win(panel)
-  review.open_at_cursor()
-  assert(vim.wait(15000, function()
-    return #vim.api.nvim_list_tabpages() == tabs_before + 1 and lib.get_current_view() ~= nil
-  end), "modified file did not open in a new Diffview tab")
-  -- The list must survive in its own tab.
-  vim.cmd("tabprevious")
-  local panel_gone = true
-  for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
-    if vim.api.nvim_win_get_buf(win) == buf then
-      panel_gone = false
-    end
-  end
-  assert(not panel_gone, "review panel did not stay open")
-  -- A brand-new file opens as a regular file beside the list, same tab.
-  vim.api.nvim_set_current_win(panel)
-  vim.api.nvim_win_set_cursor(panel, { find_line("new.txt"), 0 })
-  local tabs_before_new = #vim.api.nvim_list_tabpages()
-  review.open_at_cursor()
-  local shown = false
-  for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
-    local name = vim.api.nvim_buf_get_name(vim.api.nvim_win_get_buf(win))
-    if name:sub(-7) == "new.txt" then
-      shown = true
-    end
-  end
-  assert(shown, "new file did not open beside the list")
-  assert(#vim.api.nvim_list_tabpages() == tabs_before_new, "new file should not open a new tab")
-  -- Toggling closes the list again.
-  vim.api.nvim_set_current_win(panel)
-  review.open()
-  local closed = true
-  for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
-    if vim.api.nvim_win_get_buf(win) == buf then
-      closed = false
-    end
-  end
-  assert(closed, "second toggle did not close the review panel")
-  print("PHASE_PASS:" .. phase)
-  vim.cmd("qa!")
-elseif phase == "plain" then
+if phase == "plain" then
   -- Brand-new untracked file, no Diffview involved: the reported gap.
   vim.cmd("edit new.txt")
 else
@@ -226,7 +151,7 @@ vim.cmd("qa!")
 EOF
 
 run_phase() {
-  DIFFVIEW_TEST_FIXTURE="$FIXTURE" DIFFVIEW_TEST_SPEC="$SPEC" DIFFVIEW_TEST_REVIEW="$REVIEW" \
+  DIFFVIEW_TEST_FIXTURE="$FIXTURE" DIFFVIEW_TEST_SPEC="$SPEC" \
     nvim --headless --noplugin -u NONE -l "$TMP_DIR/driver.lua" "$1" 2>&1 |
     grep -Fq "PHASE_PASS:$1" ||
     fail "diffview regression failed in phase $1"
@@ -236,11 +161,9 @@ run_phase diff
 
 run_phase plain
 
-run_phase panel
-
 git -C "$FIXTURE" add a.txt
 git -C "$FIXTURE" commit --quiet -m "agent change"
 
 run_phase history
 
-printf 'diffview review: PASS (diff + plain + panel + history phases)\n'
+printf 'diffview unified toggle: PASS (diff + plain + history phases)\n'
