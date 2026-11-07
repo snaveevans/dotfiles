@@ -83,6 +83,12 @@ specs in `lua/plugins/`. Everything else is LazyVim's.
 | --- | --- |
 | `<leader>gw` | worktrees in this repo |
 | `<leader>gW` | worktrees across every repo |
+| `<leader>gdf` | diff this file vs `main` (all agent commits plus uncommitted work) |
+| `<leader>gdF` | diff this file vs a branch you type |
+| `<leader>gdm` | diff tracked files vs `main` (Diffview never lists brand-new files here) |
+| `<leader>gdh` | commit-by-commit history for this file |
+| `<leader>gdu` | show this file as a unified diff in a new tab (`q` or `gdu` again closes it); works on any file, including brand-new ones |
+| `<leader>gdx` | close the diff view |
 | `<leader>/` (visual) | grep the repo for the selected text |
 | `<leader><leader>` / `<leader>p` | find files |
 | `<leader>o` | buffers |

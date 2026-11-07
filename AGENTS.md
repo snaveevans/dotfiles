@@ -70,11 +70,12 @@ scripts/test-wt.sh
 
 ## Single-Test Guidance
 
-There are currently three explicit automated test scripts: `scripts/test-refresh-secrets.sh`, `scripts/test-wt.sh`, and `scripts/test-provision-pi.sh`
+There are currently four explicit automated test scripts: `scripts/test-refresh-secrets.sh`, `scripts/test-wt.sh`, `scripts/test-provision-pi.sh`, and `scripts/test-diffview.sh`
 
 Use the narrowest check for the file type you changed:
 - secret refresh logic: `scripts/test-refresh-secrets.sh`
 - worktree command logic: `scripts/test-wt.sh`
+- diffview toggle logic: `scripts/test-diffview.sh`
 - Pi config provisioning logic: `scripts/test-provision-pi.sh`
 - link-install behavior: `scripts/install-home-links.sh --dry-run --home "$(mktemp -d)"`
 - one shell file: `bash -n path/to/file.sh`
@@ -175,6 +176,7 @@ Pick the narrowest relevant checks:
 - run `scripts/test-refresh-secrets.sh` for secret refresh changes
 - run `scripts/test-provision-pi.sh` for changes to `scripts/provision-pi.sh` or `home/.pi/agent/settings.*.json` / `models.*.json`
 - run `scripts/test-wt.sh` for changes to `home/.local/bin/wt`
+- run `scripts/test-diffview.sh` for changes to the diffview plugin spec
 - run `scripts/install-home-links.sh --dry-run` for link-install changes
 
 If you changed user-visible setup behavior, update the README or docs in the same change.
