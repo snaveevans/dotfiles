@@ -52,7 +52,7 @@ This repo now uses an explicit bootstrap + link + refresh flow for setup and day
    entry) or `replace` (take the tracked declaration). Former MCP servers
    are gone: browser automation, docs lookup, and search now run through
    CLI skills (`chrome-devtools-cli`, `playwright-cli`, `find-docs`,
-   `web-search`), with API keys coming from `~/.config/secrets/env`.
+   `bx`), with API keys coming from `~/.config/secrets/env`.
 
 ## What each script does
 
