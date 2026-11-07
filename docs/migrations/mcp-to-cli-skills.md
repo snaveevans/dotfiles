@@ -9,17 +9,19 @@ script deletes leftovers when present).
 
 | Skill(s) | Source | Refresh command |
 |---|---|---|
-| `find-docs` | Hand-written from [Context7 CLI docs](https://context7.com/docs/clients/cli) | Re-check the docs page; `ctx7` flags are stable |
-| `web-search`, `news-search`, `llm-context`, `answers` | [brave-search-skills](https://github.com/brave/brave-search-skills) via `skillshare install brave/brave-search-skills -s 'web-search,news-search,llm-context,answers'` | `skillshare update --all`, then re-apply the key rename below |
+| `find-docs` | [context7](https://github.com/upstash/context7) via `skillshare install upstash/context7 -s find-docs` (official skill) | Re-apply the `-y` flag on every `npx ctx7@latest` invocation below |
+| `bx` | [brave-search-skills](https://github.com/brave/brave-search-skills) via `skillshare install brave/brave-search-skills -s bx` (official `bx` skill: `context` replaces `llm-context`, `web`/`news` replace the search skills, `answers` replaces the `answers` skill) | Re-apply the npx/key adaptation below |
 | `playwright-cli`, `playwright-component-testing`, `playwright-trace` | `npx playwright init-skills --loop claude` output, adopted into source | Re-run the generator, diff, copy changed files into source |
 | `chrome-devtools-cli` | [chrome-devtools-mcp](https://github.com/ChromeDevTools/chrome-devtools-mcp) `skills/chrome-devtools-cli`, adapted to npx | Re-fetch `SKILL.md` + `references/`, re-apply the npx substitution below |
 
 ## Adaptations re-applied on every vendor update
 
-- Brave skills reference `BRAVE_SEARCH_API_KEY` upstream; this repo's
-  canonical name is `BRAVE_API_KEY` (exported by
-  `scripts/refresh-secrets.sh` from Bitwarden). Rename on adopt and on
-  every update.
+- `bx` assumes a global `bx` binary and `BRAVE_SEARCH_API_KEY`. This copy
+  adds a repo-adaptation note at the top of `SKILL.md`: run everything via
+  `npx -y @brave/brave-search-cli@1.7.0` (no global install), keyed by this
+  repo's canonical `BRAVE_API_KEY` (exported by
+  `scripts/refresh-secrets.sh` from Bitwarden), which `bx` accepts via its
+  `BRAVE_API_KEY` fallback. Re-apply on every vendor update.
 - `chrome-devtools-cli` assumes a global `chrome-devtools` command.
   This copy rewrites invocations to
   `npx -y -p chrome-devtools-mcp@latest chrome-devtools ...` (plus
@@ -36,5 +38,7 @@ script deletes leftovers when present).
 
 - No one-shot `browser_fill_form` in either browser CLI.
 - `chrome-devtools` `wait_for` has no CLI equivalent.
-- `brave_summarizer` is deprecated upstream; use the `answers` skill.
+- `brave_summarizer` is deprecated upstream; use `bx answers` instead
+  (requires an Answers-capable plan — without one the API returns
+  `OPTION_NOT_IN_PLAN`, and `bx context` is the fallback).
 - Playwright CLI sessions default to headless with a 1-hour idle timeout.
